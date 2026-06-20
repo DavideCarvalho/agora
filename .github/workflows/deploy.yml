@@ -1,0 +1,71 @@
+name: Deploy Agora to GitHub Pages
+
+# This `agora` folder is the root of its own GitHub repository.
+on:
+  push:
+    branches: [main]
+  # Manual "Run workflow" button.
+  workflow_dispatch:
+  # Periodic re-sync: rebuilds and redeploys so docs edited in the library repos
+  # (which live in their own repos) show up without anyone touching Agora.
+  schedule:
+    - cron: '17 */3 * * *' # every 3 hours
+  # Instant trigger: a library repo can POST a repository_dispatch of this type
+  # to rebuild immediately on a docs change.
+  repository_dispatch:
+    types: [lib-docs-updated]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; let in-progress runs finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Derives base_path from the repo name, e.g. "/agora" for a project site.
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # prebuild (scripts/sync-docs.mjs) clones each @agora library repo and pulls
+      # its docs/ into content/docs/<slug>/, then next build exports to out/.
+      - name: Build static site
+        run: pnpm build
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

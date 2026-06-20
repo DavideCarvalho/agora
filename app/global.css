@@ -1,0 +1,288 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* ------------------------------------------------------------------ *
+ * Agora theme — AdonisJS violet on a dusk-ink canvas.
+ * Overrides Fumadocs' fd-* tokens so the whole site (docs included)
+ * shares one cohesive identity.
+ * ------------------------------------------------------------------ */
+
+:root {
+  --agora-primary: #5a45ff; /* AdonisJS violet */
+  --agora-primary-soft: hsl(250 74% 51% / 0.14);
+  --agora-ink: hsl(240 10% 6.5%);
+
+  /* light theme (toggle) — warm paper */
+  --color-fd-background: hsl(40 30% 96%);
+  --color-fd-foreground: hsl(240 14% 12%);
+  --color-fd-muted: hsl(40 24% 92%);
+  --color-fd-muted-foreground: hsl(240 6% 42%);
+  --color-fd-popover: hsl(40 30% 98%);
+  --color-fd-popover-foreground: hsl(240 14% 12%);
+  --color-fd-card: hsl(40 28% 97%);
+  --color-fd-card-foreground: hsl(240 14% 12%);
+  --color-fd-border: hsl(240 10% 14% / 0.1);
+  --color-fd-primary: var(--agora-primary);
+  --color-fd-primary-foreground: hsl(40 40% 97%);
+  --color-fd-secondary: hsl(40 24% 92%);
+  --color-fd-secondary-foreground: hsl(240 14% 12%);
+  --color-fd-accent: var(--agora-primary-soft);
+  --color-fd-accent-foreground: hsl(250 74% 38%);
+  --color-fd-ring: var(--agora-primary);
+}
+
+.dark {
+  /* default canvas — deep dusk ink + warm bone text */
+  --color-fd-background: hsl(240 10% 6.5%);
+  --color-fd-foreground: hsl(40 28% 92%);
+  --color-fd-muted: hsl(240 8% 12%);
+  --color-fd-muted-foreground: hsl(40 12% 66%);
+  --color-fd-popover: hsl(240 9% 9.5%);
+  --color-fd-popover-foreground: hsl(40 24% 90%);
+  --color-fd-card: hsl(240 9% 9%);
+  --color-fd-card-foreground: hsl(40 28% 94%);
+  --color-fd-border: hsl(40 30% 82% / 0.09);
+  --color-fd-primary: var(--agora-primary);
+  --color-fd-primary-foreground: hsl(40 40% 96%);
+  --color-fd-secondary: hsl(240 8% 13%);
+  --color-fd-secondary-foreground: hsl(40 24% 90%);
+  --color-fd-accent: var(--agora-primary-soft);
+  --color-fd-accent-foreground: hsl(250 80% 72%);
+  --color-fd-ring: var(--agora-primary);
+}
+
+.dark #nd-sidebar {
+  --color-fd-muted: hsl(240 8% 13%);
+  --color-fd-secondary: hsl(240 8% 14%);
+  --color-fd-muted-foreground: hsl(40 12% 70%);
+}
+
+/* ------------------------------------------------------------------ *
+ * Typography
+ * ------------------------------------------------------------------ */
+
+body {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+}
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* editorial headings across the site */
+h1,
+h2 {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* ------------------------------------------------------------------ *
+ * Home page ("the agora")
+ * ------------------------------------------------------------------ */
+
+.agora-home {
+  --hairline: var(--color-fd-border);
+  position: relative;
+  width: 100%;
+  overflow-clip-margin: 1rem;
+}
+
+/* atmospheric backdrop: violet dusk glow + faint contour grid + grain */
+.agora-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.agora-sky::before {
+  /* violet glow rising from behind the hero */
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -10%;
+  width: min(90rem, 140%);
+  height: 48rem;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(60% 60% at 50% 0%, hsl(250 74% 51% / 0.22), transparent 70%),
+    radial-gradient(40% 50% at 18% 12%, hsl(268 60% 50% / 0.12), transparent 70%);
+  filter: blur(8px);
+}
+.agora-sky::after {
+  /* fine "field-guide" grid */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--color-fd-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-fd-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 78%);
+  opacity: 0.6;
+}
+
+.agora-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* eyebrow / kicker */
+.agora-kicker {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-fd-muted-foreground);
+}
+
+.agora-rule {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--color-fd-border) 12%, var(--color-fd-border) 88%, transparent);
+}
+
+/* library card */
+.library {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.4rem 1.4rem 1.25rem;
+  background: var(--color-fd-card);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.25s ease, transform 0.25s ease, background 0.25s ease;
+  isolation: isolate;
+}
+.library::before {
+  /* violet wash that wakes up on hover */
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(120% 120% at 0% 0%, var(--agora-primary-soft), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.library:hover {
+  transform: translateY(-3px);
+  border-color: hsl(250 74% 51% / 0.4);
+}
+.library:hover::before {
+  opacity: 1;
+}
+.library-no {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--color-fd-muted-foreground);
+}
+.library-icon {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 11px;
+  color: var(--agora-primary);
+  background: hsl(250 74% 51% / 0.1);
+  border: 1px solid hsl(250 74% 51% / 0.22);
+}
+.role-tag {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(250 80% 66%);
+}
+
+/* small pill badge */
+.agora-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-fd-border);
+  background: var(--color-fd-muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--color-fd-muted-foreground);
+}
+
+/* staggered reveal on load */
+@keyframes agora-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.agora-rise {
+  animation: agora-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .agora-rise {
+    animation: none;
+  }
+  .library:hover {
+    transform: none;
+  }
+}
+
+/* primary CTA */
+.agora-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.25rem;
+  border-radius: 10px;
+  background: var(--agora-primary);
+  color: hsl(40 40% 97%);
+  font-weight: 600;
+  font-size: 0.92rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 10px 30px -12px hsl(250 74% 51% / 0.6);
+}
+.agora-cta:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 14px 36px -12px hsl(250 74% 51% / 0.7);
+}
+.agora-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-fd-border);
+  color: var(--color-fd-foreground);
+  font-weight: 500;
+  font-size: 0.92rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.agora-ghost:hover {
+  border-color: hsl(250 74% 51% / 0.45);
+  background: var(--agora-primary-soft);
+}

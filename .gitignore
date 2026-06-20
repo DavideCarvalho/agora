@@ -1,0 +1,28 @@
+# deps
+/node_modules
+
+# fumadocs generated content
+.source
+
+# docs synced from each library's repo at build time (scripts/sync-docs.mjs).
+# The hub content/docs/index.mdx + meta.json are tracked; per-lib dirs are generated.
+/.docs-tmp/
+/public/lib-assets/
+/content/docs/context/
+/content/docs/diagnostics/
+/content/docs/resilience/
+/content/docs/filter/
+/content/docs/durable/
+/content/docs/telescope/
+
+# build
+/coverage
+/.next/
+/out/
+*.tsbuildinfo
+
+# misc
+.DS_Store
+.env*.local
+.vercel
+next-env.d.ts

@@ -1,0 +1,42 @@
+{
+  "name": "agora",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Agora documentation site — a unified, AdonisJS-themed docs hub that syncs each library's docs.",
+  "type": "module",
+  "scripts": {
+    "sync:docs": "node scripts/sync-docs.mjs",
+    "sync:docs:local": "AGORA_DOCS_LOCAL=1 node scripts/sync-docs.mjs",
+    "predev": "AGORA_DOCS_LOCAL=1 node scripts/sync-docs.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/sync-docs.mjs",
+    "build": "next build",
+    "start": "serve out",
+    "lint": "biome check",
+    "format": "biome format --write",
+    "postinstall": "fumadocs-mdx"
+  },
+  "dependencies": {
+    "@orama/orama": "^3.1.18",
+    "fumadocs-core": "16.10.3",
+    "fumadocs-mdx": "15.0.12",
+    "fumadocs-ui": "16.10.3",
+    "lucide-react": "^1.17.0",
+    "next": "16.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@tailwindcss/postcss": "^4.3.0",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "postcss": "^8.5.15",
+    "serve": "^14.2.6",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3"
+  }
+}

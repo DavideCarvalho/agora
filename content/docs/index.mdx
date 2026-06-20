@@ -1,0 +1,25 @@
+---
+title: Agora
+description: The AdonisJS ecosystem — context, diagnostics, resilience, filter, durable and telescope.
+---
+
+# Agora
+
+**Agora** is a family of production-grade libraries for AdonisJS — a Greek gathering place for your
+app's cross-cutting concerns. Each library ships on its own, but they compose: they share context,
+emit to one diagnostics bus, and surface in one observability console.
+
+## The libraries
+
+- **[Context](/docs/context)** — ambient request/tenant/correlation context across HTTP, queue, durable and ace.
+- **[Diagnostics](/docs/diagnostics)** — a diagnostics bus over `node:diagnostics_channel` with an OpenTelemetry auto-bridge.
+- **[Resilience](/docs/resilience)** — timeout / retry / circuit-breaker / failover policies, with a distributed breaker store.
+- **[Filter](/docs/filter)** — a typed query-filter language with a Lucid adapter.
+- **[Durable](/docs/durable)** — durable, resumable, cross-process workflows.
+- **[Telescope](/docs/telescope)** — a Telescope-style observability console with an extensible dashboard.
+
+## How they fit together
+
+Everything is wired through small `Symbol.for('@agora/<lib>:<name>')` capability slots, so a library
+lights up its neighbours **when present** and no-ops when absent — no hard dependencies between repos.
+Install only what you need.
