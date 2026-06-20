@@ -31,7 +31,7 @@ export const libs: AgoraLib[] = [
     role: 'Foundation',
     icon: Boxes,
     iconName: 'Boxes',
-    packages: 2,
+    packages: 1,
     stage: 'alpha',
   },
   {
@@ -67,7 +67,7 @@ export const libs: AgoraLib[] = [
     role: 'Workflows',
     icon: Workflow,
     iconName: 'Workflow',
-    packages: 9,
+    packages: 2,
     stage: 'beta',
   },
   {
@@ -79,7 +79,7 @@ export const libs: AgoraLib[] = [
     role: 'Observability',
     icon: Telescope,
     iconName: 'Telescope',
-    packages: 5,
+    packages: 1,
     stage: 'beta',
   },
 ];
