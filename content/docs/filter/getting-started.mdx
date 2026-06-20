@@ -1,0 +1,205 @@
+---
+title: Getting Started
+description: Add declarative query filtering to an AdonisJS project in minutes — install, parse the request, apply it to a Lucid query under an allow-list, and paginate.
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+`@agora/filter` is a pair of small, focused packages:
+
+| Package | Where it runs | What it does |
+|---|---|---|
+| [`@agora/filter`](/docs/filter/filter/guides/lucid) | server (AdonisJS) | parse a request → apply it to a Lucid query under a field allow-list → resolve pagination |
+| [`@agora/filter-client`](/docs/filter/filter/guides/client) | browser / Node | a fluent, type-safe builder that emits exactly the query string the server parses |
+
+The server package is **plain functions** — no provider to register, no config file, no decorators. You import `parseFilterRequest` and `applyFilter` and call them. Most endpoints are wired in a couple of minutes.
+
+---
+
+## Prerequisites
+
+- **Node.js 20.6+**
+- **AdonisJS 6** with **Lucid** (`@adonisjs/lucid`)
+- **TypeScript 5+**
+
+---
+
+## Step 1 — Install
+
+<Tabs items={['node ace', 'npm', 'pnpm']}>
+  <Tab value="node ace">
+    ```bash
+    node ace add @agora/filter
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npm install @agora/filter
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add @agora/filter
+    ```
+  </Tab>
+</Tabs>
+
+For the front-end, install the client builder in your web app or shared package:
+
+```bash
+npm install @agora/filter-client
+```
+
+<Callout type="info">
+`@agora/filter` has **no runtime dependency on Lucid** — it targets a structural `QueryBuilderLike` interface that any Lucid query builder satisfies. There is no service provider to register and nothing to add to `adonisrc.ts`.
+</Callout>
+
+---
+
+## Step 2 — Parse the request
+
+`parseFilterRequest(qs)` takes a decoded query object — exactly what AdonisJS's `request.qs()` returns — and reshapes it into a structured `FilterInput`. It is a pure reshape: no validation, no allow-listing (that happens in `applyFilter`).
+
+```ts
+import { parseFilterRequest } from '@agora/filter'
+
+const input = parseFilterRequest(request.qs())
+// {
+//   filters?: ColumnFilter[]
+//   sort?:    { field: string; direction: 'asc' | 'desc' }[]
+//   search?:  string
+//   page?:    number
+//   size?:    number
+// }
+```
+
+It understands every shape the client builder emits:
+
+| Query string | Parsed into |
+|---|---|
+| `filter[status]=active` | `{ field: 'status', operator: 'equals', value: 'active' }` |
+| `filter[id]=1,2,3` | `{ field: 'id', operator: 'in', value: ['1','2','3'] }` |
+| `filter[id][]=1&filter[id][]=2` | `{ field: 'id', operator: 'in', value: ['1','2'] }` |
+| `filter[age][gte]=18` | `{ field: 'age', operator: 'gte', value: '18' }` |
+| `sort=-createdAt,name` | `[{ field: 'createdAt', direction: 'desc' }, { field: 'name', direction: 'asc' }]` |
+| `search=fleet` | `search: 'fleet'` |
+| `page=2&size=50` (or `page[number]`/`page[size]`) | `page: 2, size: 50` |
+
+---
+
+## Step 3 — Apply it to a Lucid query
+
+`applyFilter(query, input, config)` validates the input, prunes it against the allow-list, mutates the query builder in place, and **returns the resolved pagination**:
+
+```ts
+import { applyFilter } from '@agora/filter'
+import User from '#models/user'
+
+const query = User.query()
+
+const { page, size } = applyFilter(query, input, {
+  allowed: ['name', 'email', 'age', 'status'], // filterable columns
+  sortable: ['name', 'createdAt'],             // optional — defaults to `allowed`
+  searchable: ['name', 'email'],               // columns the `search` term scans (ILIKE)
+})
+
+const users = await query.paginate(page, size)
+```
+
+The `allowed` / `sortable` / `searchable` lists are the **security boundary**. A filter, sort, or search on any field not named there is silently dropped (or rejected — see [`throwOnInvalid`](/docs/filter/filter/guides/validation#throwoninvalid)). See [Filter Classes](/docs/filter/filter/guides/filter-classes) for the full `FilterConfig` reference.
+
+<Callout type="info" title="Why pagination is returned, not applied">
+`applyFilter` resolves `size` (clamped to `[1, maxSize]`, default cap `100`) and `page` (min `1`), but leaves execution to you. That keeps the function pure with respect to the builder's terminal operations, so you can `query.paginate(page, size)`, run a plain `query.exec()`, or build a `DISTINCT` projection from the same filtered query.
+</Callout>
+
+---
+
+## The full endpoint
+
+Putting it together in an AdonisJS controller:
+
+```ts title="app/controllers/users_controller.ts"
+import type { HttpContext } from '@adonisjs/core/http'
+import { parseFilterRequest, applyFilter } from '@agora/filter'
+import User from '#models/user'
+
+export default class UsersController {
+  async index({ request }: HttpContext) {
+    const input = parseFilterRequest(request.qs())
+    const query = User.query()
+
+    const { page, size } = applyFilter(query, input, {
+      allowed: ['name', 'email', 'age', 'status'],
+      searchable: ['name', 'email'],
+      defaultSize: 25,
+      maxSize: 100,
+    })
+
+    return query.paginate(page, size)
+  }
+}
+```
+
+```ts title="start/routes.ts"
+import router from '@adonisjs/core/services/router'
+const UsersController = () => import('#controllers/users_controller')
+
+router.get('/users', [UsersController, 'index'])
+```
+
+A request to:
+
+```
+GET /users?filter[status]=active&filter[age][gte]=18&search=fleet&sort=-createdAt&page=1&size=25
+```
+
+will:
+
+1. **Parse** `request.qs()` into `{ filters: [...], search: 'fleet', sort: [...], page: 1, size: 25 }`
+2. **Validate** each `ColumnFilter` (operator known, value shape correct, field charset safe, depth ≤ 10)
+3. **Prune** anything outside the allow-list (`status`, `age` survive; an unknown field would be dropped)
+4. **Apply** the survivors to the query as `WHERE` / `ORDER BY` / ILIKE clauses
+5. **Return** `{ page: 1, size: 25 }` for `query.paginate()`
+
+---
+
+## Build the request from the front-end
+
+The client builder produces exactly the wire format the server parses. The same conditions, type-checked at the call site:
+
+```ts title="web/users.ts"
+import { filterQuery } from '@agora/filter-client'
+
+const qs = filterQuery()
+  .equals('status', 'active')
+  .gte('age', 18)
+  .search('fleet')
+  .sort('createdAt', 'desc')
+  .page(1, 25)
+  .toQueryString()
+
+const res = await fetch(`/users?${qs}`)
+```
+
+See the [Client Builder guide](/docs/filter/filter/guides/client) for the full method surface, the typed variant (`filterQueryTyped`), reactivity, and TanStack Table sync.
+
+---
+
+## Next steps
+
+<Steps>
+<Step>
+[**Operators**](/docs/filter/filter/guides/operators) — all 22 operators, SQL-symbol aliases, and the wire format.
+</Step>
+<Step>
+[**Filter Classes**](/docs/filter/filter/guides/filter-classes) — the full `FilterConfig` policy: `allowed`, `sortable`, `searchable`, `defaultSize`, `maxSize`, `throwOnInvalid`.
+</Step>
+<Step>
+[**Controllers**](/docs/filter/filter/guides/controllers) — patterns for wiring `parse → apply` cleanly into AdonisJS, including reusable helpers.
+</Step>
+<Step>
+[**Client Builder**](/docs/filter/filter/guides/client) — the typed front-end query builder and framework adapters.
+</Step>
+</Steps>

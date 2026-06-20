@@ -54,15 +54,6 @@ const art: Record<string, ReactElement> = {
       />
     </g>
   ),
-  // Funnel — narrows many inputs down to the few that pass.
-  Funnel: (
-    <g>
-      <path d="M-46 -34 L46 -34 L12 4 L12 44 L-12 54 L-12 4 Z" fill={C} />
-      <rect x="-36" y="-26" width="72" height="4" fill={INK} />
-      <rect x="-26" y="-16" width="52" height="4" fill={INK} />
-      <circle cx="0" cy="66" r="5" fill={C} />
-    </g>
-  ),
   // Temple — built to endure, the agora itself.
   Temple: (
     <g>
@@ -98,9 +89,8 @@ const meta: Record<string, { name: keyof typeof art; plate: string }> = {
   context: { name: 'Column', plate: '01' },
   diagnostics: { name: 'Amphora', plate: '02' },
   resilience: { name: 'Shield', plate: '03' },
-  filter: { name: 'Funnel', plate: '04' },
-  durable: { name: 'Temple', plate: '05' },
-  telescope: { name: 'Eye', plate: '06' },
+  durable: { name: 'Temple', plate: '04' },
+  telescope: { name: 'Eye', plate: '05' },
 };
 
 export interface Emblem {

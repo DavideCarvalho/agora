@@ -1,0 +1,236 @@
+---
+title: Testing
+description: Unit-testing filters against a recording mock query builder, asserting the generated calls, and end-to-end tests with Japa and a real database.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Because the adapter targets the structural `QueryBuilderLike` interface rather than Lucid directly, you can test your filter logic two ways: **fast unit tests** against a recording mock (no database), and **end-to-end tests** with Japa against a real database. Use both — the mock proves the right query was built, the integration test proves it returns the right rows.
+
+---
+
+## Unit testing with a recording mock
+
+A `QueryBuilderLike` is a small interface — implement a stand-in that records every call, run `applyFilter` (or the low-level functions) against it, and assert the recorded calls. The library has no runtime Lucid dependency, so the mock is all you need.
+
+```ts title="tests/unit/user_filter.spec.ts"
+import { test } from '@japa/runner'
+import { applyFilter, type QueryBuilderLike } from '@agora/filter'
+
+interface Call { method: string; args: unknown[] }
+
+/** A recording stand-in for a Lucid query builder. */
+class MockQuery implements QueryBuilderLike {
+  calls: Call[] = []
+  children: MockQuery[] = []
+
+  private record(method: string, ...args: unknown[]): this {
+    this.calls.push({ method, args })
+    return this
+  }
+  private group(method: string, cb: (qb: QueryBuilderLike) => void): this {
+    const child = new MockQuery()
+    this.children.push(child)
+    cb(child)
+    return this
+  }
+
+  where(a: any, b?: any, c?: any): this {
+    if (typeof a === 'function') return this.group('where', a)
+    return c !== undefined ? this.record('where', a, b, c) : this.record('where', a, b)
+  }
+  orWhere(cb: (qb: QueryBuilderLike) => void) { return this.group('orWhere', cb) }
+  whereNot(c: string, v: unknown) { return this.record('whereNot', c, v) }
+  whereIn(c: string, v: unknown[]) { return this.record('whereIn', c, v) }
+  whereNotIn(c: string, v: unknown[]) { return this.record('whereNotIn', c, v) }
+  whereNull(c: string) { return this.record('whereNull', c) }
+  whereNotNull(c: string) { return this.record('whereNotNull', c) }
+  whereBetween(c: string, r: [unknown, unknown]) { return this.record('whereBetween', c, r) }
+  whereNotBetween(c: string, r: [unknown, unknown]) { return this.record('whereNotBetween', c, r) }
+  whereILike(c: string, v: string) { return this.record('whereILike', c, v) }
+  orWhereILike(c: string, v: string) { return this.record('orWhereILike', c, v) }
+  orderBy(c: string, d: 'asc' | 'desc') { return this.record('orderBy', c, d) }
+
+  /** Every call across this builder and its nested groups. */
+  flatten(): Call[] {
+    return [...this.calls, ...this.children.flatMap((c) => c.flatten())]
+  }
+}
+
+test.group('UserFilter', () => {
+  test('applies a contains filter as ILIKE', ({ assert }) => {
+    const qb = new MockQuery()
+    applyFilter(
+      qb,
+      { filters: [{ field: 'name', operator: 'contains', value: 'Al' }] },
+      { allowed: ['name'] },
+    )
+    assert.deepInclude(qb.flatten(), { method: 'whereILike', args: ['name', '%Al%'] })
+  })
+
+  test('applies gte as a comparison', ({ assert }) => {
+    const qb = new MockQuery()
+    applyFilter(
+      qb,
+      { filters: [{ field: 'age', operator: 'gte', value: 18 }] },
+      { allowed: ['age'] },
+    )
+    assert.deepInclude(qb.flatten(), { method: 'where', args: ['age', '>=', 18] })
+  })
+})
+```
+
+<Callout type="info">
+The library's own test suite uses exactly this pattern — a `MockQueryBuilder` recorder with a `flatten()` that collects every leaf call across nested AND/OR groups, so assertions don't care about the precise grouping depth. Copy it into your test helpers.
+</Callout>
+
+---
+
+## Asserting allow-listing
+
+The allow-list is the security boundary, so test it directly — a disallowed field must not reach the builder:
+
+```ts
+test('drops disallowed fields', ({ assert }) => {
+  const qb = new MockQuery()
+  applyFilter(
+    qb,
+    {
+      filters: [
+        { field: 'name', operator: 'equals', value: 'Al' },
+        { field: 'secret', operator: 'equals', value: 'x' },
+      ],
+    },
+    { allowed: ['name'] },
+  )
+  const flat = qb.flatten()
+  assert.deepInclude(flat, { method: 'where', args: ['name', 'Al'] })
+  assert.isUndefined(flat.find((c) => c.args.includes('secret')))
+})
+
+test('throws when strict and a field is disallowed', ({ assert }) => {
+  const qb = new MockQuery()
+  assert.throws(() =>
+    applyFilter(
+      qb,
+      { filters: [{ field: 'secret', operator: 'equals', value: 'x' }] },
+      { allowed: ['name'], throwOnInvalid: true },
+    ),
+  )
+})
+```
+
+---
+
+## Asserting pagination resolution
+
+`applyFilter` returns the resolved pagination — assert the clamping:
+
+```ts
+test('clamps size to maxSize and floors page to 1', ({ assert }) => {
+  const qb = new MockQuery()
+  assert.deepEqual(applyFilter(qb, {}, { allowed: '*' }), { page: 1, size: 25 })
+  assert.deepEqual(
+    applyFilter(qb, { page: 3, size: 500 }, { allowed: '*', maxSize: 100 }),
+    { page: 3, size: 100 },
+  )
+})
+```
+
+---
+
+## Testing the wire format (parse step)
+
+`parseFilterRequest` is pure — feed it a decoded query object and assert the structured output:
+
+```ts
+import { parseFilterRequest } from '@agora/filter'
+
+test('parses bracket-notation operators and sort', ({ assert }) => {
+  const input = parseFilterRequest({
+    filter: { age: { gte: '18' }, status: 'active' },
+    sort: '-createdAt,name',
+  })
+  assert.deepEqual(input.filters, [
+    { field: 'age', operator: 'gte', value: '18' },
+    { field: 'status', operator: 'equals', value: 'active' },
+  ])
+  assert.deepEqual(input.sort, [
+    { field: 'createdAt', direction: 'desc' },
+    { field: 'name', direction: 'asc' },
+  ])
+})
+```
+
+---
+
+## End-to-end tests with a real database
+
+The mock proves the calls; an integration test proves the SQL is correct and returns the right rows. With Japa's API client and a seeded database, hit the endpoint with a client-built query string and assert the result:
+
+```ts title="tests/functional/users.spec.ts"
+import { test } from '@japa/runner'
+import { filterQuery } from '@agora/filter-client'
+import User from '#models/user'
+
+test.group('GET /users', (group) => {
+  group.each.setup(async () => {
+    await User.createMany([
+      { name: 'Alice', status: 'active', age: 30 },
+      { name: 'Bob', status: 'inactive', age: 20 },
+    ])
+  })
+
+  test('filters by status and age', async ({ client, assert }) => {
+    const qs = filterQuery().equals('status', 'active').gte('age', 25).toQueryString()
+
+    const response = await client.get(`/users?${qs}`)
+
+    response.assertStatus(200)
+    const body = response.body()
+    assert.lengthOf(body.data, 1)
+    assert.equal(body.data[0].name, 'Alice')
+  })
+
+  test('rejects a disallowed field in strict mode', async ({ client }) => {
+    const response = await client.get('/users?filter[passwordHash]=x')
+    response.assertStatus(400)
+  })
+})
+```
+
+<Callout type="info">
+Building the query string with `@agora/filter-client` in your tests doubles as a round-trip check: it verifies the client and server agree on the wire format end-to-end. See [Client Builder](/docs/filter/filter/guides/client).
+</Callout>
+
+---
+
+## Testing the client builder
+
+The client builder is pure and synchronous — assert its terminators directly:
+
+```ts
+import { filterQuery } from '@agora/filter-client'
+
+test('builds the expected query string', ({ assert }) => {
+  const qs = filterQuery()
+    .contains('name', 'Al')
+    .gte('age', 18)
+    .sortDesc('createdAt')
+    .toQueryString()
+  assert.equal(qs, 'filter[name][contains]=Al&filter[age][gte]=18&sort=-createdAt')
+})
+
+test('where replaces, add accumulates', ({ assert }) => {
+  const result = filterQuery()
+    .add('createdAt', 'gte', '2026-01-01')
+    .add('createdAt', 'lte', '2026-12-31')
+    .build()
+  assert.lengthOf(result.filter.where, 2)
+})
+
+test('rejects an invalid operator value', ({ assert }) => {
+  // `in` requires an array — a scalar throws synchronously at call time
+  assert.throws(() => filterQuery().where('status', 'in', 'active' as any))
+})
+```

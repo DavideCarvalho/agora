@@ -1,3 +1,3 @@
 {
-  "pages": ["index", "---Libraries---", "context", "diagnostics", "resilience", "filter", "durable", "telescope"]
+  "pages": ["index", "---Libraries---", "context", "diagnostics", "resilience", "durable", "telescope"]
 }

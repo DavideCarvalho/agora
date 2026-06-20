@@ -1,0 +1,11 @@
+{
+  "title": "Filter",
+  "pages": [
+    "index",
+    "getting-started",
+    "guides"
+  ],
+  "root": true,
+  "description": "A typed query-filter language with a Lucid adapter and a client query builder.",
+  "icon": "Filter"
+}

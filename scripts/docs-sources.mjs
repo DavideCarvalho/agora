@@ -43,17 +43,6 @@ export const sources = [
     migrated: true,
   },
   {
-    slug: 'filter',
-    name: 'Filter',
-    description: 'A typed query-filter language with a Lucid adapter and a client query builder.',
-    icon: 'Filter',
-    repo: 'DavideCarvalho/adonis-filter',
-    ref: 'master',
-    path: 'docs',
-    repoDir: 'adonis-filter',
-    migrated: true,
-  },
-  {
     slug: 'durable',
     name: 'Durable',
     description: 'Durable, resumable, cross-process workflows for AdonisJS — built on @adonisjs/queue.',

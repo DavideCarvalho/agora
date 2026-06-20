@@ -1,12 +1,4 @@
-import {
-  Activity,
-  Boxes,
-  Filter,
-  type LucideIcon,
-  Telescope,
-  Workflow,
-  Zap,
-} from 'lucide-react';
+import { Activity, Boxes, type LucideIcon, Telescope, Workflow, Zap } from 'lucide-react';
 
 export interface AgoraLib {
   /** url + folder slug under /docs */
@@ -64,17 +56,6 @@ export const libs: AgoraLib[] = [
     icon: Zap,
     iconName: 'Zap',
     packages: 1,
-    stage: 'alpha',
-  },
-  {
-    slug: 'filter',
-    pkg: 'filter',
-    name: 'Filter',
-    blurb: 'A typed query-filter language with a Lucid adapter and a client query builder.',
-    role: 'Data',
-    icon: Filter,
-    iconName: 'Filter',
-    packages: 2,
     stage: 'alpha',
   },
   {

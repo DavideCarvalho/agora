@@ -1,0 +1,164 @@
+---
+title: Filter Classes
+description: The FilterConfig policy — allow-listing filterable, sortable, and searchable columns, default and max page size, and strict vs. lenient rejection.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`@agora/filter` has no filter *classes* — there are no decorators and no base class to extend. The declarative surface is a single plain object, the **`FilterConfig`**, passed as the third argument to `applyFilter`. It is the policy for one endpoint: which columns are filterable, sortable, and searchable, and how pagination is bounded.
+
+```ts
+import { applyFilter } from '@agora/filter'
+
+const { page, size } = applyFilter(query, input, {
+  allowed: ['name', 'email', 'age', 'status'],
+  sortable: ['name', 'createdAt'],
+  searchable: ['name', 'email'],
+  defaultSize: 25,
+  maxSize: 100,
+  throwOnInvalid: false,
+})
+```
+
+<Callout type="info">
+Because the policy is just an object, you can store it next to the model, share it across controllers, or compute it per request (e.g. widen the allow-list for admins). See [Controllers](/docs/filter/filter/guides/controllers) for patterns.
+</Callout>
+
+---
+
+## FilterConfig reference
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `allowed` | `string[] \| '*'` | **required** | Columns clients may filter on. `'*'` allows any column (use with care). |
+| `sortable` | `string[] \| '*'` | falls back to `allowed` | Columns clients may sort on. |
+| `searchable` | `string[]` | `[]` (search disabled) | Columns the free-text `search` term scans with ILIKE. |
+| `defaultSize` | `number` | `25` | Page size when the request omits `size`. |
+| `maxSize` | `number` | `100` | Hard upper bound — `size` is clamped to `[1, maxSize]`. |
+| `throwOnInvalid` | `boolean` | `false` | Throw `InvalidColumnFilterError` on a disallowed field instead of silently dropping it. |
+
+---
+
+## The allow-list is the security boundary
+
+`allowed`, `sortable`, and `searchable` are not conveniences — they are the only thing standing between a client query string and your columns. Any field a client references that is not in the relevant list is pruned out of the query before it reaches Lucid.
+
+```ts
+const input = parseFilterRequest({
+  filter: { name: 'Al', passwordHash: { contains: 'x' } },
+})
+
+applyFilter(query, input, { allowed: ['name', 'email'] })
+// `name` is applied; `passwordHash` is dropped — never reaches SQL.
+```
+
+The pruning is **recursive**. For an AND/OR group, each leaf is checked independently; leaves on disallowed fields are removed, and a group left with no surviving children is dropped entirely.
+
+<Callout type="warn">
+`allowed: '*'` disables the filter allow-list. Only use it for trusted, internal endpoints — or pair it with a `searchable`/`sortable` list and rely on your model's column set being safe. Prefer an explicit array everywhere a client can reach.
+</Callout>
+
+---
+
+## sortable defaults to allowed
+
+If you omit `sortable`, it falls back to `allowed` — the same columns are filterable and sortable. Set it explicitly to diverge:
+
+```ts
+applyFilter(query, input, {
+  allowed: ['name', 'email', 'age', 'status'],
+  sortable: ['name', 'createdAt'], // can sort by createdAt even though you can't filter it
+})
+```
+
+A sort on a non-sortable field is dropped (or rejected with `throwOnInvalid`), exactly like filters.
+
+---
+
+## searchable enables free-text search
+
+The `search` term is only applied when `searchable` is non-empty. It runs a single OR-combined ILIKE group across those columns:
+
+```ts
+applyFilter(query, input, {
+  allowed: ['name', 'email'],
+  searchable: ['name', 'email'],
+})
+// ?search=fleet  →  WHERE (name ILIKE '%fleet%' OR email ILIKE '%fleet%')
+```
+
+The term is escaped with `escapeLike()` before the pattern is built. An empty or whitespace-only term is ignored. If `searchable` is omitted, `search` in the input is silently skipped.
+
+---
+
+## Pagination bounds
+
+`applyFilter` resolves pagination from the input against the config and **returns** it:
+
+```ts
+const { page, size } = applyFilter(query, input, {
+  allowed: ['name'],
+  defaultSize: 25,
+  maxSize: 100,
+})
+```
+
+- `size` = `clamp(input.size ?? defaultSize ?? 25, 1, maxSize ?? 100)`
+- `page` = `max(1, input.page ?? 1)`
+
+So a request asking for `size=500` against `maxSize: 100` is clamped to `100`; a missing/zero/negative `page` resolves to `1`. You then drive Lucid's pagination yourself:
+
+```ts
+const result = await query.paginate(page, size)
+```
+
+<Callout type="info" title="Lucid pagination is 1-based">
+`applyFilter` resolves `page` with a floor of `1`, matching Lucid's `query.paginate(page, perPage)` which is 1-based. The [client builder](/docs/filter/filter/guides/client)'s `.page(page, size)` is 0-based (TanStack convention) — normalize at the boundary if you pass client page numbers straight through.
+</Callout>
+
+---
+
+## throwOnInvalid — strict mode
+
+By default, disallowed fields are dropped silently, so an over-broad query still returns results (just an unfiltered or partially-filtered set). Set `throwOnInvalid: true` to make the endpoint reject such requests instead:
+
+```ts
+try {
+  applyFilter(query, input, { allowed: ['name'], throwOnInvalid: true })
+} catch (err) {
+  // err instanceof InvalidColumnFilterError
+  // 'Field "secret" is not filterable.' / '... is not sortable.'
+}
+```
+
+This throws `InvalidColumnFilterError` (exported from `@agora/filter`) the moment a disallowed filter or sort field is encountered. See [Validation](/docs/filter/filter/guides/validation) for turning that into a clean HTTP response.
+
+---
+
+## Reusing a config
+
+Keep the policy beside the model so every controller that lists it shares one source of truth:
+
+```ts title="app/filters/user_filter.ts"
+import type { FilterConfig } from '@agora/filter'
+
+export const userFilterConfig: FilterConfig = {
+  allowed: ['name', 'email', 'age', 'status'],
+  sortable: ['name', 'createdAt'],
+  searchable: ['name', 'email'],
+  maxSize: 100,
+}
+```
+
+```ts title="app/controllers/users_controller.ts"
+import { parseFilterRequest, applyFilter } from '@agora/filter'
+import { userFilterConfig } from '#filters/user_filter'
+import User from '#models/user'
+
+async index({ request }: HttpContext) {
+  const input = parseFilterRequest(request.qs())
+  const query = User.query()
+  const { page, size } = applyFilter(query, input, userFilterConfig)
+  return query.paginate(page, size)
+}
+```

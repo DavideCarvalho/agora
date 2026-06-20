@@ -1,0 +1,142 @@
+---
+title: Lucid Integration
+description: Applying filters to Lucid models and query builders — the QueryBuilderLike contract, the low-level apply functions, pagination, and DISTINCT projections.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`@agora/filter` applies to **any Lucid query builder** — model queries (`User.query()`), database queries (`db.from('users')`), and the relation sub-queries inside `preload`/`whereHas` callbacks. It never imports Lucid directly; it targets a small structural interface, `QueryBuilderLike`, that every Lucid builder already satisfies.
+
+---
+
+## The `QueryBuilderLike` contract
+
+The adapter only uses the `where*` and `orderBy` family. The exported `QueryBuilderLike` interface declares exactly that subset:
+
+```ts
+interface QueryBuilderLike {
+  where(callback: (qb: QueryBuilderLike) => void): QueryBuilderLike;
+  where(column: string, value: unknown): QueryBuilderLike;
+  where(column: string, operator: string, value: unknown): QueryBuilderLike;
+  orWhere(callback: (qb: QueryBuilderLike) => void): QueryBuilderLike;
+  whereNot(column: string, value: unknown): QueryBuilderLike;
+  whereIn(column: string, values: unknown[]): QueryBuilderLike;
+  whereNotIn(column: string, values: unknown[]): QueryBuilderLike;
+  whereNull(column: string): QueryBuilderLike;
+  whereNotNull(column: string): QueryBuilderLike;
+  whereBetween(column: string, range: [unknown, unknown]): QueryBuilderLike;
+  whereNotBetween(column: string, range: [unknown, unknown]): QueryBuilderLike;
+  whereILike(column: string, value: string): QueryBuilderLike;
+  orWhereILike(column: string, value: string): QueryBuilderLike;
+  orderBy(column: string, direction: 'asc' | 'desc'): QueryBuilderLike;
+}
+```
+
+A Lucid `ModelQueryBuilder` or `DatabaseQueryBuilder` is a structural superset, so you can pass it straight in — no cast needed. The nested-callback `where`/`orWhere` overloads model Lucid's grouping closures, which is how AND/OR composition is rendered.
+
+<Callout type="info">
+Because the binding is structural rather than a hard dependency, the adapter stays trivially unit-testable: feed it a recording mock that implements the same methods and assert the calls. See [Testing](/docs/filter/filter/guides/testing).
+</Callout>
+
+---
+
+## `applyFilter` — the full pipeline
+
+The high-level entry point. It validates and allow-list-prunes the input, applies filters → search → sort, and returns resolved pagination:
+
+```ts
+import { parseFilterRequest, applyFilter } from '@agora/filter'
+import User from '#models/user'
+
+const input = parseFilterRequest(request.qs())
+const query = User.query()
+
+const { page, size } = applyFilter(query, input, {
+  allowed: ['name', 'email', 'age', 'status'],
+  searchable: ['name', 'email'],
+})
+
+const users = await query.paginate(page, size)
+```
+
+See [Filter Classes](/docs/filter/filter/guides/filter-classes) for every `FilterConfig` option.
+
+---
+
+## The low-level functions
+
+When you need a single stage applied to an arbitrary builder — typically inside a `whereHas`/`preload` callback — three functions are exported. They take **already-validated, already-pruned** `ColumnFilter[]` / `SortItem[]` and apply them with no allow-listing or pagination:
+
+```ts
+import { applyColumnFilters, applySort, applySearch } from '@agora/filter'
+
+applyColumnFilters(qb, [
+  { field: 'status', operator: 'equals', value: 'active' },
+  { field: 'age', operator: 'gte', value: 18 },
+])
+
+applySort(qb, [{ field: 'createdAt', direction: 'desc' }])
+
+applySearch(qb, 'fleet', ['name', 'email']) // OR-combined ILIKE across the columns
+```
+
+<Callout type="warn">
+These functions trust their input — they do not enforce an allow-list. Only feed them filters you control, or that you have already validated and pruned. For client-derived input on the parent query, always go through `applyFilter`.
+</Callout>
+
+---
+
+## Pagination
+
+`applyFilter` resolves but does not execute pagination. Drive Lucid's paginator with the returned values:
+
+```ts
+const { page, size } = applyFilter(query, input, { allowed: ['name'] })
+const result = await query.paginate(page, size) // 1-based page, matches the resolver
+```
+
+- `size` is clamped to `[1, maxSize]` (default cap `100`, default value `defaultSize ?? 25`).
+- `page` has a floor of `1`.
+
+If you don't want pagination, ignore the return value and execute the query directly — the `WHERE` / `ORDER BY` clauses are already on it:
+
+```ts
+applyFilter(query, input, { allowed: ['name', 'status'] })
+const all = await query.exec()
+```
+
+---
+
+## DISTINCT projections
+
+Because `applyFilter` only mutates the builder's clauses and hands execution back to you, you can layer a `DISTINCT` projection on the same filtered query — useful for populating a filter dropdown with the values that exist under the current filters:
+
+```ts
+const input = parseFilterRequest(request.qs())
+const query = User.query()
+
+applyFilter(query, input, { allowed: ['status', 'baseId'] })
+
+// "Which statuses exist among the rows matching the current filter?"
+const rows = await query.distinct('status').select('status')
+// → [{ status: 'active' }, { status: 'inactive' }]
+```
+
+The [client builder](/docs/filter/filter/guides/client) has a matching `.distinct(...)` that serializes the requested columns; read them off the parsed request and apply them with Lucid's own `distinct()`.
+
+---
+
+## Database (non-model) queries
+
+The same functions work on a raw Lucid database query — it satisfies `QueryBuilderLike` too:
+
+```ts
+import db from '@adonisjs/lucid/services/db'
+import { parseFilterRequest, applyFilter } from '@agora/filter'
+
+const input = parseFilterRequest(request.qs())
+const query = db.from('users')
+
+const { page, size } = applyFilter(query, input, { allowed: ['name', 'status'] })
+return query.paginate(page, size)
+```
