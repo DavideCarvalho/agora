@@ -1,0 +1,7 @@
+{
+  "root": true,
+  "title": "AuthKit",
+  "description": "A full OIDC/OAuth2 Authorization Server for AdonisJS — IdP, OIDC client, and React ergonomics.",
+  "icon": "KeyRound",
+  "pages": ["index"]
+}

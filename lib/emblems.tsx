@@ -98,6 +98,16 @@ const art: Record<string, ReactElement> = {
       <path d="M30 -8 C35 11 53 11 58 -8" stroke={BONE} strokeWidth="2.5" fill="none" />
     </g>
   ),
+  // Key (κλείς) — the key to enter: authentication / identity.
+  Key: (
+    <g>
+      <circle cx="0" cy="-32" r="22" fill={C} />
+      <circle cx="0" cy="-32" r="10" fill={BONE} />
+      <rect x="-5" y="-14" width="10" height="64" fill={C} />
+      <rect x="5" y="34" width="20" height="9" fill={C} />
+      <rect x="5" y="48" width="13" height="9" fill={C} />
+    </g>
+  ),
 };
 
 // slug → { emblem name, plate number }
@@ -108,6 +118,7 @@ const meta: Record<string, { name: keyof typeof art; plate: string }> = {
   durable: { name: 'Temple', plate: '04' },
   telescope: { name: 'Eye', plate: '05' },
   authz: { name: 'Scales', plate: '06' },
+  authkit: { name: 'Key', plate: '07' },
 };
 
 export interface Emblem {

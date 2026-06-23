@@ -1,0 +1,81 @@
+---
+title: AuthKit
+description: A full OpenID Connect / OAuth2 Authorization Server (Identity Provider) for AdonisJS, plus an OIDC client adapter and typed React auth ergonomics.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+**AuthKit** turns an AdonisJS app into a full **OpenID Connect / OAuth2 Authorization Server**
+(Identity Provider), lets other apps consume it as **OIDC clients**, and gives React frontends
+typed auth ergonomics. It's built as an idiomatic wrapper around
+[`oidc-provider`](https://github.com/panva/node-oidc-provider).
+
+<Callout type="info">
+  AuthKit handles **authentication** (who you are). Pair it with [Authz](/docs/authz) for
+  **authorization** (what you can do) — AuthKit's `Identity` flows straight into Authz's
+  `resolveUserRef`, and into the shared [request context](/docs/context).
+</Callout>
+
+## Features
+
+- **OIDC / OAuth2 server** — authorization code + PKCE, refresh tokens, token exchange, discovery,
+  JWKS, revocation, introspection.
+- **MFA** — TOTP, WebAuthn passkeys, recovery codes, trusted-device skip.
+- **Passwordless** — magic-link email and passkey-first login.
+- **Protocol extensions** — Device Flow (RFC 8628), DPoP (RFC 9449), PAR (RFC 9126), step-up auth
+  via `acr_values`, Dynamic Client Registration (RFC 7591/7592).
+- **Consoles** — an admin console (users, clients, sessions, audit) and a self-service account console.
+- **Tokens & sessions** — Personal Access Tokens, admin impersonation, back-channel & RP-initiated logout.
+- **Hardening** — progressive account lockout, per-IP rate-limiting, an audit log with an
+  events/webhook fan-out, and new-login email alerts.
+- **Operability** — i18n (English + pt-BR), OpenTelemetry metrics, `authkit:doctor` /
+  `authkit:rotate-keys` commands, JWKS keystore vaults for AWS / GCP / Azure.
+
+## Packages
+
+AuthKit ships as a family of `@adonis-agora/authkit-*` packages, so each app pulls in only what it runs:
+
+| Package | Role |
+| --- | --- |
+| `@adonis-agora/authkit-server` | The OIDC/OAuth2 Authorization Server (Identity Provider). |
+| `@adonis-agora/authkit-client` | OIDC relying-party adapter — session auth + JWT/opaque/PAT resolvers. |
+| `@adonis-agora/authkit-react` | Frontend ergonomics: a typed `useAuth()` hook + role-gating components. |
+| `@adonis-agora/authkit-sdk` | Backend Admin SDK with `remote` (HTTP) and `embedded` (in-process) drivers. |
+| `@adonis-agora/authkit-core` | Shared contracts (`Identity`, `SessionResolver`, config types). |
+| `@adonis-agora/authkit-testing` | Mint real signed ID tokens in tests. |
+| `@adonis-agora/authkit-vault-{aws,gcp,azure}` | JWKS keystore vaults per cloud. |
+
+## Install
+
+Run the Authorization Server in your IdP app:
+
+```bash
+node ace add @adonis-agora/authkit-server
+```
+
+Consume it from another app as an OIDC client:
+
+```bash
+node ace add @adonis-agora/authkit-client
+```
+
+Add typed React ergonomics to an Inertia + React frontend:
+
+```bash
+npm i @adonis-agora/authkit-react
+```
+
+## How it fits the ecosystem
+
+- **[Context](/docs/context)** — the authenticated session populates the ambient request context
+  (`userRef`, tenant), so every other Agora library sees the current user.
+- **[Diagnostics](/docs/diagnostics)** — AuthKit's audit fan-out publishes auth events
+  (`authkit:login.success`, `authkit:mfa.enabled`, `authkit:account.locked`, …) on the diagnostics bus.
+- **[Telescope](/docs/telescope)** — those events surface automatically in the observability console.
+- **[Authz](/docs/authz)** — AuthKit identities feed DB-backed roles & permissions through Bouncer.
+
+## Full documentation
+
+AuthKit has its own in-depth documentation (getting started, topologies, MFA, organizations, the SDK,
+React components, and more) in the
+[**adonis-authkit repository**](https://github.com/DavideCarvalho/adonis-authkit).

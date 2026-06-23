@@ -1,4 +1,13 @@
-import { Activity, Boxes, type LucideIcon, ShieldCheck, Telescope, Workflow, Zap } from 'lucide-react';
+import {
+  Activity,
+  Boxes,
+  KeyRound,
+  type LucideIcon,
+  ShieldCheck,
+  Telescope,
+  Workflow,
+  Zap,
+} from 'lucide-react';
 
 export interface AgoraLib {
   /** url + folder slug under /docs */
@@ -93,6 +102,18 @@ export const libs: AgoraLib[] = [
     iconName: 'ShieldCheck',
     packages: 1,
     stage: 'alpha',
+  },
+  {
+    slug: 'authkit',
+    pkg: 'authkit-server',
+    name: 'AuthKit',
+    blurb:
+      'A full OIDC/OAuth2 Authorization Server for AdonisJS — MFA, passwordless, device flow, DPoP, admin & account consoles, plus an OIDC client adapter and React ergonomics.',
+    role: 'Identity',
+    icon: KeyRound,
+    iconName: 'KeyRound',
+    packages: 9,
+    stage: 'beta',
   },
 ];
 

@@ -75,4 +75,7 @@ export const sources = [
     repoDir: 'adonis-authz',
     migrated: true,
   },
+  // NOTE: authkit is NOT synced here — its docs (apps/docs/content/docs) are a
+  // coupled Fumadocs app with live React demos + app path-aliases, not portable.
+  // The /docs/authkit page is hand-authored in content/docs/authkit/ instead.
 ];
