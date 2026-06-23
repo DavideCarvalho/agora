@@ -5,7 +5,7 @@ export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 
 // npm scope every package in the agora lives under.
-export const npmScope = '@agora';
+export const npmScope = '@adonis-agora';
 
 // GitHub info — used for nav link + "edit on GitHub" + Pages basePath assumptions.
 // NOTE: `repo` should match the GitHub repository name; the Pages basePath is

@@ -28,7 +28,7 @@ const jetbrains = JetBrains_Mono({
 const siteUrl = `https://${gitConfig.user}.github.io${process.env.NEXT_PUBLIC_BASE_PATH || ''}`;
 
 const description =
-  'Agora is a collection of plug-n-play, fully-configurable libraries for AdonisJS, published under @agora. One docs site for the whole ecosystem — many libraries, gathered.';
+  'Agora is a collection of plug-n-play, fully-configurable libraries for AdonisJS, published under @adonis-agora. One docs site for the whole ecosystem — many libraries, gathered.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

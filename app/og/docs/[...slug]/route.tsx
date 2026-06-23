@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
   const emblem = getEmblem(libSlug);
   const title = page.data.title;
   const description = clamp(page.data.description ?? '', emblem ? 130 : 150);
-  const kicker = emblem ? `@agora/${libSlug}` : '@agora · for AdonisJS';
+  const kicker = emblem ? `@adonis-agora/${libSlug}` : '@adonis-agora · for AdonisJS';
 
   return new ImageResponse(
     <div

@@ -74,7 +74,7 @@ export default function HomePage() {
             icon={<Plug className="size-5" />}
             kicker="Get going fast"
             title="Plug-n-play"
-            body="node ace add @agora/<lib> and you're running with opinionated, typed defaults. Conventions over configuration, wired through the AdonisJS provider — shipping in minutes, not a config marathon."
+            body="node ace add @adonis-agora/<lib> and you're running with opinionated, typed defaults. Conventions over configuration, wired through the AdonisJS provider — shipping in minutes, not a config marathon."
           />
           <Philosophy
             icon={<Settings2 className="size-5" />}

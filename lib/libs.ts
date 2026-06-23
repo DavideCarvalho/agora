@@ -3,7 +3,7 @@ import { Activity, Boxes, type LucideIcon, Telescope, Workflow, Zap } from 'luci
 export interface AgoraLib {
   /** url + folder slug under /docs */
   slug: string;
-  /** primary published package, without the @agora scope */
+  /** primary published package, without the @adonis-agora scope */
   pkg: string;
   /** display name */
   name: string;

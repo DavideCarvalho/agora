@@ -37,7 +37,7 @@ export default function OpengraphImage() {
         }}
       >
         <div style={{ display: 'flex', width: 16, height: 16, borderRadius: 999, background: '#5a45ff' }} />
-        @agora · for AdonisJS
+        @adonis-agora · for AdonisJS
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column' }}>
