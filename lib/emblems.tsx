@@ -82,6 +82,22 @@ const art: Record<string, ReactElement> = {
       />
     </g>
   ),
+  // Scales — the balance of Themis: who is permitted to do what.
+  Scales: (
+    <g>
+      <rect x="-30" y="40" width="60" height="8" fill={C} />
+      <rect x="-36" y="48" width="72" height="10" fill={C} />
+      <rect x="-3" y="-44" width="6" height="86" fill={C} />
+      <circle cx="0" cy="-44" r="6" fill={C} />
+      <rect x="-48" y="-40" width="96" height="6" fill={C} />
+      <path d="M-44 -34 L-44 -10" stroke={C} strokeWidth="3" strokeLinecap="round" />
+      <path d="M44 -34 L44 -10" stroke={C} strokeWidth="3" strokeLinecap="round" />
+      <path d="M-64 -10 C-58 16 -30 16 -24 -10 Z" fill={C} />
+      <path d="M24 -10 C30 16 58 16 64 -10 Z" fill={C} />
+      <path d="M-58 -8 C-53 11 -35 11 -30 -8" stroke={BONE} strokeWidth="2.5" fill="none" />
+      <path d="M30 -8 C35 11 53 11 58 -8" stroke={BONE} strokeWidth="2.5" fill="none" />
+    </g>
+  ),
 };
 
 // slug → { emblem name, plate number }
@@ -91,6 +107,7 @@ const meta: Record<string, { name: keyof typeof art; plate: string }> = {
   resilience: { name: 'Shield', plate: '03' },
   durable: { name: 'Temple', plate: '04' },
   telescope: { name: 'Eye', plate: '05' },
+  authz: { name: 'Scales', plate: '06' },
 };
 
 export interface Emblem {

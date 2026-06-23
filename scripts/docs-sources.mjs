@@ -64,4 +64,15 @@ export const sources = [
     repoDir: 'adonis-telescope',
     migrated: true,
   },
+  {
+    slug: 'authz',
+    name: 'Authz',
+    description: 'DB-backed roles & permissions that feed AdonisJS Bouncer — wildcard grants, tenancy, a Lucid store and ace commands.',
+    icon: 'ShieldCheck',
+    repo: 'DavideCarvalho/adonis-authz',
+    ref: 'master',
+    path: 'docs',
+    repoDir: 'adonis-authz',
+    migrated: true,
+  },
 ];

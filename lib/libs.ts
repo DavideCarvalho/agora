@@ -1,4 +1,4 @@
-import { Activity, Boxes, type LucideIcon, Telescope, Workflow, Zap } from 'lucide-react';
+import { Activity, Boxes, type LucideIcon, ShieldCheck, Telescope, Workflow, Zap } from 'lucide-react';
 
 export interface AgoraLib {
   /** url + folder slug under /docs */
@@ -81,6 +81,18 @@ export const libs: AgoraLib[] = [
     iconName: 'Telescope',
     packages: 1,
     stage: 'beta',
+  },
+  {
+    slug: 'authz',
+    pkg: 'authz',
+    name: 'Authz',
+    blurb:
+      'DB-backed roles & permissions that feed AdonisJS Bouncer — wildcard grants, multi-tenancy, a Lucid store and ace commands. Integrates, never replaces.',
+    role: 'Authorization',
+    icon: ShieldCheck,
+    iconName: 'ShieldCheck',
+    packages: 1,
+    stage: 'alpha',
   },
 ];
 
