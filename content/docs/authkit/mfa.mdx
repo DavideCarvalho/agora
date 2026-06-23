@@ -1,0 +1,106 @@
+---
+title: MFA / TOTP
+description: Authenticator enrollment, the login challenge, recovery codes, and trusted devices.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+AuthKit ships opt-in **TOTP** multi-factor authentication: time-based one-time passwords
+from an authenticator app (Google Authenticator, 1Password, …), plus single-use recovery
+codes. A second option, **WebAuthn passkeys**, is available as an alternative factor — see
+[WebAuthn / Passkeys](/docs/authkit/webauthn).
+
+## Enabling MFA
+
+MFA is driven by the optional MFA methods on the `AccountStore`. With `lucidAccountStore`,
+compose the model with the `withMfa` mixin and set an `mfaIssuer`:
+
+```ts title="config/authkit_server.ts"
+accountStore: lucidAccountStore(AuthUser, { mfaIssuer: 'Acme' }),
+mfaIssuer: 'Acme',
+```
+
+```ts title="app/models/auth_user.ts"
+import { withMfa } from '@adonis-agora/authkit-server'
+
+export default class AuthUser extends compose(BaseModel, withAuthUser(), withCredentials(), withMfa()) {}
+```
+
+`mfaIssuer` is the label shown in the authenticator app. If a store omits the MFA methods,
+MFA is simply off.
+
+## Enrollment (QR)
+
+The account console (mounted by `registerAuthHost`) exposes enrollment under
+`/account/mfa`:
+
+| Route | Action |
+| --- | --- |
+| `GET /account/mfa` | Show MFA status |
+| `POST /account/mfa/enroll` | Start enrollment — returns a TOTP secret + `otpauth` URI to render as a QR code |
+| `POST /account/mfa/confirm` | Confirm with a code from the app; on success MFA is activated and recovery codes are returned **once** |
+| `POST /account/mfa/disable` | Turn MFA off (clears secret + recovery codes) |
+
+Under the hood these call `startTotpEnrollment` (generates a *pending* secret + keyuri
+without activating), then `confirmTotpEnrollment` (verifies the code, activates MFA, and
+generates the recovery codes).
+
+## The login challenge
+
+When an account has MFA enabled, the interaction flow inserts a challenge step:
+
+```text
+identifier → login (password) → mfa (TOTP code) → consent
+```
+
+The host posts the code to `/auth/interaction/:uid/mfa`, which calls `verifyTotp`. A user
+who has lost their device can submit a **recovery code** instead — `consumeRecoveryCode`
+validates and removes it (single-use). If the account has a passkey enrolled, the same step
+also offers a [passkey](/docs/authkit/webauthn) challenge as an alternative to typing a code.
+
+## Recovery codes
+
+`confirmTotpEnrollment` returns N recovery codes in plaintext exactly once, at activation
+time. Persisted hashed, each is single-use via `consumeRecoveryCode`. Enabling and
+disabling MFA emit the `mfa.enabled` / `mfa.disabled` audit events.
+
+## Trusted devices
+
+To avoid asking for the second factor on every sign-in, AuthKit can mark a device as
+**trusted** for a number of days. It's on by default (30 days). To tune the policy, use the
+`trusted_devices` runtime setting:
+
+```bash
+node ace authkit:settings:set trusted_devices '{"enabled":true,"days":14}'
+```
+
+The cookie encryption secrets stay in `defineConfig` (infra — they are code-level secrets,
+not operational policy).
+
+### How it works (no extra DB)
+
+When a second factor verifies, the MFA challenge offers a **"Trust this device for N days"**
+checkbox. If checked, AuthKit writes a signed, `httpOnly` cookie (`authkit_trusted_device`)
+**encrypted with the app key** — via `response.encryptedCookie`, so no new table or column
+is required. The cookie carries `{ accountId, deviceId, iat, exp }`.
+
+On later sign-ins, after the password is verified and the account has MFA, a valid trusted
+cookie for **that** account skips the MFA step. The login still records `amr: ['pwd']` (no
+MFA `acr`) so downstream relying parties can tell the factor apart.
+
+### Validation and revocation
+
+A trusted cookie is honored only when it has not expired, belongs to the account that just
+authenticated, and was issued **at or after** the last MFA (re)enrollment. The last point is
+the revocation lever: **re-enrolling the authenticator invalidates every previously trusted
+device** (the cookie's `iat` falls before the new `mfaEnabledAt`).
+
+`/account/security` exposes a **"Stop trusting this device"** button that clears the cookie
+for the current browser (emits `trusted_device.revoked`). A per-device, server-side
+revocation list is intentionally out of scope for this MVP — global revocation is achieved
+by re-enrolling MFA. This tradeoff keeps the feature migration-free.
+
+### Step-up always wins
+
+A **step-up** request (the client asks for the `mfaAcr` in `acr_values`) **always** forces
+the second factor, regardless of any trusted cookie.

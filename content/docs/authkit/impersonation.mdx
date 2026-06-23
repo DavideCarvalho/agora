@@ -1,0 +1,63 @@
+---
+title: Impersonation
+description: Act as another user via RFC 8693 token-exchange.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Impersonation lets a privileged actor (an admin) obtain a token that represents a
+*target* user, so they can act on that user's behalf for support or debugging. AuthKit
+implements this with **OAuth 2.0 Token Exchange (RFC 8693)**.
+
+## Enabling the grant
+
+The acting client must be allowed the token-exchange grant in its registration. Update the
+client via the admin console (`/admin/clients` → Edit) or the Admin REST API:
+
+```bash
+curl -X PATCH https://auth.acme.com/api/authkit/v1/clients/acme-admin \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "grantTypes": [
+          "authorization_code",
+          "refresh_token",
+          "urn:ietf:params:oauth:grant-type:token-exchange"
+        ]
+      }'
+```
+
+## Exchanging a token
+
+From the relying party, swap the admin's current access token for one minted for the
+target subject:
+
+```ts
+import { exchangeToken } from '@adonis-agora/authkit-client'
+
+const tokens = await exchangeToken({
+  issuer,
+  clientId,
+  clientSecret,
+  subjectToken: adminAccessToken,   // the actor's current access token
+  requestedSubject: targetUserId,   // who to impersonate
+})
+```
+
+This posts `grant_type=urn:ietf:params:oauth:grant-type:token-exchange` with
+`subject_token` (the actor) and `requested_subject` (the target) to `${issuer}/token`,
+returning a fresh `TokenSet` for the target user.
+
+## The `act` claim
+
+The issued token carries the standard RFC 8693 **`act`** (actor) claim, recording *who*
+is impersonating the subject. This keeps the audit trail honest — the token is for the
+target user, but the `act` claim names the admin behind it. Impersonation also emits an
+`impersonation` audit event with the actor id.
+
+<Callout type="warn">
+  Impersonation is **admin-only**. Gate the exchange behind your own authorization (e.g. a
+  Bouncer policy that checks the actor's global roles) before calling `exchangeToken` —
+  the grant being enabled on the client does not by itself authorize a given user to use
+  it. See [Authz](/docs/authz) for policy-based gating.
+</Callout>

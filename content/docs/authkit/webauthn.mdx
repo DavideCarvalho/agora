@@ -1,0 +1,120 @@
+---
+title: WebAuthn / Passkeys
+description: Passkeys as a second factor — registration, the login challenge, and autofill.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+AuthKit supports **WebAuthn passkeys** as a second factor, alternative to
+[TOTP](/docs/authkit/mfa): biometrics, a device PIN, or a security key, with nothing to
+type. Like TOTP, it's opt-in and driven by optional `AccountStore` methods — a store without
+passkey support simply hides the section.
+
+## Configuration
+
+The Relying Party (RP) parameters are derived from `issuer` when omitted: `rpId` =
+issuer hostname (no port), `origin` = issuer origin, `rpName` = the branding / `mfaIssuer`
+name. Override them with `webauthn`:
+
+```ts title="config/authkit_server.ts"
+defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'),
+  // ...
+  webauthn: {
+    rpName: 'Acme',
+    rpId: 'auth.example.com',
+    origin: 'https://auth.example.com',
+  },
+})
+```
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `rpName` | `string?` | branding / `mfaIssuer` | RP name shown by the authenticator. |
+| `rpId` | `string?` | issuer hostname | RP ID (hostname, no port). |
+| `origin` | `string \| string[]?` | issuer origin | Expected origin(s) in verification. |
+
+## The model mixin
+
+Add the `withWebauthnCredential` mixin so the store has somewhere to persist credentials
+(id, public key, counter, transports):
+
+```ts title="app/models/auth_user.ts"
+import { compose } from '@adonisjs/core/helpers'
+import { BaseModel } from '@adonisjs/lucid/orm'
+import {
+  withAuthUser,
+  withCredentials,
+  withMfa,
+  withWebauthnCredential,
+} from '@adonis-agora/authkit-server'
+
+export default class AuthUser extends compose(
+  BaseModel,
+  withAuthUser(),
+  withCredentials(),
+  withMfa(),
+  withWebauthnCredential()
+) {}
+```
+
+## Registration (account console)
+
+The account console (mounted by `registerAuthHost`) manages passkeys on the MFA page:
+
+| Route | Action |
+| --- | --- |
+| `POST /account/mfa/passkeys/options` | Begin registration — returns `generateRegistrationOptions` + a `challenge` |
+| `POST /account/mfa/passkeys/verify` | Finish — `verifyRegistrationResponse` against the stored challenge; on success persists the credential and enables MFA |
+| `POST /account/mfa/passkeys/:id/remove` | Remove a passkey |
+
+The store exposes the begin/finish pair as `generatePasskeyRegistrationOptions` /
+`verifyPasskeyRegistration`, plus `listPasskeys` (a `PasskeySummary` — never the public key
+or counter) and `removePasskey`.
+
+<Callout type="info">
+  The `challenge` returned by a *begin* call must be stored by the controller (in the
+  session) and passed back as `expectedChallenge` to the matching *finish* call — the store
+  keeps no challenge state between calls.
+</Callout>
+
+## The login challenge
+
+When an account has a passkey enrolled, the login interaction offers it as an alternative
+to the TOTP code:
+
+| Route | Action |
+| --- | --- |
+| `POST /auth/interaction/:uid/passkey/options` | Begin authentication — `generatePasskeyAuthenticationOptions` |
+| `POST /auth/interaction/:uid/passkey/verify` | Finish — `verifyPasskeyAuthentication`; updates the stored signature counter |
+
+Registering and removing a passkey emit the `passkey.registered` / `passkey.removed` audit
+events.
+
+## Passkey autofill (conditional mediation)
+
+When `auth_methods.passkeyAutofill` is `true` (the default when passkeys are configured),
+the built-in login screen activates **WebAuthn conditional mediation**: the browser shows
+passkey suggestions directly inside the email/username input field. The user never has to
+click a separate "Sign in with passkey" button.
+
+The input must have `autocomplete="username webauthn"`. The server endpoint receives an
+`optionsMode=discoverable` flag and returns options with an empty `allowCredentials` list
+so any enrolled passkey can respond.
+
+**Runtime toggle:**
+
+```bash
+# Disable passkey autofill (passkey button still works)
+node ace authkit:settings:set auth_methods '{"passkeyAutofill":false}'
+```
+
+**Custom login screens (React hosts):** use `usePasskeyAutofill` from
+`@adonis-agora/authkit-react` to replicate the same behaviour on a fully custom login
+page. See [React — usePasskeyAutofill](/docs/authkit/react#usepasskeyautofill).
+
+**Browser support:** Chrome 108+, Safari 16+, Edge 108+. Browsers without support silently
+skip the ceremony — the standard login form is always the fallback.
+
+**Fail-safe:** the ceremony is started with an `AbortController`. Any error, abort, or lack
+of support is swallowed; the standard login continues unaffected.

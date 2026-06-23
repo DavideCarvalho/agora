@@ -1,0 +1,499 @@
+---
+title: Getting Started
+description: Stand up an Authorization Server, wire a relying party, and read the user in your controllers via ctx.auth.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+This is the complete happy path: install the packages, write the two config files, mount
+the host, wire login / callback / logout, and read the authenticated user in your
+controllers. By the end you have a working IdP **and** a relying party that knows who's
+logged in.
+
+For the two deployment shapes side by side (everything-in-one-app vs. a standalone IdP with
+separate client apps), see [Deployment Topologies](/docs/authkit/topologies) — this page is
+the linear single-app path.
+
+## Install & scaffold
+
+Use `node ace add` — it installs the package **and** runs its configure hook in one step.
+Run it once per package:
+
+```bash
+node ace add @adonis-agora/authkit-server
+node ace add @adonis-agora/authkit-client
+```
+
+<Callout type="info">
+  AuthKit needs a SQL connection for its adapter and stores. The `database` adapter and
+  `lucidAccountStore` use Lucid, so `@adonisjs/lucid` must be installed and configured.
+</Callout>
+
+### What the server `add` scaffolds
+
+`node ace add @adonis-agora/authkit-server` prompts for the UI preset of the
+login/consent screens — **`edge` | `react` | `headless`** (pass `--ui=react` to skip the
+prompt) — and then:
+
+- Publishes **`config/authkit.ts`** — a starter config (Redis adapter, managed JWKS,
+  `findAccount` / `verifyCredentials` callbacks). Edit it to taste.
+- Publishes the **`app/models/auth_user.ts`** model, composed from the `withAuthUser()` +
+  `withCredentials()` mixins.
+- Registers the **provider** in `adonisrc.ts` and the bundled **ace commands** (including
+  `authkit:eject`) via the package's `adonisjs` block.
+- Adds an **env validation** for `AUTHKIT_ISSUER` and writes a default value
+  (`http://localhost:3333/oidc`) to `.env`.
+
+**What each `--ui` preset does:**
+
+| Preset | UI files published | Render mode |
+| --- | --- | --- |
+| `edge` (default) | None | Built-in Edge views from the `authkit::` disk — zero setup, works out of the box |
+| `react` | React pages under `inertia/pages/authkit/` (login, signup, consent, forgot, reset, verify-email, mfa-challenge, account/login, account/tokens, account/mfa) + `auth_shell.tsx` | `inertiaRenderer({ prefix: 'authkit', views: [...] })` pre-configured in the published config |
+| `headless` | None | No render key; flows respond with JSON contracts for you to drive |
+
+<Callout type="info">
+  The lib does **not** ship `.tsx` React files — there are no pre-built React pages inside
+  the npm package. With `--ui=react` the scaffold **writes starter pages into your project**;
+  they are yours to edit from that moment on. With `edge` or `headless`, the authentication
+  flow screens are served from the package's built-in Edge views (`authkit::` disk) and
+  your project disk has nothing extra.
+</Callout>
+
+<Callout type="warn">
+  Choosing `--ui=react` requires `@adonisjs/inertia` + `react` + Vite already configured in
+  the app, or the command aborts. Run `node ace add @adonisjs/inertia` (with React) first.
+</Callout>
+
+#### Tune the server config
+
+The published `config/authkit.ts` is a Redis-adapter starter. For the Lucid-backed
+single-app path in this guide, edit it to use the `database` adapter, point at the
+`AuthUser` store, and set the `mountPath`/renderer. **Clients are no longer declared
+here** — create them in the admin console after first boot (see below):
+
+```ts title="config/authkit.ts"
+import env from '#start/env'
+import AuthUser from '#models/auth_user'
+import {
+  defineConfig,
+  adapters,
+  lucidAccountStore,
+  inertiaRenderer,
+} from '@adonis-agora/authkit-server'
+
+const authServerConfig = defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'),
+  adapter: adapters.database({ connection: 'auth' }),
+  jwks: { source: 'managed', algorithm: 'RS256' },
+  ttl: { accessToken: '15m', refreshToken: '30d' },
+  accountStore: lucidAccountStore(AuthUser),
+  mountPath: '/oidc',
+  // React preset: point at the pages written into your project by `node ace add --ui=react`.
+  // The `views` list is an allowlist; screens not listed here fall back to Edge views.
+  // Remove the `render` key entirely if you chose --ui=edge (built-in Edge views, no setup).
+  render: inertiaRenderer({
+    prefix: 'authkit',
+    views: [
+      'login', 'consent', 'signup', 'forgot', 'reset',
+      'verify-email', 'mfa-challenge',
+      'account/login', 'account/tokens', 'account/mfa',
+    ],
+  }),
+  admin: { enabled: true },    // enables the admin console (React SPA, pre-bundled in the package)
+  adminApi: {
+    enabled: true,
+    apiKeys: [env.get('AUTHKIT_ADMIN_API_KEY')],
+  },
+})
+
+export default authServerConfig
+```
+
+The `issuer` is the public URL of the provider and **must end with `mountPath`** — e.g.
+`https://auth.example.com/oidc` for `mountPath: '/oidc'`. The published model already
+composes the mixins the Lucid store needs; add columns to it as your domain grows.
+
+<Callout type="info">
+  **No `clients:` block needed at boot.** The server starts fine with zero static clients.
+  You register your first client through the admin console or the Admin API after the first
+  start (see [Registering your first client](#registering-your-first-client)).
+</Callout>
+
+### What the client `add` scaffolds
+
+`node ace add @adonis-agora/authkit-client` (no prompts):
+
+- Publishes **`config/authkit_client.ts`** — issuer, client credentials, and a JWT resolver
+  reading the token set from the session.
+- Publishes the **`app/controllers/oidc_session_controller.ts`** stub — the
+  login / callback / logout flow over the client helpers.
+- Registers the **provider** in `adonisrc.ts` and the bundled **ace commands**.
+- Registers **`authkit_middleware` as a router-global middleware** automatically — this is
+  what makes `ctx.auth` exist on every request. No manual kernel edit needed.
+- Adds **env validations** for `AUTHKIT_ISSUER`, `AUTHKIT_CLIENT_ID`,
+  `AUTHKIT_CLIENT_SECRET`, and `AUTHKIT_REDIRECT_URI`. It does **not** write their values —
+  fill them in `.env` yourself (see [Environment variables](#environment-variables)).
+
+The remaining client work is manual: tune the config below, and wire the login / callback /
+logout **routes** (the controller is scaffolded but its routes are not).
+
+## Client config
+
+Edit the published `config/authkit_client.ts` to declare the issuer, client credentials,
+the resolver, and how to map an IdP identity to your user record:
+
+```ts title="config/authkit_client.ts"
+import env from '#start/env'
+import { defineConfig, resolvers } from '@adonis-agora/authkit-client'
+import type { Identity } from '@adonis-agora/authkit-client'
+import AppUser from '#models/app_user'
+
+const authkitClientConfig = defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'),
+  clientId: env.get('AUTHKIT_CLIENT_ID'),
+  clientSecret: env.get('AUTHKIT_CLIENT_SECRET'),
+  redirectUri: env.get('AUTHKIT_REDIRECT_URI'),
+  resolver: resolvers.jwt({ tokenSource: 'session' }),
+
+  // Map the IdP identity (claims) to YOUR user record.
+  resolveUser: async (identity: Identity) => {
+    return AppUser.updateOrCreate(
+      { id: identity.userId },
+      { id: identity.userId, email: identity.email, fullName: identity.profile?.name ?? null }
+    )
+  },
+})
+
+export default authkitClientConfig
+```
+
+`resolveUser` runs lazily, only when you call `auth.getUser()`. For the conceptual model —
+the `Identity` shape, resolvers, and reconciling pre-existing rows by email — see
+[Client](/docs/authkit/client).
+
+## Mount the host
+
+`registerAuthHost` is **not** scaffolded — add it yourself. It mounts everything in one
+call — the OIDC provider wildcard, the login / consent / signup interaction pages, password
+reset, the account console, and (opt-in) social, PAT introspection, and rate-limit
+middleware.
+
+```ts title="start/routes.ts"
+import router from '@adonisjs/core/services/router'
+import { registerAuthHost } from '@adonis-agora/authkit-server'
+
+registerAuthHost(router, {
+  mountPath: '/oidc',
+  // social: { providers: ['google'] }, // opt-in
+  // rateLimit: { enabled: true },       // opt-in
+})
+```
+
+<Callout type="warn">
+  Pass the **same** `mountPath` to both `defineConfig` and `registerAuthHost`. A few
+  switches — `social` and `rateLimit` — must also be mirrored here because route mounting
+  happens before the (lazy) config resolves.
+</Callout>
+
+## The client middleware (already registered)
+
+`authkit_middleware` is what makes `ctx.auth` exist. **`node ace add` already registered it
+as a router-global middleware** in `start/kernel.ts`, so every route gets an authenticator —
+you don't have to add it yourself. For reference, the registration it wrote looks like:
+
+```ts title="start/kernel.ts"
+import router from '@adonisjs/core/services/router'
+
+router.use([
+  // ...existing middleware
+  () => import('@adonis-agora/authkit-client/authkit_middleware'),
+])
+```
+
+Per request it proactively refreshes the token set (`maybeRefresh`, see
+[Refresh Tokens](/docs/authkit/refresh-tokens)) and then attaches the authenticator
+(`ctx.auth = await manager.createAuthenticator(ctx)`).
+
+<Callout type="info">
+  `ctx.auth` is **always present** after the middleware runs — it never throws on an
+  anonymous request. Whether someone is actually logged in is decided by `getIdentity()`
+  resolving to a non-`null` value. Use `authenticate()` / `check()` for that (below).
+</Callout>
+
+If you'd rather opt routes in explicitly, swap the router-global registration for a
+**named** middleware instead:
+
+```ts title="start/kernel.ts"
+export const middleware = router.named({
+  // ...
+  authkit: () => import('@adonis-agora/authkit-client/authkit_middleware'),
+})
+```
+
+```ts title="start/routes.ts"
+router.get('/dashboard', [DashboardController]).use(middleware.authkit())
+```
+
+## Login, callback, logout
+
+Login is OIDC authorization-code + PKCE. The bundled `OidcSessionController` stub was
+already published to `app/controllers/oidc_session_controller.ts` by `node ace add` — it's
+the whole flow in three short methods over the client helpers (shown here with an
+RP-initiated logout; the scaffolded `logout` does a simpler local-only session drop):
+
+```ts title="app/controllers/oidc_session_controller.ts"
+import type { HttpContext } from '@adonisjs/core/http'
+import {
+  buildAuthorizeUrl,
+  exchangeCode,
+  generatePkce,
+  buildEndSessionUrl,
+} from '@adonis-agora/authkit-client'
+import { randomUUID } from 'node:crypto'
+
+export default class OidcSessionController {
+  async login(ctx: HttpContext) {
+    const manager = await ctx.containerResolver.make('authkit.client')
+    const cfg = manager.clientConfig
+    const { verifier, challenge } = await generatePkce()
+    const state = randomUUID()
+    // Stash PKCE verifier + state so we can verify the callback.
+    ctx.session.put('authkit_pkce', { verifier, state })
+    const url = buildAuthorizeUrl({
+      issuer: cfg.issuer, clientId: cfg.clientId, redirectUri: cfg.redirectUri,
+      scopes: cfg.scopes, state, codeChallenge: challenge,
+    })
+    return ctx.response.redirect(url)
+  }
+
+  async callback(ctx: HttpContext) {
+    const manager = await ctx.containerResolver.make('authkit.client')
+    const cfg = manager.clientConfig
+    const { code, state } = ctx.request.qs()
+    const pkce = ctx.session.get('authkit_pkce')
+    if (!pkce || pkce.state !== state) return ctx.response.badRequest({ error: 'invalid state' })
+    const tokenSet = await exchangeCode({
+      issuer: cfg.issuer, clientId: cfg.clientId, clientSecret: cfg.clientSecret,
+      redirectUri: cfg.redirectUri, code, codeVerifier: pkce.verifier,
+    })
+    // Persist the token set under the configured sessionKey — this is what
+    // resolvers.jwt({ tokenSource: 'session' }) reads on later requests.
+    ctx.session.put(cfg.sessionKey, tokenSet)
+    ctx.session.forget('authkit_pkce')
+    return ctx.response.redirect('/')
+  }
+
+  async logout(ctx: HttpContext) {
+    const manager = await ctx.containerResolver.make('authkit.client')
+    const cfg = manager.clientConfig
+    // RP-initiated logout: end the IdP session, then drop the local one.
+    // id_token_hint lets the IdP skip its confirmation page.
+    const idToken = manager.getIdToken(ctx)
+    ctx.session.forget(cfg.sessionKey)
+    return ctx.response.redirect(
+      buildEndSessionUrl({
+        issuer: cfg.issuer,
+        idToken,
+        clientId: cfg.clientId,
+        postLogoutRedirectUri: 'http://localhost:3333/',
+      })
+    )
+  }
+}
+```
+
+Wire the routes (the `/auth/callback` path is the `redirectUri` you registered for the
+client):
+
+```ts title="start/routes.ts"
+const OidcSessionController = () => import('#controllers/oidc_session_controller')
+
+router.get('/auth/login', [OidcSessionController, 'login']).as('auth.login')
+router.get('/auth/callback', [OidcSessionController, 'callback']).as('auth.callback')
+router.post('/auth/logout', [OidcSessionController, 'logout']).as('auth.logout')
+```
+
+The sequence: `login` redirects the browser to the IdP's `/authorize`; the user
+authenticates there and is bounced back to `redirectUri` with `code` + `state`; `callback`
+verifies `state`, swaps the code for a token set via `exchangeCode`, and stores it with
+`session.put(cfg.sessionKey, tokenSet)`. **The stored token set is the login** — there's
+nothing else to persist on the RP. For IdP-initiated termination, see
+[Back-Channel Logout](/docs/authkit/back-channel-logout).
+
+## Registering your first client
+
+After the first boot, open the admin console at `/admin/clients` (log in with an account
+that has the `ADMIN` role) and click **Create client**. Alternatively, use the Admin REST
+API directly — no browser session required:
+
+```bash
+# Create a confidential client for your app
+curl -X POST http://localhost:3333/api/authkit/v1/clients \
+  -H "Authorization: Bearer $AUTHKIT_ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "clientId": "my-app",
+        "redirectUris": ["http://localhost:3333/auth/callback"],
+        "postLogoutRedirectUris": ["http://localhost:3333/"],
+        "grantTypes": ["authorization_code", "refresh_token"],
+        "tokenEndpointAuthMethod": "client_secret_basic"
+      }'
+```
+
+The response includes `clientSecret` — **save it now**, it is not recoverable afterwards:
+
+```json
+{ "clientId": "my-app", "clientSecret": "s3cr3t-shown-once" }
+```
+
+Set the credentials in `.env` and wire them into your client config:
+
+```dotenv title=".env"
+AUTHKIT_CLIENT_ID=my-app
+AUTHKIT_CLIENT_SECRET=s3cr3t-shown-once
+AUTHKIT_REDIRECT_URI=http://localhost:3333/auth/callback
+```
+
+From this point the client is stored in the adapter/DB and survives restarts. You can
+update its redirect URIs, regenerate its secret, or delete it at any time from the console
+or API — no config change or redeploy required.
+
+## Environment variables
+
+```dotenv title=".env"
+AUTHKIT_ISSUER=http://localhost:3333/oidc
+AUTHKIT_ADMIN_API_KEY=high-entropy-key-here
+# set after creating the first client (see above):
+AUTHKIT_CLIENT_ID=my-app
+AUTHKIT_CLIENT_SECRET=super-secret
+AUTHKIT_REDIRECT_URI=http://localhost:3333/auth/callback
+```
+
+## Using it in controllers
+
+This is the part you'll use every day. After the middleware runs, `ctx.auth` is an
+`Authenticator`; destructure it from the context. You don't have to import or declare
+anything — the client package ships a module augmentation
+(`interface HttpContext { auth: Authenticator }`) via its `adonisjs.types` entry, so once
+configured `ctx.auth` is typed everywhere.
+
+**Identity vs User.** Two distinct things come out of the authenticator:
+
+- **Identity** — the OIDC claims, app-agnostic (`userId` = `sub`, `email`, `globalRoles`,
+  `profile`, `sessionId`, `raw`). Same shape for every resolver.
+- **User** — *your* domain model, produced by `resolveUser(identity)`. The Identity says
+  *who* the IdP authenticated; `resolveUser` turns that into the row your app works with.
+
+### Require a login — `authenticate()`
+
+`authenticate()` resolves the identity and **throws** if there isn't one. Use it where
+anonymous access is a programming error:
+
+```ts title="app/controllers/dashboard_controller.ts"
+import type { HttpContext } from '@adonisjs/core/http'
+
+export default class DashboardController {
+  async handle({ auth, inertia }: HttpContext) {
+    const identity = await auth.authenticate() // throws if not logged in
+    return inertia.render('dashboard', { email: identity.email })
+  }
+}
+```
+
+### Get your user — `getUser()`
+
+`getUser()` returns whatever `resolveUser` produced (or `null` if not authenticated) — the
+usual entry point, since you almost always want your model rather than raw claims. It
+returns `unknown`, so pass a type argument:
+
+```ts
+async handle({ auth, response }: HttpContext) {
+  const user = await auth.getUser<AppUser>()
+  if (!user) return response.unauthorized({ message: 'Not authenticated' })
+  return user
+}
+```
+
+### Optional auth — `check()`
+
+`check()` returns a boolean and never throws — for pages that render differently for guests
+vs. members:
+
+```ts
+async handle({ auth, inertia }: HttpContext) {
+  if (await auth.check()) {
+    return inertia.render('home', { user: await auth.getUser<AppUser>() })
+  }
+  return inertia.render('home', { user: null })
+}
+```
+
+### Raw claims — `getIdentity()`
+
+When you need the claims directly (the `sub`, `sessionId`, anything in `raw`) without
+hitting your DB, use `getIdentity()` — it returns `Identity | null`:
+
+```ts
+const identity = await auth.getIdentity()
+if (identity) console.log(identity.userId, identity.sessionId, identity.raw)
+```
+
+### Roles — `hasGlobalRole` / `hasAppRole`
+
+Two role surfaces, mirroring Identity vs User:
+
+- **`hasGlobalRole(role)`** is synchronous and checks `identity.globalRoles` (IdP claims).
+  It only sees roles after the identity is resolved — call `authenticate()` / `check()` /
+  `getIdentity()` first.
+- **`hasAppRole(role)`** is `async`, consults `resolveAppRoles(identity)` (your app-local
+  roles), and resolves the identity for you.
+
+```ts
+async handle({ auth, response }: HttpContext) {
+  await auth.authenticate()                 // ensure identity is resolved
+  if (!auth.hasGlobalRole('admin')) {       // sync, from claims
+    return response.forbidden({ message: 'Access denied' })
+  }
+  if (await auth.hasAppRole('billing.manager')) {
+    // app-local capability
+  }
+}
+```
+
+### Protecting a route group
+
+For browser routes you usually want a redirect to login, not a 500. Centralize the check in
+a small middleware and apply it to a group:
+
+```ts title="app/middleware/require_auth_middleware.ts"
+import type { HttpContext } from '@adonisjs/core/http'
+import type { NextFn } from '@adonisjs/core/types/http'
+
+export default class RequireAuthMiddleware {
+  async handle(ctx: HttpContext, next: NextFn) {
+    if (!(await ctx.auth.check())) {
+      return ctx.response.redirect().toRoute('auth.login')
+    }
+    return next()
+  }
+}
+```
+
+```ts title="start/routes.ts"
+router
+  .group(() => {
+    router.get('/dashboard', [DashboardController]).as('dashboard')
+    router.get('/settings', [SettingsController]).as('settings')
+  })
+  .prefix('/app')
+  .as('app')
+  .use(middleware.requireAuth())
+```
+
+That's the whole single-app setup — provider, relying party, and `ctx.auth` all wired.
+Continue with [Topologies](/docs/authkit/topologies) to decide how to deploy it,
+[Client](/docs/authkit/client) for the deeper resolver model, or
+[MFA](/docs/authkit/mfa) and [Organizations](/docs/authkit/organizations) to layer on
+features.

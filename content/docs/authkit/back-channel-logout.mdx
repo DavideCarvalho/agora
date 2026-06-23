@@ -1,0 +1,91 @@
+---
+title: Back-Channel Logout
+description: OIDC Back-Channel Logout — server-to-server session termination.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OIDC **Back-Channel Logout** lets the IdP notify a relying party out-of-band that a
+session (or grant) ended, so the RP can destroy its local sessions — even when the user's
+browser never visits the RP again. AuthKit implements both sides.
+
+## Server: declare the logout URI per client
+
+Set `backchannelLogoutUri` on the client. The recommended way is through the admin console
+(`/admin/clients` → Edit) or the Admin REST API:
+
+```bash
+curl -X PATCH https://auth.acme.com/api/authkit/v1/clients/acme-web \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "backchannelLogoutUri": "https://web.acme.com/auth/backchannel-logout",
+        "backchannelLogoutSessionRequired": true
+      }'
+```
+
+Both fields are also editable in the admin console client form.
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `backchannelLogoutUri` | `string?` | — | RP endpoint that receives the `logout_token` POST. |
+| `backchannelLogoutSessionRequired` | `boolean?` | `false` | Maps to `backchannel_logout_session_required`; requires the `sid` claim in the token. |
+
+## Client: handle the logout_token
+
+The client kit ships `AuthkitClientManager.handleBackchannelLogout(ctx)` and the
+`validateLogoutToken` primitive. Wire a route to the manager handler:
+
+```ts title="start/routes.ts"
+import router from '@adonisjs/core/services/router'
+
+router.post('/auth/backchannel-logout', async (ctx) => {
+  const manager = await ctx.containerResolver.make('authkit.client')
+  return manager.handleBackchannelLogout(ctx)
+})
+```
+
+The handler reads `logout_token` from the form body, validates it, updates the session
+index (if configured), and invokes your `onBackchannelLogout` callback. It returns `200` on
+success and `400 { error: 'invalid_request' }` on an invalid token, and always sets
+`Cache-Control: no-store` (a spec requirement).
+
+`validateLogoutToken` verifies the signature against the IdP's JWKS and enforces the spec:
+`iss` matches, `aud` includes the `clientId`, `iat` present, the `events` claim contains
+`http://schemas.openid.net/event/backchannel-logout` (exported as `BACKCHANNEL_LOGOUT_EVENT`),
+at least one of `sid`/`sub` present, and **no** `nonce` claim. Violations throw
+`InvalidLogoutTokenError`.
+
+## The session index
+
+To know *which* local sessions to destroy, the client maps the OP's `sid`/`sub` to your
+local session ids via a `SessionIndex`. Configure it and an `onBackchannelLogout` callback:
+
+```ts title="config/authkit_client.ts"
+import { defineConfig, InMemorySessionIndex } from '@adonis-agora/authkit-client'
+
+const sessionIndex = new InMemorySessionIndex()
+
+export default defineConfig({
+  // ...
+  sessionIndex,
+  onBackchannelLogout: async ({ sid, sub }) => {
+    // Destroy the local sessions the index returned (Redis/DB store, etc.)
+  },
+})
+```
+
+Register the binding on login (after the callback creates a local session):
+
+```ts
+sessionIndex.register({ sid: identity.sessionId, sub: identity.userId, sessionId: localSessionId })
+```
+
+`SessionIndex` is an interface with `register`, `revokeBySid`, and `revokeBySub`. On
+logout, the handler calls `revokeBySid` when a `sid` is present, else `revokeBySub`.
+
+<Callout type="warn">
+  `InMemorySessionIndex` is for tests and **single-instance** deployments only. In a
+  multi-instance host the logout POST can land on a different instance than the one that
+  created the session — implement `SessionIndex` over a shared store (Redis/DB).
+</Callout>

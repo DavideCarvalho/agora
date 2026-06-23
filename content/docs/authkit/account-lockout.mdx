@@ -1,0 +1,61 @@
+---
+title: Account Lockout
+description: Progressive per-email lockout, complementary to IP rate-limiting.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Account lockout is an anti-brute-force throttle keyed by **email** — complementary to the
+IP-keyed rate-limiting. After repeated password failures, the account is temporarily locked
+with a progressive (backing-off) duration.
+
+It is backed by the same `@adonisjs/limiter` peer as rate-limiting — **no migration, no
+extra table** — and is **on by default**. If `@adonisjs/limiter` is not configured, it
+degrades to a no-op (fail-safe).
+
+## Configuration
+
+The `lockout` block in `defineConfig` carries only the **infrastructure** `store` field.
+Policy is managed via the `lockout` runtime setting:
+
+```ts title="config/authkit_server.ts"
+defineConfig({
+  // ...
+  lockout: {
+    // store: 'redis',    // optional — a store from config/limiter.ts
+  },
+})
+```
+
+```bash
+# Set lockout policy at runtime (no redeploy)
+node ace authkit:settings:set lockout \
+  '{"enabled":true,"maxAttempts":5,"windowSec":900,"baseLockoutSec":60,"maxLockoutSec":3600}'
+```
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | `true` | No-op when the limiter isn't configured. |
+| `maxAttempts` | `number` | `5` | Failures within the window before locking. |
+| `windowSec` | `number` | `900` | Sliding window (seconds) for counting failures. |
+| `baseLockoutSec` | `number` | `60` | Duration of the first lockout. |
+| `maxLockoutSec` | `number` | `3600` | Ceiling for the progressive backoff. |
+| `store` | `string?` (config) | host default | Infra — set in `defineConfig`, not the setting. |
+
+## Behaviour
+
+On the password step of the login interaction:
+
+- Each failed password attempt is recorded for the email; after `maxAttempts` within
+  `windowSec`, the email is locked for an increasing duration (starting at `baseLockoutSec`,
+  backing off up to `maxLockoutSec`).
+- While locked, the login is rejected with the `errors.account_locked` message
+  (interpolated with the remaining `{seconds}`) and an `account.locked` audit event is
+  emitted.
+- A **successful** password clears the failure counter for that email.
+
+<Callout type="info">
+  Lockout (per-email) and rate-limiting (per-IP) defend different vectors and stack: the IP
+  bucket slows a single host hammering the login route, while lockout slows a distributed
+  attack spread across IPs but targeting one account.
+</Callout>

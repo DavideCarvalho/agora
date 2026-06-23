@@ -1,0 +1,106 @@
+---
+title: Deployment Topologies
+description: Run a dedicated IdP, or embed the provider inside an existing app.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+AuthKit is topology-agnostic: the same server config works whether the Authorization
+Server is its own deployment or lives inside one of your product apps. There are three
+shapes you'll meet in practice.
+
+## The three shapes
+
+- **Standalone IdP + relying parties** — a dedicated `auth` app runs only AuthKit. Every
+  product app is an OIDC client (relying party) pointing at it. This is the cleanest
+  separation and the easiest to scale: identities live in one place.
+- **Embedded (host-is-its-own-client)** — the provider runs *inside* an existing product
+  app, and that same app is also one of its own clients. One process serves both the product
+  and the OIDC endpoints.
+- **Same-app, no separate client** — for a single app you can run the server and the client
+  config together in one process; the host authenticates against itself. This is what
+  [Getting Started](/docs/authkit/getting-started) sets up.
+
+## Standalone
+
+A dedicated identity provider app — nothing but AuthKit. Product apps are all relying
+parties pointing at it.
+
+```ts title="config/authkit_server.ts (standalone IdP)"
+const authServerConfig = defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'), // https://auth.acme.com/oidc
+  adapter: adapters.database({ connection: 'auth' }),
+  jwks: { source: 'managed', algorithm: 'RS256' },
+  accountStore: lucidAccountStore(AuthUser),
+  mountPath: '/oidc',
+  render: inertiaRenderer({ prefix: 'authkit' }),
+  admin: { enabled: true },
+  adminApi: { enabled: true, apiKeys: [env.get('AUTHKIT_ADMIN_API_KEY')] },
+})
+```
+
+The IdP owns the user identities. After first boot, create each client (`acme-web`,
+`acme-admin`, …) in the admin console at `/admin/clients` or via the Admin REST API:
+
+```bash
+curl -X POST https://auth.acme.com/api/authkit/v1/clients \
+  -H "Authorization: Bearer $AUTHKIT_ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "clientId": "acme-web",
+        "redirectUris": ["https://web.acme.com/auth/callback"],
+        "postLogoutRedirectUris": ["https://web.acme.com/"],
+        "grantTypes": ["authorization_code", "refresh_token"],
+        "tokenEndpointAuthMethod": "client_secret_basic"
+      }'
+```
+
+Each client gets its own `clientId`/`clientSecret` and registered redirect URIs. The
+secret is shown **once** in the response — save it in the client app's `.env`. Each product
+app then carries only the [client config](/docs/authkit/client) — no server package at all.
+
+## Embedded
+
+The provider runs **inside** an existing product app, and that app is also one of its own
+clients (host-is-its-own-client). This is the `acme-web` example: the same process
+serves the product *and* the OIDC endpoints.
+
+```ts title="config/authkit_server.ts (embedded)"
+const authServerConfig = defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'),
+  adapter: adapters.database({ connection: 'auth' }),
+  jwks: { source: 'managed', algorithm: 'RS256' },
+  accountStore: lucidAccountStore(AuthUser),
+  mountPath: '/oidc',
+  render: inertiaRenderer({ prefix: 'authkit' }),
+  admin: { enabled: true },
+  adminApi: { enabled: true, apiKeys: [env.get('AUTHKIT_ADMIN_API_KEY')] },
+})
+```
+
+After first boot, create the host app's own client (`acme-web`) in the admin console or
+API, then copy the returned `clientSecret` to `.env`. Alongside the server config, add a
+`config/authkit_client.ts` pointing at the same issuer — the host authenticates against
+itself. See [Client](/docs/authkit/client).
+
+<Callout type="info">
+  In the embedded topology, prefer the **embedded** SDK driver
+  ([SDK](/docs/authkit/sdk)) for admin operations — it resolves the server services straight
+  from the container, with no HTTP hop and no API key to manage.
+</Callout>
+
+## mountPath, issuer & cookies
+
+- **`mountPath`** (default `/oidc`) is where the provider's wildcard routes are mounted.
+  It must match the tail of `issuer`.
+- **`issuer`** is the public, externally-reachable URL — `scheme://host[:port]/mountPath`.
+  Relying parties derive `/auth`, `/token`, `/jwks`, and `/session/end` from it.
+- **Cookies** — the provider sets its SSO session cookies on the issuer's host. In the
+  embedded topology the provider and the host app share an origin, so the IdP session and
+  the app session coexist on the same host (two separate cookies). Provide signing keys
+  via `cookieKeys` if you want stable cookie signatures across restarts.
+
+<Callout type="info">
+  Switching topologies later is mostly an infrastructure change — split the app out, keep
+  the same `issuer` URL, and the relying parties don't need to change.
+</Callout>

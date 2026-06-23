@@ -1,0 +1,108 @@
+---
+title: Resolvers
+description: jwt, pat, and opaque — how a request becomes an Identity.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+The client's `resolver` decides how an incoming request is turned into an `Identity`.
+AuthKit ships three factories under `resolvers`, picked by your token model and your
+revocation needs.
+
+## resolvers.jwt
+
+For browser / user sessions. Validates the OIDC token **locally** against the IdP's JWKS,
+checking `issuer` and `audience` (your `clientId`). No network call per request.
+
+```ts title="config/authkit_client.ts"
+import { resolvers } from '@adonis-agora/authkit-client'
+
+resolver: resolvers.jwt({ tokenSource: 'session' })
+```
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `tokenSource` | `'session' \| 'bearer'` | `'session'` | Where to read the token. `'session'` reads the token set from the login flow; `'bearer'` reads the `Authorization` header. |
+| `jwksUri` | `string` | `${issuer}/jwks` | Explicit JWKS endpoint; defaults to the provider's standard route. |
+
+Because validation is stateless, a JWT resolver does **not** see revocation until the
+token expires. If you need immediate revocation, use `resolvers.opaque`.
+
+## resolvers.pat
+
+For machine-to-machine callers presenting a Personal Access Token. Validates by calling
+the IdP's PAT introspection endpoint with a shared secret. See
+[Personal Access Tokens](/docs/authkit/personal-access-tokens).
+
+```ts
+resolver: resolvers.pat({
+  introspectionUrl: `${env.get('AUTHKIT_ISSUER')}/authkit/pat/introspect`,
+  introspectionSecret: env.get('PAT_INTROSPECTION_SECRET'),
+})
+```
+
+| Option | Type | Notes |
+| --- | --- | --- |
+| `introspectionUrl` | `string` | The IdP's `/authkit/pat/introspect` endpoint. |
+| `introspectionSecret` | `string` | Shared secret authenticating the introspection call. |
+
+## resolvers.opaque
+
+For **opaque OIDC access tokens** introspected on every request (RFC 7662). Unlike `jwt`
+(stateless, no revocation check) and `pat` (a `pat_` token with a shared secret), the
+opaque access token issued by the OIDC flow is introspected at the IdP per request — so a
+revocation at the IdP drops the app session **immediately** (on the next request, or after
+`cacheTtlMs`).
+
+```ts
+resolver: resolvers.opaque({ tokenSource: 'session' })
+```
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `tokenSource` | `'session' \| 'bearer'` | `'session'` | `'session'` introspects the access token stored in the token set; `'bearer'` introspects the `Authorization` header token (APIs). |
+| `introspectionUrl` | `string` | `${issuer}/token/introspection` | The provider's standard introspection endpoint. |
+| `cacheTtlMs` | `number` | `0` | In-memory TTL (ms) for `active: true` responses. `0` introspects every request (revocation is immediate); raise it to trade immediacy for fewer round-trips. |
+
+<Callout type="warn">
+  `resolvers.opaque` requires a **confidential** client (a `clientSecret`): the
+  introspection call authenticates with HTTP Basic (`clientId:clientSecret`). It throws at
+  resolve time if no secret is configured.
+</Callout>
+
+## The Identity
+
+Every resolver yields the same shape (claims only — no app domain):
+
+```ts
+import type { Identity } from '@adonis-agora/authkit-client'
+
+interface Identity {
+  userId: string          // sub
+  email: string
+  globalRoles: string[]   // from globalRolesClaim, default 'roles'
+  profile?: { name?: string; avatarUrl?: string }
+  sessionId?: string      // sid
+  issuedAt: number        // iat (ms)
+  expiresAt: number       // exp (ms)
+  raw: Record<string, unknown>
+}
+```
+
+Whatever resolver you pick, `resolveUser` and `resolveAppRoles` (see
+[Client](/docs/authkit/client)) are unchanged — the rest of your app never knows which token
+model produced the identity.
+
+As of **v0.3.0** the `pat` and `opaque` resolvers populate `profile.avatarUrl` (from the
+introspection response's `picture`) and `sessionId` (from `sid`), matching what the `jwt`
+resolver already derives from the ID token. All three resolvers now yield the same fully
+populated `Identity` shape — `resolveUser` can rely on `identity.profile?.avatarUrl` and
+`identity.sessionId` regardless of token model.
+
+## Choosing a resolver
+
+| Scenario | Resolver | Revocation |
+| --- | --- | --- |
+| Browser session, low latency | `resolvers.jwt` | On token expiry only |
+| Browser session, must honour immediate revocation | `resolvers.opaque` | Immediate (or after `cacheTtlMs`) |
+| CI / scripts / integrations | `resolvers.pat` | Immediate (introspected) |

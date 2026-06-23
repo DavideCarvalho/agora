@@ -1,0 +1,200 @@
+---
+title: Agora integration
+description: How AuthKit wires into the Agora ecosystem — diagnostics events, request context, Authz, resilience, and durable GDPR workflows.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+AuthKit is a standalone OIDC stack, but inside an Agora app it slots into the shared
+seams the other libraries already use. Every integration here is **opt-in and best-effort**:
+none of them are required for AuthKit to run, and each degrades to a no-op when the sibling
+library is absent.
+
+## Diagnostics events (`agora:authkit:*`)
+
+AuthKit republishes **every audit event** onto the Agora [diagnostics bus](/docs/diagnostics)
+as `agora:authkit:<AuditEventType>` — for example:
+
+```text
+agora:authkit:login.success
+agora:authkit:login.failure
+agora:authkit:mfa.enabled
+agora:authkit:account.locked
+agora:authkit:pat.issued
+agora:authkit:impersonation
+agora:authkit:organization.invitation_accepted
+```
+
+The audit sink does the republish automatically. It is **fire-and-forget**: it never touches
+the request path, and `emit()` is guarded (`hasSubscribers`) so it is a true no-op when
+nothing is subscribed.
+
+### Subscribing
+
+Use `onDiagnostic` from `@adonis-agora/diagnostics`, ideally in a preload file so the
+subscription is up before the app serves traffic:
+
+```ts title="start/diagnostics.ts"
+import { onDiagnostic } from '@adonis-agora/diagnostics'
+
+// One specific channel:
+onDiagnostic('agora:authkit:account.locked', (event) => {
+  // ship to your SIEM, page on-call, etc.
+})
+
+// Every agora:authkit:* channel — including ones registered later:
+onDiagnostic('agora:authkit:*', (event) => {
+  metrics.increment(`auth.${event.channel}`)
+})
+```
+
+<Callout type="warn">
+  A subscriber runs **inline** on the producer's `emit` call. The republish itself is off
+  the hot path, but heavy work in *your handler* (network, disk) is not — batch, queue, or
+  hand off to a worker. See [Diagnostics → consumers](/docs/diagnostics).
+</Callout>
+
+## Telescope — automatic, plus a Security dashboard
+
+Because the events ride the diagnostics bus, [`@adonis-agora/telescope`](/docs/telescope)
+records each one as a `diagnostic` entry tagged `lib:authkit` with **zero** AuthKit-specific
+config. For a purpose-built auth view, register the dedicated extension:
+
+```ts title="config/telescope.ts"
+import { defineConfig } from '@adonis-agora/telescope'
+import { defineAuthkitTelescopeExtension } from '@adonis-agora/authkit-server/telescope'
+
+export default defineConfig({
+  extensions: [defineAuthkitTelescopeExtension()],
+})
+```
+
+This contributes a navigable **Auth** entry type and a **Security** dashboard (login success
+rate, MFA/passkey enrollments, lockouts, PAT/impersonation activity). The full reference is
+on the [Observability](/docs/authkit/observability#telescope--the-agora-diagnostics-bus) page.
+
+## Context population (`@agora/context:set`)
+
+[`@adonis-agora/context`](/docs/context) carries an ambient per-request store with a
+`userRef` and `tenantId`, so every other library (logging, durable jobs, authz) sees *who*
+the current request is acting for. Authentication runs after the context is established, so
+the principal is written **into** the store after the fact.
+
+`@adonis-agora/context` publishes a symmetric **write slot** for exactly this — a
+`globalThis` slot keyed by `Symbol.for('@agora/context:set')` (exported as `CONTEXT_SET`).
+AuthKit's client middleware uses that slot to populate the `userRef` once it resolves an
+identity, so you don't have to wire it yourself. Conceptually it does:
+
+```ts
+// After the authenticator resolves an Identity, AuthKit writes the ref into the
+// ambient context via the published write slot — a no-op if @adonis-agora/context
+// is not installed or no context is active.
+import { Context } from '@adonis-agora/context'
+
+Context.set('userRef', { type: 'user', id: identity.userId })
+// Context.set('tenantId', identity.raw.org_id) // if you map orgs → tenants
+```
+
+<Callout type="info">
+  The write is **best-effort**: if no context is active (a route the context middleware
+  didn't cover), the value is silently dropped — it never throws. Make sure the context
+  server middleware runs before `authkit_middleware`. See
+  [Context → customization](/docs/context/context/customization) for the write-slot contract.
+</Callout>
+
+If you map AuthKit organizations to context tenants, the active `org_id` claim is the natural
+source for `tenantId` — set it in your own middleware after `auth`.
+
+## Authz — the identity / userRef seam
+
+[`@adonis-agora/authz`](/docs/authz) decides *what a user can do*; AuthKit decides *who they
+are*. They meet at the user reference. AuthKit's `resolveUser(identity)` (see
+[Client](/docs/authkit/client)) produces your domain user, and Authz's `resolveUserRef(user)`
+turns that user into the `{ type, id }` subject Bouncer checks against:
+
+```ts title="config/authz.ts"
+export default defineConfig({
+  // The same user AuthKit resolved becomes the subject Authz evaluates.
+  resolveUserRef: (user) => ({ type: 'account', id: user.id }),
+})
+```
+
+The chain is: **OIDC claims → `Identity` → `resolveUser` → your user → `resolveUserRef` →
+Bouncer policy**. AuthKit's `globalRoles` (IdP claims) and `resolveAppRoles` (app-local
+roles) feed the role checks; Authz layers DB-backed permissions on top. Because both sides
+agree on the `userRef`, a durable job dispatched under a request's context (carrying that
+same ref) can re-evaluate the same policies on a worker.
+
+## Resilience on outbound calls
+
+The relying party makes outbound HTTP calls to the IdP — discovery, JWKS, code exchange,
+refresh, token exchange. Pass a composed policy from [`@adonis-agora/resilience`](/docs/resilience)
+as `resilience` in the client config to wrap **every** outbound call:
+
+```ts title="config/authkit_client.ts"
+import { defineConfig, resolvers } from '@adonis-agora/authkit-client'
+import { wrap, timeout, retry, circuitBreaker } from '@adonis-agora/resilience'
+
+export default defineConfig({
+  // ...
+  resolver: resolvers.jwt({ tokenSource: 'session' }),
+  resilience: wrap(timeout(2000), retry({ attempts: 3 }), circuitBreaker({ threshold: 5 })),
+})
+```
+
+`@adonis-agora/resilience` is an **optional peer dependency**: without it configured, the
+client's outbound calls are a plain `fetch` (no behavior change), and the package never needs
+to be installed. See [Client → Resilience](/docs/authkit/client#resilience-for-outbound-calls).
+
+## Durable GDPR workflows
+
+AuthKit's [erasure cascade](/docs/authkit/compliance#account-deletion-self-service) is
+transactional within the IdP's database. When a deletion must fan out beyond it — purge a
+data warehouse, revoke third-party SaaS access, delete object-storage blobs, notify
+downstream services — model the fan-out as a [`@adonis-agora/durable`](/docs/durable)
+workflow so each external step is checkpointed and retried:
+
+```ts title="start/durable.ts"
+import app from '@adonisjs/core/services/app'
+import { WorkflowEngine } from '@adonis-agora/durable'
+import { createAuthkit } from '@adonis-agora/authkit-sdk'
+
+const engine = await app.container.make(WorkflowEngine)
+
+engine.register('gdpr-erasure', '1', async (ctx, { accountId }: { accountId: string }) => {
+  // 1. Run AuthKit's own cascade (idempotent; safe to replay).
+  await ctx.step('authkit-delete', async () => {
+    const authkit = await createAuthkit({ mode: 'embedded', app })
+    return authkit.users.delete(accountId)
+  })
+
+  // 2. Fan out to external systems — each step is checkpointed independently.
+  await ctx.step('purge-warehouse', async () => purgeWarehouse(accountId))
+  await ctx.step('revoke-saas', async () => revokeSaasAccess(accountId))
+  await ctx.step('delete-blobs', async () => deleteUserBlobs(accountId))
+
+  return { status: 'erased', accountId }
+})
+```
+
+A subscriber on `agora:authkit:account.deleted` (or `user.deleted` for admin deletions) is a
+natural trigger to start the workflow. Because the durable run carries the dispatching
+request's [context](/docs/context) (`userRef`, `tenantId`), each external step knows on whose
+behalf it is acting — useful for the audit trail of the erasure itself.
+
+<Callout type="info">
+  Use the **embedded** [SDK driver](/docs/authkit/sdk) inside the same app, or `remote` when
+  the workflow worker is a separate service from the IdP. Either way the `users.delete`
+  return shape (cascade counts) is identical, so the workflow code does not change.
+</Callout>
+
+## Summary
+
+| Seam | Library | Mechanism | Required? |
+| --- | --- | --- | --- |
+| Auth events | [Diagnostics](/docs/diagnostics) | `agora:authkit:*` channels via `onDiagnostic` | No (no-op when unsubscribed) |
+| Observability | [Telescope](/docs/telescope) | generic watcher + opt-in Security extension | No (optional peer) |
+| Current principal | [Context](/docs/context) | `CONTEXT_SET` write slot → `userRef` | No (silent if absent) |
+| Authorization | [Authz](/docs/authz) | `resolveUser` → `resolveUserRef` → Bouncer | No (separate library) |
+| Outbound resilience | [Resilience](/docs/resilience) | `resilience` policy on the client | No (optional peer) |
+| Erasure fan-out | [Durable](/docs/durable) | workflow triggered by `account.deleted` | No (your orchestration) |

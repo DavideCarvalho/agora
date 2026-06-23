@@ -1,0 +1,190 @@
+---
+title: Observability
+description: Metrics, the OTel recorder, the JSON/dashboard routes, and the Telescope Security dashboard.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+AuthKit emits a canonical set of metrics from both the server (IdP) and the client kit,
+through a small `MetricsRecorder` seam that wires to OpenTelemetry when available — and
+always keeps an in-memory snapshot for the built-in JSON / dashboard routes.
+
+## Enabling metrics (server)
+
+Metrics are off until you turn them on in `observability`:
+
+```ts title="config/authkit_server.ts"
+defineConfig({
+  // ...
+  observability: {
+    metrics: true,    // create the recorder and wire provider events
+    jsonRoutes: true, // GET /authkit/metrics  → snapshot JSON
+    dashboard: true,  // GET /authkit/dashboard → tiny HTML table (auto-refresh)
+  },
+})
+```
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `metrics` | `boolean?` | `false` | Builds the `OtelRecorder` and binds `authkit.metrics`; without it the recorder is a `NoopRecorder`. |
+| `jsonRoutes` | `boolean?` | `false` | Mounts `GET /authkit/metrics` returning the in-memory snapshot. |
+| `dashboard` | `boolean?` | `false` | Mounts `GET /authkit/dashboard`, a minimal auto-refreshing HTML table. |
+
+## The metric names
+
+The canonical names live in `AUTHKIT_METRICS` (from `@adonis-agora/authkit-core`).
+
+### Server (IdP)
+
+Wired from real `oidc-provider` v9 events:
+
+| Constant | Name | Kind | Meaning |
+| --- | --- | --- | --- |
+| `loginSuccess` | `authkit.login.success` | counter | A grant succeeded (`grant.success`). |
+| `loginFailure` | `authkit.login.failure` | counter | A provider error occurred (`server_error`). |
+| `tokenIssued` | `authkit.token.issued` | counter | An access token was issued/saved. |
+| `refreshRotated` | `authkit.refresh.rotated` | counter | A refresh token was saved/rotated. |
+| `grantRevoked` | `authkit.grant.revoked` | counter | A grant was revoked (`grant.revoked`). |
+
+### Client (RP)
+
+Recorded by the `Authenticator` while resolving an identity:
+
+| Constant | Name | Kind | Meaning |
+| --- | --- | --- | --- |
+| `resolveDuration` | `authkit.resolve.duration` | histogram | Wall-clock (ms) to resolve an identity — includes opaque-resolver introspection latency. |
+| `resolveErrors` | `authkit.resolve.errors` | counter | The resolver threw while resolving. |
+
+### Reserved names
+
+These names are part of the contract for future use (no emit site yet): `sessionsActive`
+(`authkit.sessions.active`), `passwordHashDuration` (`authkit.password.hash.duration`),
+`jwksRefresh` (`authkit.jwks.refresh`), `tokenRefresh` (`authkit.token.refresh`).
+
+## The MetricsRecorder seam
+
+A recorder is just two methods plus a snapshot:
+
+```ts
+interface MetricsRecorder {
+  increment(name: AuthkitMetricName, attributes?: Record<string, string | number>): void
+  record(name: AuthkitMetricName, value: number, attributes?: Record<string, string | number>): void
+  snapshot(): MetricsSnapshot
+}
+```
+
+- **`OtelRecorder`** (server and client) best-effort imports `@opentelemetry/api`. If it's
+  installed, counters/histograms are emitted to your configured OTel meter; if not, it
+  silently stays in-memory-only. It **always** aggregates into an `InMemorySnapshot`.
+- **`NoopRecorder`** is used when `metrics` is off.
+
+`InMemorySnapshot` and `NoopRecorder` are exported from `@adonis-agora/authkit-core`, so
+you can build a custom recorder over the same contract. The snapshot shape:
+
+```ts
+interface MetricsSnapshot {
+  counters: Record<string, number>
+  histograms: Record<string, { count: number; sum: number; min: number; max: number }>
+  updatedAt: number
+}
+```
+
+<Callout type="info">
+  To actually export to a backend (Prometheus/OTLP), install `@opentelemetry/api` plus an
+  OTel SDK and meter provider in your app. AuthKit only calls the API surface; the SDK
+  wiring (readers, exporters) is yours.
+</Callout>
+
+## Sample Grafana dashboard
+
+The board below wires the key metrics to a Prometheus datasource (metric names are shown in
+their Prometheus form — dots become underscores and counters gain `_total`):
+
+```json
+{
+  "title": "AuthKit — Auth Overview",
+  "uid": "authkit-overview",
+  "tags": ["authkit", "oidc", "auth"],
+  "panels": [
+    {
+      "title": "Login success vs failure rate",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(authkit_login_success_total[5m]))", "legendFormat": "login success/s" },
+        { "expr": "sum(rate(authkit_login_failure_total[5m]))", "legendFormat": "login failure/s" }
+      ]
+    },
+    {
+      "title": "Identity resolve duration (incl. introspection latency)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(authkit_resolve_duration_bucket[5m])) by (le))", "legendFormat": "resolve p95" },
+        { "expr": "histogram_quantile(0.50, sum(rate(authkit_resolve_duration_bucket[5m])) by (le))", "legendFormat": "resolve p50" }
+      ]
+    },
+    {
+      "title": "Tokens, rotation, revocation & resolve errors",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum(rate(authkit_token_issued_total[5m]))", "legendFormat": "tokens issued/s" },
+        { "expr": "sum(rate(authkit_refresh_rotated_total[5m]))", "legendFormat": "refresh rotated/s" },
+        { "expr": "sum(rate(authkit_grant_revoked_total[5m]))", "legendFormat": "grants revoked/s" },
+        { "expr": "sum(rate(authkit_resolve_errors_total[5m]))", "legendFormat": "resolve errors/s" }
+      ]
+    }
+  ]
+}
+```
+
+<Callout type="warn">
+  The exact Prometheus metric names depend on your OTel → Prometheus exporter's naming
+  conventions (unit suffixes, `_total`). Adjust the PromQL `expr` to match what your
+  exporter actually publishes for the `authkit.*` instruments.
+</Callout>
+
+## Telescope & the Agora diagnostics bus
+
+Independently of OTel metrics, AuthKit republishes **every audit event** onto the Agora
+[diagnostics bus](/docs/diagnostics) as `agora:authkit:<AuditEventType>` (e.g.
+`agora:authkit:login.success`, `agora:authkit:mfa.enabled`, `agora:authkit:account.locked`,
+`agora:authkit:pat.issued`). This is wired automatically by the audit sink — it is a
+best-effort, fire-and-forget republish that never touches the request path and is a no-op
+when nothing is subscribed.
+
+### The baseline works without any extra setup
+
+If you have [`@adonis-agora/telescope`](/docs/telescope) installed, its **generic
+diagnostics watcher** already records each of these events as a `diagnostic` entry tagged
+`lib:authkit` — no AuthKit-specific configuration required. You can browse them in Telescope
+under the diagnostics entry type out of the box.
+
+### Adding the dedicated "Security" dashboard
+
+For a purpose-built auth view, register AuthKit's Telescope **extension**. It contributes a
+navigable **Auth** entry type and a **Security** dashboard that aggregates the recorded
+`agora:authkit:*` entries: login success rate, successful/failed logins over time, MFA &
+passkey enrollments, account lockouts, and PAT / impersonation activity.
+
+```ts title="config/telescope.ts"
+import { defineConfig } from '@adonis-agora/telescope'
+import { defineAuthkitTelescopeExtension } from '@adonis-agora/authkit-server/telescope'
+
+export default defineConfig({
+  extensions: [defineAuthkitTelescopeExtension()],
+})
+```
+
+You can widen or narrow the rolling window the stat / gauge / breakdown panels aggregate
+over (default 24h):
+
+```ts
+defineAuthkitTelescopeExtension({ windowMs: 7 * 24 * 60 * 60 * 1000 })
+```
+
+<Callout type="info">
+  `@adonis-agora/telescope` is an **optional peer dependency** of
+  `@adonis-agora/authkit-server`. The extension lives on the isolated
+  `@adonis-agora/authkit-server/telescope` subpath, so the main entrypoint never imports
+  Telescope — and the baseline (events on the bus) keeps working whether or not you register
+  the extension. See [Agora integration](/docs/authkit/agora-integration) for the full wiring.
+</Callout>

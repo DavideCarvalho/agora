@@ -1,0 +1,96 @@
+---
+title: Device Flow
+description: RFC 8628 — the OAuth 2.0 Device Authorization Grant for input-constrained devices.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+The **Device Authorization Grant** (RFC 8628) lets devices with no browser or limited input
+(TVs, CLIs, IoT) obtain tokens: the device shows a short *user code*, the user enters it on a
+second device (phone/laptop), logs in, and the device polls the token endpoint until approval.
+
+When enabled, AuthKit turns on `oidc-provider`'s `deviceFlow` feature, which exposes the
+`device_authorization_endpoint` (`${issuer}/device/auth`) and a user-facing verification UI
+(`${issuer}/device`). The verification screens (code entry, confirmation, success) are
+rendered by AuthKit with i18n strings matching the rest of the host-kit's screens.
+
+## Enabling it
+
+```ts title="config/authkit_server.ts"
+defineConfig({
+  // ...
+  deviceFlow: { enabled: true },
+})
+```
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | `false` | Exposes `device_authorization_endpoint` and the user-code screens. |
+
+The client must be granted the device-code grant type. Create or update the client via the
+admin console or Admin REST API:
+
+```bash
+curl -X POST https://auth.acme.com/api/authkit/v1/clients \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "clientId": "tv-app",
+        "redirectUris": ["https://tv-app/cb"],
+        "grantTypes": [
+          "authorization_code",
+          "refresh_token",
+          "urn:ietf:params:oauth:grant-type:device_code"
+        ],
+        "tokenEndpointAuthMethod": "client_secret_basic"
+      }'
+```
+
+## The flow
+
+**1. Device requests a code** — POST to the device authorization endpoint with client
+credentials:
+
+```bash
+curl -u tv-app:secret \
+  -d 'scope=openid profile' \
+  ${ISSUER}/device/auth
+```
+
+```json
+{
+  "device_code": "…",
+  "user_code": "ABCD-EFGH",
+  "verification_uri": "${ISSUER}/device",
+  "verification_uri_complete": "${ISSUER}/device?user_code=ABCD-EFGH",
+  "expires_in": 600,
+  "interval": 5
+}
+```
+
+**2. User verifies** — the device shows `user_code` and `verification_uri`. The user opens
+the URI, enters the code, confirms the device, and completes the normal login (and consent,
+and MFA if enabled) — the same interaction flow used by the authorization-code grant.
+
+**3. Device polls for tokens** — the device polls the token endpoint with the
+`device_code`. Before approval it receives `authorization_pending` (or `slow_down`); after
+approval it receives the token set:
+
+```bash
+curl -u tv-app:secret \
+  -d 'grant_type=urn:ietf:params:oauth:grant-type:device_code' \
+  -d "device_code=${DEVICE_CODE}" \
+  ${ISSUER}/token
+```
+
+```json
+{ "error": "authorization_pending" }
+```
+
+The discovery document advertises `device_authorization_endpoint` once the feature is on.
+
+<Callout type="info">
+  The verification screens are rendered directly by the provider (Koa) layer, so they use
+  self-contained HTML with the AuthKit i18n catalog rather than your Inertia/Edge renderer.
+  Override the `device.*` keys to localize them.
+</Callout>

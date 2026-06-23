@@ -1,0 +1,349 @@
+---
+title: Organizations
+description: Multi-tenancy — organizations, members, invitations, and per-org token claims.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Organizations add **multi-tenancy** to your IdP: users belong to one or more organizations,
+can switch their active organization, and receive per-org claims (`org_id`, `org_slug`,
+`org_role`) in every token. The feature is **capability-probed**: AuthKit activates it
+automatically when the three required tables are present in the database — no config flag
+needed unless you want to tune the defaults.
+
+## Database schema
+
+**Created automatically.** With schema auto-management on (the default), AuthKit creates the
+three organization tables on boot — nothing to do. If you disabled it
+(`schema: { autoManage: false }`), call `ensureAuthkitSchema(this.db)` in a migration, or
+create the tables yourself. For reference, the column names the Lucid store expects:
+
+```ts
+// auth_organizations
+schema.createTable('auth_organizations', (table) => {
+  table.string('id').primary()
+  table.string('name').notNullable()
+  table.string('slug').notNullable().unique()
+  table.string('logo_url').nullable()
+  table.json('metadata').nullable()
+  table.timestamps(true, true)
+})
+
+// auth_organization_members
+schema.createTable('auth_organization_members', (table) => {
+  table.string('id').primary()
+  table.string('organization_id').notNullable()
+    .references('id').inTable('auth_organizations').onDelete('CASCADE')
+  table.string('account_id').notNullable()
+  table.string('role').notNullable().defaultTo('member')
+  table.timestamps(true, true)
+  table.unique(['organization_id', 'account_id'])
+})
+
+// auth_organization_invitations
+schema.createTable('auth_organization_invitations', (table) => {
+  table.string('id').primary()
+  table.string('organization_id').notNullable()
+    .references('id').inTable('auth_organizations').onDelete('CASCADE')
+  table.string('email').notNullable()
+  table.string('role').notNullable().defaultTo('member')
+  table.string('token_hash').notNullable().unique()
+  table.string('invited_by').notNullable()  // accountId of the inviter
+  table.timestamp('expires_at').notNullable()
+  table.timestamp('accepted_at').nullable()
+  table.timestamps(true, true)
+})
+```
+
+## Configuration
+
+Configure organizations in `defineConfig`. Only the `enabled` override and `claimStrategy`
+belong here — policy fields (`roles`, `allowSelfCreate`, `invitationTtlHours`) are managed
+via the `organizations_policy` runtime setting:
+
+```ts title="config/authkit_server.ts"
+defineConfig({
+  // …
+  organizations: {
+    // enabled: true,        // default: auto (on when tables exist)
+    claimStrategy: 'active', // emit claims from the session's active org (default)
+  },
+})
+```
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `enabled` | `boolean` | auto | `undefined` = auto (detects tables at runtime). |
+| `claimStrategy` | `'active'` | `'active'` | Emit claims from the current active org cookie. The only supported strategy. |
+
+Policy fields (`roles`, `allowSelfCreate`, `invitationTtlHours`) are managed via the
+`organizations_policy` runtime setting:
+
+```bash
+node ace authkit:settings:set organizations_policy \
+  '{"allowSelfCreate":false,"invitationTtlHours":72,"roles":["owner","admin","member"]}'
+```
+
+## Lucid store models
+
+Pass your three model classes to `lucidAccountStore`:
+
+```ts title="config/authkit_server.ts"
+import { lucidAccountStore } from '@adonis-agora/authkit-server'
+import AuthOrganization from '#models/auth_organization'
+import AuthOrganizationMember from '#models/auth_organization_member'
+import AuthOrganizationInvitation from '#models/auth_organization_invitation'
+
+accountStore: lucidAccountStore({
+  // …your existing model config…
+  organizationModels: {
+    OrgModel: AuthOrganization,
+    MemberModel: AuthOrganizationMember,
+    InvitationModel: AuthOrganizationInvitation,
+  },
+})
+```
+
+When `organizationModels` is present **and** the tables exist at runtime, the store returns
+an `OrganizationsCapability` that the host kit uses automatically.
+
+## Token claims
+
+When a user has an **active organization** (set via the signed cookie from `/account/orgs`),
+these claims are added to every id_token, userinfo response, and JWT access token:
+
+| Claim | Type | Notes |
+| --- | --- | --- |
+| `org_id` | `string` | The active organization's id. |
+| `org_slug` | `string` | The active organization's slug. |
+| `org_role` | `string` | The member's role in the active org (e.g. `'owner'`). |
+
+<Callout type="info">
+  Org claims are only emitted when the user has an active org. A new login or token refresh
+  is required to see claims for a newly joined organization.
+</Callout>
+
+## Account console — `/account/orgs`
+
+Every authenticated user has access to `/account/orgs`:
+
+| Route | Action |
+| --- | --- |
+| `GET /account/orgs` | List the user's organizations; switch the active one |
+| `POST /account/orgs` | Create a new organization (requires `allowSelfCreate: true`) |
+| `POST /account/orgs/deactivate` | Clear the active organization cookie |
+| `POST /account/orgs/:id/activate` | Set the active organization |
+| `POST /account/orgs/:id/leave` | Leave an organization (blocked when last owner) |
+| `POST /account/orgs/:id/invite` | Send an email invitation to a new member |
+| `POST /account/orgs/:id/members/:accountId/remove` | Remove a member |
+| `POST /account/orgs/:id/invitations/:invId/revoke` | Cancel a pending invitation |
+
+### Invitation flow
+
+Invitations are sent by email (`mail.onOrgInvitation`) and carry a short-lived signed token
+(SHA-256 hash stored in the DB, TTL from `organizations_policy.invitationTtlHours`). The
+accept URLs are:
+
+```text
+GET  /account/orgs/invitations/:token/accept   → accept form (no session required)
+POST /account/orgs/invitations/:token/accept   → accept the invitation
+```
+
+The token is validated against the hash, TTL, and the authenticated account's email before
+creating the membership.
+
+#### Wire up the invitation email
+
+```ts title="config/authkit_server.ts"
+mail: {
+  onOrgInvitation: async ({ email, orgName, orgSlug, role, acceptUrl }) => {
+    await mailer.send((m) =>
+      m.from(env.get('EMAIL_FROM')).to(email)
+        .subject(`You have been invited to ${orgName}`)
+        .text(`Accept your invitation as ${role}: ${acceptUrl}`)
+    )
+  },
+}
+```
+
+## Governance invariants
+
+- An organization always has **at least one owner**. Removing or demoting the last owner is
+  rejected with `last_owner`.
+- LGPD cascade: deleting an account removes all its memberships and pending invitations.
+  The org itself is **not** deleted (the other members still exist).
+- Data export includes the user's memberships and pending invitations (see
+  [Compliance](/docs/authkit/compliance)).
+
+## Admin console — `/admin/orgs`
+
+When the admin console is enabled, an **Organizations** section appears under `/admin/orgs`:
+
+| Route | Action |
+| --- | --- |
+| `GET /admin/orgs` | List all organizations (paginated) |
+| `POST /admin/orgs` | Create an organization (admin assigns the initial owner) |
+| `GET /admin/orgs/:id` | View detail: members + pending invitations |
+| `POST /admin/orgs/:id/delete` | Delete the organization and cascade |
+| `POST /admin/orgs/:id/members` | Add a member directly (no invitation) |
+| `POST /admin/orgs/:id/members/:accountId/remove` | Remove a member |
+| `POST /admin/orgs/:id/invitations/:invId/revoke` | Revoke an invitation |
+
+## Admin REST API
+
+All organization operations are available under `/api/authkit/v1/organizations`. Requires
+the Admin REST API to be enabled and a Bearer API key.
+
+| Method | Path | Body / Query | Notes |
+| --- | --- | --- | --- |
+| `GET` | `/organizations` | — | List all organizations. |
+| `POST` | `/organizations` | `{ name, slug, ownerAccountId, logoUrl? }` | Create; automatically adds the owner as a member. |
+| `GET` | `/organizations/:id` | — | Detail with `members[]` and `pendingInvitations[]`. |
+| `PATCH` | `/organizations/:id` | `{ name?, logoUrl? }` | Update metadata. |
+| `DELETE` | `/organizations/:id` | — | Delete and cascade members/invitations. |
+| `POST` | `/organizations/:id/members` | `{ accountId, role }` | Add a member directly. |
+| `DELETE` | `/organizations/:id/members/:accountId` | — | Remove a member. |
+| `PATCH` | `/organizations/:id/members/:accountId` | `{ role }` | Update a member's role. |
+| `POST` | `/organizations/:id/invitations` | `{ email, role }` | Create and send an invitation. |
+| `DELETE` | `/organizations/:id/invitations/:invitationId` | — | Revoke an invitation. |
+
+```bash
+# Create an organization
+curl -X POST https://idp.example.com/api/authkit/v1/organizations \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Acme Corp", "slug": "acme", "ownerAccountId": "acc-42" }'
+
+# Invite a member
+curl -X POST https://idp.example.com/api/authkit/v1/organizations/org-1/invitations \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "email": "jane@acme.com", "role": "admin" }'
+```
+
+## Backend SDK
+
+```ts
+const authkit = await createAuthkit({ mode: 'remote', baseUrl, apiKey })
+
+// List
+const { data: orgs } = await authkit.organizations.list()
+
+// Create
+const org = await authkit.organizations.create({
+  name: 'Acme Corp',
+  slug: 'acme',
+  ownerAccountId: 'acc-42',
+})
+
+// Detail (includes members + pending invitations)
+const detail = await authkit.organizations.get(org.id)
+detail.members             // AuthkitOrgMember[]
+detail.pendingInvitations  // AuthkitOrgInvitation[]
+
+// Members
+await authkit.organizations.members.add(org.id, { accountId: 'acc-7', role: 'member' })
+await authkit.organizations.members.updateRole(org.id, 'acc-7', 'admin')
+await authkit.organizations.members.remove(org.id, 'acc-7')
+
+// Invitations
+const inv = await authkit.organizations.invitations.create(org.id, {
+  email: 'bob@acme.com',
+  role: 'member',
+})
+await authkit.organizations.invitations.revoke(org.id, inv.id)
+
+// Delete
+await authkit.organizations.delete(org.id)
+```
+
+See [SDK](/docs/authkit/sdk) for the full type table.
+
+## React
+
+`@adonis-agora/authkit-react` ships four hooks and two pre-built components for
+organizations. They fetch data from the JSON endpoints the host kit exposes
+(`/account/orgs/json`, `/account/orgs/invitations/json`, `/account/orgs/:id/json`) and POST
+mutations via the standard account routes.
+
+### Hooks
+
+```tsx
+import {
+  useOrganizations,
+  useOrganization,
+  useSwitchOrganization,
+  useOrgInvitations,
+} from '@adonis-agora/authkit-react'
+
+// List the current user's organizations + pending inbound invitations
+const orgs = useOrganizations()
+// orgs.data: OrgEntry[]   (id, name, slug, logoUrl, role, isActive)
+// orgs.invitations: OrgInvitationEntry[]
+// orgs.loading, orgs.error
+// orgs.actions.create({ name, slug }), orgs.actions.leave(orgId), orgs.actions.accept(token)
+
+// Detail of one organization (members + active invitations)
+const org = useOrganization(orgId)
+// org.data: ActiveOrgDetail   (includes members: OrgMemberEntry[])
+// org.actions.invite({ email, role }), org.actions.removeMember(accountId), org.actions.revokeInvitation(invId)
+
+// Switch the active organization
+const switcher = useSwitchOrganization()
+// switcher.activate(orgId), switcher.deactivate()
+// switcher.loading
+
+// Pending invitations for the current user
+const invitations = useOrgInvitations()
+// invitations.data: OrgInvitationEntry[]
+// invitations.actions.accept(token), invitations.actions.refetch()
+```
+
+### Components
+
+The kit ships two pre-built components. Both consume the hooks above and the
+`AuthkitProvider` config — drop them into your JSX:
+
+```tsx
+import {
+  OrganizationSwitcher,
+  OrganizationProfile,
+} from '@adonis-agora/authkit-react'
+
+// Dropdown to switch the active organization; optionally shows a "Create org" button
+function Header({ activeOrgId }: { activeOrgId: string }) {
+  return (
+    <>
+      <OrganizationSwitcher
+        allowCreate={false}            // default; set true when organizations_policy.allowSelfCreate is on
+        createLabel="New organization"
+        className="my-custom-class"
+      />
+
+      {/* Full management card: members, invitations, leave/invite controls */}
+      <OrganizationProfile orgId={activeOrgId} className="my-custom-class" />
+    </>
+  )
+}
+```
+
+Both components use the same `--authkit-*` CSS variables as the rest of the component kit;
+see [React](/docs/authkit/react) for the theming reference.
+
+## Audit events
+
+Every organization operation emits an audit event:
+
+| Event | When |
+| --- | --- |
+| `organization.created` | An organization is created. |
+| `organization.updated` | Organization metadata is updated. |
+| `organization.deleted` | An organization is deleted. |
+| `organization.member_added` | A member is added directly. |
+| `organization.member_removed` | A member is removed. |
+| `organization.member_role_updated` | A member's role is changed. |
+| `organization.switched` | A user switches their active organization. |
+| `organization.deactivated` | A user deactivates their active org. |
+| `organization.invitation_sent` | An email invitation is created. |
+| `organization.invitation_accepted` | An invitation is accepted. |
+| `organization.invitation_revoked` | An invitation is revoked. |

@@ -1,7 +1,33 @@
 {
   "root": true,
   "title": "AuthKit",
-  "description": "A full OIDC/OAuth2 Authorization Server for AdonisJS — IdP, OIDC client, and React ergonomics.",
   "icon": "KeyRound",
-  "pages": ["index"]
+  "description": "A full OIDC/OAuth2 Authorization Server for AdonisJS — IdP, OIDC client, and React ergonomics.",
+  "pages": [
+    "---Getting Started---",
+    "index",
+    "getting-started",
+    "topologies",
+    "---Server / IdP---",
+    "mfa",
+    "webauthn",
+    "passwordless",
+    "organizations",
+    "personal-access-tokens",
+    "impersonation",
+    "device-flow",
+    "account-lockout",
+    "compliance",
+    "---Client---",
+    "client",
+    "resolvers",
+    "refresh-tokens",
+    "back-channel-logout",
+    "---Frontend---",
+    "react",
+    "---SDK & Operations---",
+    "sdk",
+    "observability",
+    "agora-integration"
+  ]
 }

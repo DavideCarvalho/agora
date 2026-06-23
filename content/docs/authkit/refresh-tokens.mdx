@@ -1,0 +1,69 @@
+---
+title: Refresh Tokens
+description: Proactive refresh and rotation, handled by the client middleware.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+When the IdP issues short-lived access tokens with `offline_access` (a `refresh_token`),
+the client kit keeps the session fresh automatically — including handling **refresh token
+rotation**.
+
+## How it works
+
+`authkit_middleware` calls `AuthkitClientManager.maybeRefresh(ctx)` on every request,
+**before** resolving the identity. If the stored access token is close to expiring (within
+a 60s skew) and a `refresh_token` is present, it refreshes the token set and writes it back
+to the session.
+
+```ts title="start/kernel.ts"
+router.use([
+  // ...
+  () => import('@adonis-agora/authkit-client/authkit_middleware'),
+])
+```
+
+The refresh itself is `refreshTokens`, a `grant_type=refresh_token` call:
+
+```ts
+import { refreshTokens } from '@adonis-agora/authkit-client'
+
+const next = await refreshTokens({
+  issuer,
+  clientId,
+  clientSecret,        // confidential clients
+  refreshToken,        // the current refresh token
+  // scope,            // optional, to narrow the new token
+})
+// next.accessToken, next.refreshToken?, next.idToken, next.expiresAt
+```
+
+## Rotation
+
+With rotation enabled at the IdP (`oidc-provider`'s `rotateRefreshToken`), the token
+endpoint returns a **new** `refresh_token` on each use and invalidates the previous one.
+`maybeRefresh` persists the rotated token set back to the session, preserving the previous
+`idToken` / `refreshToken` when the IdP does not re-issue them:
+
+```ts
+session.put(sessionKey, {
+  idToken: next.idToken || tokenSet.idToken,
+  accessToken: next.accessToken,
+  refreshToken: next.refreshToken ?? tokenSet.refreshToken,
+  expiresAt: next.expiresAt,
+})
+```
+
+<Callout type="info">
+  Refresh is **best-effort**. A revoked token, an offline IdP, or any failure is swallowed
+  silently — the token set is left as-is and the resolver decides the session on the normal
+  path. The proactive refresh only runs when an `expiresAt` is known (otherwise it would
+  fire on every request).
+</Callout>
+
+## Requirements
+
+- The client must request the `offline_access` scope (the client default `scopes` already
+  include it) and have the `refresh_token` grant in its server-side `ClientConfig`.
+- `maybeRefresh` reads/writes the token set from `ctx.session`, so the session middleware
+  must run before `authkit_middleware`.

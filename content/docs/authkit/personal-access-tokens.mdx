@@ -1,0 +1,68 @@
+---
+title: Personal Access Tokens
+description: Issue, list, and revoke PATs; validate them by introspection.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Personal Access Tokens (PAT) are long-lived credentials for machine-to-machine access —
+CI jobs, scripts, integrations — that authenticate without the interactive OIDC flow.
+
+## Enabling PAT
+
+PAT requires a `patStore` on the server and a shared `patIntrospectionSecret`:
+
+```ts title="config/authkit_server.ts"
+import PersonalAccessToken from '#models/personal_access_token'
+import { lucidPatStore } from '@adonis-agora/authkit-server'
+
+defineConfig({
+  // ...
+  patStore: lucidPatStore(PersonalAccessToken),
+  patIntrospectionSecret: env.get('PAT_INTROSPECTION_SECRET'),
+})
+```
+
+The model uses the `withPersonalAccessToken` mixin. The `PatStore` contract covers
+issuing, listing, revoking, and lookup; `lucidPatStore(Model)` is the default
+implementation.
+
+## Issue / list / revoke
+
+The account console (mounted by `registerAuthHost`) exposes the user-facing management UI:
+
+| Route | Action |
+| --- | --- |
+| `GET /account/tokens` | List the signed-in account's tokens |
+| `POST /account/tokens` | Issue a new token (the plaintext value is shown once) |
+| `POST /account/tokens/:id/revoke` | Revoke a token |
+
+Tokens are generated with `generatePatToken()` and only the hash (`hashPatToken()`) is
+persisted — the raw value is returned to the user exactly once at issue time.
+
+## Introspection (machine-to-machine)
+
+A relying party validates an inbound PAT by calling the IdP's introspection endpoint,
+authenticated with the shared secret:
+
+```text
+POST {issuer}/authkit/pat/introspect
+```
+
+On the client side, use `resolvers.pat` so this happens automatically per request:
+
+```ts title="config/authkit_client.ts"
+resolver: resolvers.pat({
+  introspectionUrl: `${env.get('AUTHKIT_ISSUER')}/authkit/pat/introspect`,
+  introspectionSecret: env.get('PAT_INTROSPECTION_SECRET'),
+})
+```
+
+A valid, non-revoked token introspects to an `Identity` just like a session JWT, so the
+rest of your app (`resolveUser`, policies) is unchanged. See
+[Resolvers](/docs/authkit/resolvers) for the full resolver model.
+
+<Callout type="info">
+  The introspection route can be rate-limited via the `introspection` bucket. PAT
+  issue/revoke/use also emit audit events (`pat.issued`, `pat.revoked`, `pat.used`).
+</Callout>

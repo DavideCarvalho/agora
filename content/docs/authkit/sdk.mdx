@@ -1,0 +1,227 @@
+---
+title: Backend SDK
+description: One typed interface, two drivers — remote (HTTP Admin API) and embedded (in-process).
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`@adonis-agora/authkit-sdk` is a **backend SDK** for managing AuthKit from server-side
+code: users, sessions, OIDC clients, the audit log, and token verification. It exposes a
+single typed interface backed by two interchangeable drivers:
+
+- **`remote`** — HTTP against the Admin REST API (`/api/authkit/v1`), authenticated with a
+  Bearer API key. Use it from any backend service, even one that has nothing else to do with
+  AuthKit.
+- **`embedded`** — in-process calls that resolve the server services straight from the
+  AdonisJS container. Use it when the IdP runs in the **same** app: zero HTTP, zero API
+  key, same return shapes.
+
+Both drivers implement the **exact same interface and return the same shapes**, so you can
+start embedded and split out to remote later without touching call sites.
+
+## Install
+
+```bash
+pnpm add @adonis-agora/authkit-sdk
+```
+
+The server package (`@adonis-agora/authkit-server`) is an **optional** peer dependency —
+only the `embedded` driver needs it (it is imported lazily). Remote-only consumers can skip
+it entirely and carry zero AdonisJS server dependency.
+
+## Creating a client
+
+`createAuthkit` always returns a `Promise<Authkit>` (the embedded driver lazy-loads the
+server kit).
+
+### Remote
+
+```ts
+import { createAuthkit } from '@adonis-agora/authkit-sdk'
+
+const authkit = await createAuthkit({
+  mode: 'remote',
+  baseUrl: 'https://idp.example.com', // host root; /api/authkit/v1 is appended
+  apiKey: process.env.AUTHKIT_ADMIN_API_KEY!,
+  // apiPrefix: '/authkit/api',  // optional — must match adminApi.prefix on the server (default '/api/authkit/v1')
+  // fetchImpl: customFetch,     // optional — defaults to global fetch
+})
+```
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `baseUrl` | `string` | — | Host root of the IdP (e.g. `https://auth.acme.com`). |
+| `apiKey` | `string` | — | Bearer API key; must match one of the `adminApi.apiKeys` on the server. |
+| `apiPrefix` | `string` | `'/api/authkit/v1'` | Prefix appended to `baseUrl` for every request. Change this when the server uses a custom `adminApi: { prefix }`. |
+| `fetchImpl` | `typeof fetch` | global `fetch` | Override the fetch implementation (useful in edge runtimes or tests). |
+
+### Embedded
+
+```ts
+import { createAuthkit } from '@adonis-agora/authkit-sdk'
+import type { ApplicationService } from '@adonisjs/core/types'
+
+export async function makeAuthkit(app: ApplicationService) {
+  return createAuthkit({ mode: 'embedded', app })
+}
+```
+
+The embedded driver derives the password-reset link origin from your `authkit.issuer`
+config when sending invite/reset e-mails.
+
+## Methods
+
+| Resource | Method | Returns |
+| --- | --- | --- |
+| `users` | `list({ search?, page?, limit? })` | `{ data, total, page, limit }` |
+| `users` | `get(id)` | the user |
+| `users` | `create({ email, name?, password?, invite? })` | the user + `invited` |
+| `users` | `update(id, { globalRoles?, name?, avatarUrl? })` | the updated user |
+| `users` | `disable(id)` / `enable(id)` | `{ id, disabled }` |
+| `users` | `resetPassword(id)` | `{ id, sent }` |
+| `users` | `delete(id)` | cascade counts + `{ id, deleted }` |
+| `sessions` | `list(userId)` | `{ canList, sessions, grants }` |
+| `sessions` | `revokeAll(userId)` | `{ sessions, grants, accessTokens, refreshTokens }` |
+| `clients` | `list()` | `{ data, canList }` |
+| `clients` | `get(id)` | the client |
+| `clients` | `create(input)` | `{ clientId, clientSecret }` — secret shown **once** |
+| `clients` | `update(id, input)` | the updated client |
+| `clients` | `regenerateSecret(id)` | `{ clientId, clientSecret }` — new secret **once** |
+| `clients` | `delete(id)` | `{ clientId, deleted }` |
+| `audit` | `list({ type?, subject?, page?, limit? })` | `{ data, total, page, limit }` |
+| `stats()` | — | MAU, daily sign-ins/sign-ups, totals (see below) |
+| `tokens` | `verify(token)` | introspection result (PAT or opaque access token) |
+| `organizations` | `list()` | `{ data: AuthkitOrganization[] }` |
+| `organizations` | `create({ name, slug, ownerAccountId, logoUrl? })` | the org |
+| `organizations` | `get(id)` | org + `members[]` + `pendingInvitations[]` |
+| `organizations` | `update(id, { name?, logoUrl? })` | the updated org |
+| `organizations` | `delete(id)` | `{ id, deleted }` |
+| `organizations.members` | `list(orgId)` | `AuthkitOrgMember[]` |
+| `organizations.members` | `add(orgId, { accountId, role })` | `{ orgId, accountId, role, added }` |
+| `organizations.members` | `remove(orgId, accountId)` | `{ orgId, accountId, removed }` |
+| `organizations.members` | `updateRole(orgId, accountId, role)` | `{ orgId, accountId, role, updated }` |
+| `organizations.invitations` | `create(orgId, { email, role })` | the invitation |
+| `organizations.invitations` | `revoke(orgId, invitationId)` | `{ orgId, invitationId, revoked }` |
+| `settings` | `list()` | `{ data: AuthkitSetting[] }` |
+| `settings` | `get(key)` | `AuthkitSetting` — `404` / `Error` when absent |
+| `settings` | `set(key, value)` | `AuthkitSetting` — upserts the row |
+| `settings` | `delete(key)` | `{ key, deleted: true }` |
+
+The `clientSecret` from `create`/`regenerateSecret` is the **only** time the secret is
+returned in clear text — store it immediately.
+
+### `settings`
+
+Read and write entries in the `auth_settings` table. All methods return `404` (remote) or
+throw `Error` (embedded) when the table is absent. `get` also throws when the key does not
+exist.
+
+```ts
+// Toggle bot protection off at runtime
+await authkit.settings.set('bot_protection', { enabled: false })
+
+// Override which flows are protected (keep verify from config)
+await authkit.settings.set('bot_protection', {
+  enabled: true,
+  on: ['login', 'signup', 'reset'],
+})
+
+// Inspect the current stored value
+const setting = await authkit.settings.get('bot_protection')
+console.log(setting.value, setting.updatedAt)
+
+// Remove the row — reverts to static config
+await authkit.settings.delete('bot_protection')
+
+// List all settings
+const { data } = await authkit.settings.list()
+```
+
+`AuthkitSetting` shape:
+
+```ts
+interface AuthkitSetting {
+  key: string
+  value: unknown        // parsed JSON
+  updatedAt: string | null
+  updatedBy: string | null
+}
+```
+
+### `stats()`
+
+Returns a summary of the IdP's activity:
+
+```ts
+const stats = await authkit.stats()
+// stats.mau             — Monthly Active Users (last 30 days)
+// stats.totalUsers
+// stats.activeSessions  — null if the adapter can't enumerate
+// stats.signInsPerDay   — [{ date: 'YYYY-MM-DD', count }]
+// stats.signUpsPerDay
+// stats.auditSupported  — false if the sink doesn't support list
+```
+
+### `users.delete(id)`
+
+Permanently deletes a user and runs the LGPD/GDPR cascade (see
+[Compliance](/docs/authkit/compliance)):
+
+```ts
+const result = await authkit.users.delete('acc-42')
+// result.deleted, result.sessions, result.grants, result.pats,
+// result.passkeys, result.providerIdentities, result.auditAnonymized, result.avatarDeleted
+```
+
+## Example
+
+```ts
+const created = await authkit.users.create({ email: 'ana@example.com', invite: true })
+// created.invited === true → reset/invite e-mail dispatched
+
+await authkit.users.update(created.id, { globalRoles: ['ADMIN'] })
+
+// Organizations
+const org = await authkit.organizations.create({
+  name: 'Acme',
+  slug: 'acme',
+  ownerAccountId: created.id,
+})
+await authkit.organizations.members.add(org.id, { accountId: 'acc-7', role: 'member' })
+
+const intro = await authkit.tokens.verify(bearerToken)
+if (intro.active) {
+  console.log(intro.sub, intro.scopes)
+}
+```
+
+## Error handling
+
+The **remote** driver throws `AuthkitApiError` for any non-2xx response, parsed from the
+API's `{ error: { code, message } }` envelope. Network/parse failures throw the same error
+with code `network_error` and `status: 0`.
+
+```ts
+import { AuthkitApiError } from '@adonis-agora/authkit-sdk'
+
+try {
+  await authkit.users.create({ email: 'dup@example.com' })
+} catch (err) {
+  if (err instanceof AuthkitApiError) {
+    // err.status (e.g. 409), err.code (e.g. 'email_taken'), err.message
+  }
+}
+```
+
+The **embedded** driver throws plain `Error` for the equivalent failure conditions
+(not found, e-mail taken, unsupported capability), since there is no HTTP status to map.
+
+## Which driver should I use?
+
+- **Same app as the IdP?** Use `embedded` — no HTTP hop, no API key to manage, and it works
+  even when the Admin REST API is not enabled. This is the natural fit for the embedded
+  [topology](/docs/authkit/topologies#embedded).
+- **Separate service / different deploy?** Use `remote` and enable the Admin REST API with
+  an API key.
+
+Both speak the identical interface.

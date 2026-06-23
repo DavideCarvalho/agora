@@ -1,0 +1,352 @@
+---
+title: React (Frontend)
+description: useAuth, gating components, headless hooks, and pre-built UI for Inertia + React.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+`@adonis-agora/authkit-react` is the complete frontend SDK for AuthKit. It exports three
+orthogonal layers:
+
+| Layer | What it does |
+| --- | --- |
+| **Auth state** | `useAuth()`, gating components (`Authenticated`, `Can`), role helpers |
+| **Headless hooks** | `useProfile()`, `useSessions()`, `useOrganizations()`, … — plain `useState`/`useEffect`, no React Query |
+| **Pre-built components** | `SignInButton`, `UserButton`, `OrganizationSwitcher`, … — themeable via `--authkit-*` CSS variables |
+
+The package does **not** authenticate — it consumes the auth state the AdonisJS host already
+resolved (via [`@adonis-agora/authkit-client`](/docs/authkit/client)) and shared as an
+Inertia shared-prop.
+
+<Callout type="info">
+  Every snippet on this page is the JSX/usage as it appears in your own React files. These
+  are examples to copy into your app — the docs site does not render the live components.
+</Callout>
+
+## Install
+
+```bash
+pnpm add @adonis-agora/authkit-react
+```
+
+`react`, `react-dom`, and `@inertiajs/react` are peer dependencies (the app provides them).
+Import the stylesheet once in your app entry to theme the pre-built components:
+
+```tsx
+import '@adonis-agora/authkit-react/styles.css'
+```
+
+## 1. Share the `authkit` prop (host)
+
+Populate the shared-prop (`AuthSharedProps`) from your `Authenticator`, typically in
+`config/inertia.ts`:
+
+```ts title="config/inertia.ts"
+import { defineConfig } from '@adonisjs/inertia'
+
+export default defineConfig({
+  sharedData: {
+    authkit: async (ctx) => {
+      const auth = ctx.auth // the Authenticator from authkit_middleware
+      const user = await auth.getUser()
+      return {
+        user: user ?? null,
+        globalRoles: auth.identity?.globalRoles ?? [],
+        // appRoles?: optional, if the host resolves app roles
+      }
+    },
+  },
+})
+```
+
+The `user` object must match `AuthUser`:
+`{ id, email, name?, avatarUrl?, globalRoles, appRoles? }` — the output of the client's
+`identityToUser` / `resolveUser`.
+
+## 2. useAuth()
+
+```tsx
+import { useAuth } from '@adonis-agora/authkit-react'
+
+function Header() {
+  const { user, isAuthenticated, hasGlobalRole } = useAuth()
+
+  if (!isAuthenticated) return <a href="/login">Sign in</a>
+
+  return (
+    <div>
+      Hi, {user!.name ?? user!.email}
+      {hasGlobalRole('ADMIN') && <a href="/admin">Admin</a>}
+    </div>
+  )
+}
+```
+
+`useAuth()` never throws when the prop is missing — it returns an unauthenticated state
+(`user: null`, empty role lists).
+
+## 3. Gating components
+
+```tsx
+import { Authenticated, Guest, Can } from '@adonis-agora/authkit-react'
+
+<Authenticated fallback={<LoginButton />}>
+  <Dashboard />
+</Authenticated>
+
+<Guest>
+  <MarketingBanner />
+</Guest>
+
+{/* single global role */}
+<Can role="ADMIN">
+  <AdminPanel />
+</Can>
+
+{/* require all roles */}
+<Can roles={['ADMIN', 'BILLING']} mode="all" fallback={<NoAccess />}>
+  <BillingSettings />
+</Can>
+
+{/* an app-specific role */}
+<Can role="EDITOR" appRole>
+  <EditButton />
+</Can>
+```
+
+## 4. AuthProvider (optional)
+
+Outside Inertia (tests, Storybook), inject the value manually. The context takes precedence
+over the page props when present:
+
+```tsx
+import { AuthProvider } from '@adonis-agora/authkit-react'
+
+<AuthProvider value={{ user, globalRoles: user.globalRoles }}>
+  <App />
+</AuthProvider>
+```
+
+## 5. AuthkitProvider (config)
+
+Wrap your app once to configure the URLs and JSON endpoints the headless data hooks and
+pre-built components use. Every field is optional — the defaults point at the **host-kit's
+real routes**. In a *client-app* topology (the app is not the IdP), point these at local app
+routes that redirect/proxy to the IdP.
+
+```tsx
+import { AuthkitProvider } from '@adonis-agora/authkit-react'
+
+<AuthkitProvider
+  config={{
+    loginUrl: '/auth/login',          // default
+    logoutUrl: '/account/logout',     // default
+    profileUrl: '/account/security',  // default
+    csrfToken: page.props.csrfToken,  // sent as X-CSRF-TOKEN on JSON mutations
+    endpoints: {
+      profile: '/account/security/profile', // GET user / POST update
+      sessions: '/account/security',         // GET sessions / trusted devices
+      apps: '/account/apps',                  // GET apps; revoke at `${apps}/:clientId/revoke`
+      passkeys: '/account/mfa/passkeys',
+    },
+  }}
+>
+  <App />
+</AuthkitProvider>
+```
+
+`AuthkitProvider` also accepts an optional `value` prop to inject the auth state directly
+(same as `AuthProvider`), if you are not using Inertia shared props.
+
+## 6. Headless hooks
+
+Composable hooks with no UI and no `@tanstack/react-query` dependency (plain
+`useState`/`useEffect`).
+
+```tsx
+import {
+  useSignIn,
+  useSignOut,
+  useUser,
+  useProfile,
+  useSessions,
+  useAuthorizedApps,
+  useOrganizations,
+  useOrganization,
+  useSwitchOrganization,
+  useOrgInvitations,
+  usePasswordStrength,
+  usePasskeyAutofill,
+} from '@adonis-agora/authkit-react'
+
+// OIDC is redirect-based — these navigate the browser.
+const { signIn } = useSignIn()
+signIn() // returnTo defaults to the current URL
+signIn({ returnTo: '/dashboard' })
+
+const { signOut } = useSignOut()
+signOut({ returnTo: '/' })
+
+const { user, isAuthenticated } = useUser() // alias over useAuth
+
+// Data hooks → { data, loading, error, actions }
+const profile = useProfile()
+await profile.actions.update({ name: 'New name' })
+
+const sessions = useSessions()
+await sessions.actions.revoke(sessionId)
+await sessions.actions.refetch()
+
+const apps = useAuthorizedApps()
+await apps.actions.revoke(clientId)
+
+// Organizations (multi-tenancy) — see Organizations for the full API
+const orgs = useOrganizations()
+const org  = useOrganization(orgId)
+const sw   = useSwitchOrganization()
+await sw.activate(orgId)
+await sw.deactivate()
+
+const invitations = useOrgInvitations()
+await invitations.actions.accept(token)
+
+// Password strength (signup / change-password forms)
+const { score, feedback } = usePasswordStrength(password)
+// score: 0–4 (4 = very strong)
+// feedback: string[] | undefined (improvement tips)
+```
+
+The data hooks fetch JSON against the endpoints configured in `AuthkitProvider`, with
+`credentials: 'same-origin'` and the optional `X-CSRF-TOKEN` header. The organization hooks
+are documented in full on the [Organizations](/docs/authkit/organizations#react) page.
+
+## 7. Pre-built components
+
+The kit ships small, accessible, themeable components built on the hooks above. Several
+render **nothing** when the user is unauthenticated, so they're safe to drop into a shared
+layout. Import the stylesheet once (see [Install](#install)), then use them as ordinary JSX:
+
+```tsx
+import {
+  SignInButton,
+  SignOutButton,
+  UserButton,
+  UserProfile,
+  AuthorizedApps,
+  Avatar,
+  PasswordStrengthMeter,
+  OrganizationSwitcher,
+  OrganizationProfile,
+} from '@adonis-agora/authkit-react'
+
+function AppShell() {
+  return (
+    <header>
+      {/* Starts the OIDC login redirect; hidden when already authenticated */}
+      <SignInButton returnTo="/dashboard">Sign in</SignInButton>
+
+      {/* Clickable avatar → dropdown with a profile link + sign-out item */}
+      <UserButton profileLabel="Profile" signOutLabel="Sign out" />
+
+      {/* Logs out; renders nothing when unauthenticated */}
+      <SignOutButton returnTo="/" />
+    </header>
+  )
+}
+```
+
+| Component | What it renders |
+| --- | --- |
+| `SignInButton` | Button that starts the OIDC login redirect. Hidden when authenticated unless `showWhenAuthenticated`. |
+| `SignOutButton` | Logout button. Renders nothing when unauthenticated. |
+| `UserButton` | Avatar that opens a dropdown (profile link + sign-out). |
+| `UserProfile` | Card with avatar/name/email and an inline edit form (POSTs to the `profile` endpoint). |
+| `AuthorizedApps` | List of OAuth/OIDC apps the user authorized, each with a revoke button. |
+| `Avatar` | Avatar primitive — `avatarUrl` image, or initials from name/email. |
+| `PasswordStrengthMeter` | Visual meter driven by `usePasswordStrength`. |
+| `OrganizationSwitcher` | Dropdown to switch the active org (see [Organizations](/docs/authkit/organizations#components)). |
+| `OrganizationProfile` | Management card: members, invitations, leave/invite controls. |
+
+All components are SSR-safe (no `window` access at module load) and themeable via
+`--authkit-*` CSS variables.
+
+## 8. usePasskeyAutofill
+
+`usePasskeyAutofill` enables **WebAuthn conditional mediation** (passkey autofill) on a
+custom login screen. When mounted, it starts a discoverable-credential ceremony in the
+background. The browser shows passkey suggestions directly inside an `<input>` element with
+`autocomplete="username webauthn"`. As soon as the user selects a passkey, `onSuccess` is
+called with the serialised assertion.
+
+```tsx
+import { usePasskeyAutofill } from '@adonis-agora/authkit-react'
+
+function LoginForm({ uid, csrfToken }: { uid: string; csrfToken: string }) {
+  usePasskeyAutofill({
+    optionsUrl: `/auth/interaction/${uid}/passkey/options`,
+    verifyUrl:  `/auth/interaction/${uid}/passkey/verify`,
+    csrfToken,
+    onSuccess: (assertion) => {
+      // Submit the assertion to the verify endpoint and let the server redirect
+      const form = document.createElement('form')
+      form.method = 'POST'
+      form.action = `/auth/interaction/${uid}/passkey/verify`
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = 'assertion'
+      input.value = assertion
+      form.appendChild(input)
+      document.body.appendChild(form)
+      form.submit()
+    },
+  })
+
+  return (
+    <form method="POST" action={`/auth/interaction/${uid}/login`}>
+      {/* autocomplete="username webauthn" is the key for conditional mediation */}
+      <input type="email" name="email" autoComplete="username webauthn" placeholder="Email" />
+      <input type="password" name="password" placeholder="Password" />
+      <button type="submit">Sign in</button>
+    </form>
+  )
+}
+```
+
+### Options
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `optionsUrl` | `string` | — | `POST` endpoint that returns discoverable assertion options (server must support `allowCredentials: []`). |
+| `verifyUrl` | `string` | — | `POST` endpoint that verifies the assertion. |
+| `onSuccess` | `(assertion: string) => void` | — | Called with `JSON.stringify(assertion)` after the user selects a passkey. |
+| `csrfToken` | `string?` | — | Sent as `X-CSRF-TOKEN` header on the options fetch. |
+| `enabled` | `boolean` | `true` | Set to `false` to disable the hook. |
+
+### Fail-safes
+
+- **SSR-safe** — does not run outside a browser environment.
+- **No WebAuthn / no conditional mediation support** — exits silently; the standard login
+  form is unaffected.
+- **Unmount** — the in-flight ceremony is aborted via `AbortController` automatically.
+- **Any error** — swallowed; the standard password form is always available.
+
+The server-side counterpart is the `passkeyAutofill` field in the `auth_methods` runtime
+setting — see [WebAuthn](/docs/authkit/webauthn#passkey-autofill-conditional-mediation).
+
+## Pure helpers
+
+For use outside components, the role functions are exported and React-free:
+
+```ts
+import {
+  hasGlobalRole,
+  hasAnyGlobalRole,
+  hasAllGlobalRoles,
+  hasAppRole,
+  hasAnyAppRole,
+  hasAllAppRoles,
+} from '@adonis-agora/authkit-react'
+
+hasGlobalRole(user, 'ADMIN')
+hasAnyGlobalRole(user, ['ADMIN', 'TEACHER'])
+```

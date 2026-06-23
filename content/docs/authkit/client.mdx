@@ -1,0 +1,255 @@
+---
+title: Client
+description: Wire a relying party with @adonis-agora/authkit-client.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+The client kit makes an AdonisJS app a relying party of an AuthKit IdP: it resolves an
+`Identity` per request, maps it to your app's user, and gives you the login / callback /
+logout helpers.
+
+## Install & configure
+
+```bash
+npm install @adonis-agora/authkit-client
+node ace configure @adonis-agora/authkit-client
+```
+
+```ts title="config/authkit_client.ts"
+import env from '#start/env'
+import { defineConfig, resolvers } from '@adonis-agora/authkit-client'
+import type { Identity } from '@adonis-agora/authkit-client'
+import AppUser from '#models/app_user'
+import UserRole from '#models/user_role'
+
+const authkitClientConfig = defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'),
+  clientId: env.get('AUTHKIT_CLIENT_ID'),
+  clientSecret: env.get('AUTHKIT_CLIENT_SECRET'),
+  redirectUri: env.get('AUTHKIT_REDIRECT_URI'),
+  resolver: resolvers.jwt({ tokenSource: 'session' }),
+
+  resolveUser: async (identity: Identity) => {
+    const user = await AppUser.updateOrCreate(
+      { id: identity.userId },
+      {
+        id: identity.userId,
+        email: identity.email,
+        fullName: identity.profile?.name ?? null,
+      },
+    )
+    await user.load('roles')
+    return user
+  },
+
+  resolveAppRoles: async (identity: Identity) => {
+    const rows = await UserRole.query().where('userId', identity.userId)
+    return rows.map((r) => r.role)
+  },
+})
+
+export default authkitClientConfig
+```
+
+## Resolvers: jwt, pat, opaque
+
+The `resolver` decides how an incoming request is turned into an `Identity`. There are
+three factories — see [Resolvers](/docs/authkit/resolvers) for the full option tables.
+
+- **`resolvers.jwt({ tokenSource?, jwksUri? })`** — for browser/user sessions. Validates
+  the OIDC token **locally** against the IdP's JWKS (`${issuer}/jwks` by default),
+  checking `issuer` and `audience` (your `clientId`). `tokenSource` is `'session'` by
+  default (the token from the login flow); `'bearer'` reads it from the request header.
+- **`resolvers.pat({ introspectionUrl, introspectionSecret })`** — for machine-to-machine
+  callers presenting a Personal Access Token. Validates by calling the IdP's introspection
+  endpoint with the shared secret. See [PAT](/docs/authkit/personal-access-tokens).
+- **`resolvers.opaque({ tokenSource?, cacheTtlMs? })`** — introspects an opaque access
+  token at the IdP **per request**, so a revocation drops the session immediately. Requires
+  a confidential client. See [Resolvers](/docs/authkit/resolvers#resolversopaque).
+
+```ts
+// Browser sessions (local JWKS validation, no network per request)
+resolver: resolvers.jwt({ tokenSource: 'session' })
+
+// Machine-to-machine (introspection)
+resolver: resolvers.pat({
+  introspectionUrl: `${env.get('AUTHKIT_ISSUER')}/authkit/pat/introspect`,
+  introspectionSecret: env.get('PAT_INTROSPECTION_SECRET'),
+})
+
+// Opaque access token, introspected per request (immediate revocation)
+resolver: resolvers.opaque({ tokenSource: 'session' })
+```
+
+## The Identity
+
+Every resolver yields the same shape (claims only — no app domain):
+
+```ts
+interface Identity {
+  userId: string          // sub
+  email: string
+  globalRoles: string[]   // from the configured claim, default 'roles'
+  profile?: { name?: string; avatarUrl?: string } // avatarUrl from 'picture'
+  sessionId?: string      // sid
+  issuedAt: number        // iat (ms)
+  expiresAt: number       // exp (ms)
+  raw: Record<string, unknown>
+}
+```
+
+Since **v0.3.0** all three resolvers (`jwt`, `pat`, `opaque`) populate `profile.avatarUrl`
+(from `picture`) and `sessionId` (from `sid`) — the `pat`/`opaque` paths now match `jwt`,
+so these fields are available regardless of token model.
+
+## resolveUser & resolveAppRoles
+
+- **`resolveUser(identity, ctx)`** — map the identity to *your* user record (create on
+  first login, hydrate relations). Whatever you return becomes the authenticated user.
+- **`resolveAppRoles(identity)`** — app-local roles (distinct from the IdP's
+  `globalRoles`), e.g. for your authorization policies.
+
+<Callout type="info">
+  `resolveUser` is the seam Agora's [Authz](/docs/authz) hooks into via `resolveUserRef` —
+  the same identity that becomes your app user also resolves the user reference Bouncer
+  checks against. See [Agora integration](/docs/authkit/agora-integration#authz-the-identityuserref-seam).
+</Callout>
+
+## Middleware
+
+Register `authkit_middleware` so each request gets an authenticator on `ctx.auth`:
+
+```ts title="start/kernel.ts"
+router.use([
+  // ...
+  () => import('@adonis-agora/authkit-client/authkit_middleware'),
+])
+```
+
+The middleware resolves the `authkit.client` manager, **proactively refreshes** the token
+set (`maybeRefresh` — see [Refresh Tokens](/docs/authkit/refresh-tokens)), and attaches
+`ctx.auth = await manager.createAuthenticator(ctx)`.
+
+## Refresh & back-channel logout
+
+- **Refresh token rotation** is handled for you: `authkit_middleware` refreshes the session
+  before it expires and persists the rotated refresh token. See
+  [Refresh Tokens](/docs/authkit/refresh-tokens).
+- **Back-channel logout** lets the IdP terminate the RP's sessions out-of-band. Configure a
+  `sessionIndex` + `onBackchannelLogout` and route the IdP's POST to
+  `manager.handleBackchannelLogout(ctx)`. See
+  [Back-Channel Logout](/docs/authkit/back-channel-logout).
+
+## Resilience for outbound calls
+
+The client makes outbound HTTP calls to the IdP — OIDC discovery, JWKS, and the token
+endpoints (code exchange, refresh, token exchange). A slow or flaky IdP can stall those
+requests. **Opt-in**, you can wrap every outbound call in a resilience policy from
+[`@adonis-agora/resilience`](/docs/resilience) — pass the composed policy as `resilience`
+in `defineConfig`:
+
+```ts title="config/authkit_client.ts"
+import { defineConfig, resolvers } from '@adonis-agora/authkit-client'
+import { wrap, timeout, retry, circuitBreaker } from '@adonis-agora/resilience'
+
+const authkitClientConfig = defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'),
+  clientId: env.get('AUTHKIT_CLIENT_ID'),
+  clientSecret: env.get('AUTHKIT_CLIENT_SECRET'),
+  redirectUri: env.get('AUTHKIT_REDIRECT_URI'),
+  resolver: resolvers.jwt({ tokenSource: 'session' }),
+
+  // Opt-in: cap each IdP call at 2s and retry transient failures up to 3 times.
+  resilience: wrap(timeout(2000), retry({ attempts: 3 })),
+})
+
+export default authkitClientConfig
+```
+
+`resilience` accepts the value returned by `wrap(...)` — anything with an
+`execute(fn)` method. Compose `timeout`, `retry`, `circuitBreaker`, and `failover` as
+needed.
+
+`@adonis-agora/resilience` is an **optional peer dependency**: without `resilience`
+configured, the client's outbound calls are a plain `fetch` (no behavior change), and the
+package never needs to be installed.
+
+## JWT access token verification
+
+When the IdP emits JWT access tokens, a **resource server** can verify them locally without
+calling `/introspect`:
+
+```ts
+import { verifyJwtAccessToken } from '@adonis-agora/authkit-client'
+
+const claims = await verifyJwtAccessToken(bearerToken, {
+  issuer: 'https://idp.acme.com/oidc',
+  jwksUri: 'https://idp.acme.com/oidc/jwks',
+  audience: 'https://api.acme.com',
+})
+// claims.sub, claims.scope, claims.client_id, claims.exp, …
+```
+
+The function uses `jose`'s `createRemoteJWKSet` (JWKS cached and re-fetched on new `kid`).
+It validates the signature, `iss`, `aud`, and enforces `typ: at+jwt` (RFC 9068 §2.1).
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `issuer` | `string` | — | Expected `iss` claim. |
+| `jwksUri` | `string` | — | The IdP's JWKS endpoint (`${issuer}/jwks` or from discovery). |
+| `audience` | `string \| string[]` | — | Expected `aud` claim — your API's URI. |
+| `algorithms` | `string[]` | all asymmetric | Accepted signing algorithms. |
+| `allowAnyTyp` | `boolean` | `false` | Skip the `typ: at+jwt` check. |
+
+Throws a `JWTVerifyError` (from `jose`) when the token is invalid. Calling this function is
+**stateless** — no round-trip to the IdP per request.
+
+## The login / callback / logout flow
+
+The flow is OIDC authorization-code + PKCE. The exported helpers do the heavy lifting:
+
+```ts
+import {
+  generatePkce,
+  buildAuthorizeUrl,
+  exchangeCode,
+  buildEndSessionUrl,
+} from '@adonis-agora/authkit-client'
+
+// 1. Login: generate PKCE + state, stash in session, redirect to the IdP
+const { verifier, challenge } = await generatePkce()
+const url = buildAuthorizeUrl({
+  issuer,
+  clientId,
+  redirectUri,
+  scopes: ['openid', 'profile', 'email', 'offline_access'],
+  state,
+  codeChallenge: challenge,
+})
+return response.redirect(url)
+
+// 2. Callback: exchange the code for tokens, store the session
+const tokens = await exchangeCode({
+  issuer,
+  clientId,
+  clientSecret,
+  redirectUri,
+  code: request.input('code'),
+  codeVerifier: verifier,
+})
+
+// 3. Logout (RP-initiated): end the IdP session, bounce back
+return response.redirect(
+  buildEndSessionUrl({
+    issuer,
+    idToken: tokens.idToken,
+    postLogoutRedirectUri: 'https://my-app.example.com/',
+  }),
+)
+```
+
+`buildEndSessionUrl` targets `${issuer}/session/end`. Passing `idToken` as the
+`id_token_hint` lets the IdP skip its confirmation page; the `postLogoutRedirectUri` must
+be registered on the client. The complete, scaffolded controller is shown in
+[Getting Started](/docs/authkit/getting-started#login-callback-logout).
