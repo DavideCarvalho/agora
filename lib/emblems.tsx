@@ -98,6 +98,21 @@ const art: Record<string, ReactElement> = {
       <path d="M30 -8 C35 11 53 11 58 -8" stroke={BONE} strokeWidth="2.5" fill="none" />
     </g>
   ),
+  // Mosaic (ψηφίδες) — the tessera of a Greek floor mosaic: many tiles, one picture.
+  Mosaic: (
+    <g>
+      <rect x="-44" y="-38" width="88" height="76" fill={C} />
+      <rect x="-38" y="-32" width="76" height="64" fill={BONE} />
+      <rect x="-30" y="-24" width="18" height="18" fill={C} />
+      <rect x="-6" y="-24" width="18" height="18" fill={INK} />
+      <rect x="18" y="-24" width="12" height="18" fill={C} />
+      <rect x="-30" y="0" width="12" height="18" fill={INK} />
+      <rect x="-12" y="0" width="18" height="18" fill={C} />
+      <rect x="12" y="0" width="18" height="18" fill={INK} />
+      <circle cx="6" cy="-15" r="7" fill={C} />
+      <path d="M-30 24 L0 6 L30 24 Z" fill={C} />
+    </g>
+  ),
   // Key (κλείς) — the key to enter: authentication / identity.
   Key: (
     <g>
@@ -119,6 +134,7 @@ const meta: Record<string, { name: keyof typeof art; plate: string }> = {
   telescope: { name: 'Eye', plate: '05' },
   authz: { name: 'Scales', plate: '06' },
   authkit: { name: 'Key', plate: '07' },
+  media: { name: 'Mosaic', plate: '08' },
 };
 
 export interface Emblem {

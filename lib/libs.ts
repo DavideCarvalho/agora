@@ -1,6 +1,7 @@
 import {
   Activity,
   Boxes,
+  Image,
   KeyRound,
   type LucideIcon,
   ShieldCheck,
@@ -100,6 +101,18 @@ export const libs: AgoraLib[] = [
     role: 'Authorization',
     icon: ShieldCheck,
     iconName: 'ShieldCheck',
+    packages: 1,
+    stage: 'alpha',
+  },
+  {
+    slug: 'media',
+    pkg: 'media',
+    name: 'Media',
+    blurb:
+      'A media library for AdonisJS — owner collections, image conversions (eager/lazy), and column attachments, all on top of @adonisjs/drive. The spatie media-library feel.',
+    role: 'Storage',
+    icon: Image,
+    iconName: 'Image',
     packages: 1,
     stage: 'alpha',
   },

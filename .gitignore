@@ -13,6 +13,8 @@
 /content/docs/resilience/
 /content/docs/durable/
 /content/docs/telescope/
+/content/docs/authz/
+/content/docs/media/
 
 # build
 /coverage

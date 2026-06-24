@@ -62,7 +62,7 @@ export default function OpengraphImage() {
           <div style={{ display: 'flex', fontSize: 40, fontWeight: 700, color: '#ECE7E1' }}>Agora</div>
           <div style={{ display: 'flex' }}>— libraries for the AdonisJS ecosystem</div>
         </div>
-        <div style={{ display: 'flex', fontSize: 26, color: '#8A847C' }}>7 libraries · 16 packages</div>
+        <div style={{ display: 'flex', fontSize: 26, color: '#8A847C' }}>8 libraries · 17 packages</div>
       </div>
     </div>,
     { ...size },

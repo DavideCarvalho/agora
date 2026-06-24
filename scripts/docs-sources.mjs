@@ -75,6 +75,18 @@ export const sources = [
     repoDir: 'adonis-authz',
     migrated: true,
   },
+  {
+    slug: 'media',
+    name: 'Media',
+    description:
+      'A media library for AdonisJS — owner collections, image conversions, and column attachments on top of @adonisjs/drive.',
+    icon: 'Image',
+    repo: 'DavideCarvalho/adonis-media',
+    ref: 'master',
+    path: 'docs',
+    repoDir: 'adonis-media',
+    migrated: true,
+  },
   // NOTE: authkit is NOT synced here — its docs (apps/docs/content/docs) are a
   // coupled Fumadocs app with live React demos + app path-aliases, not portable.
   // The /docs/authkit page is hand-authored in content/docs/authkit/ instead.
