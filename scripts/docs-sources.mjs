@@ -87,6 +87,18 @@ export const sources = [
     repoDir: 'adonis-media',
     migrated: true,
   },
+  {
+    slug: 'agent',
+    name: 'Agent',
+    description:
+      'A governed, durable-ready AI agent for AdonisJS — streaming chat, tool-calling, HITL, quota/cost accounting and multi-agent delegation.',
+    icon: 'Bot',
+    repo: 'DavideCarvalho/adonis-agent',
+    ref: 'master',
+    path: 'packages/adonis/docs',
+    repoDir: 'adonis-agent',
+    migrated: true,
+  },
   // NOTE: authkit is NOT synced here — its docs (apps/docs/content/docs) are a
   // coupled Fumadocs app with live React demos + app path-aliases, not portable.
   // The /docs/authkit page is hand-authored in content/docs/authkit/ instead.

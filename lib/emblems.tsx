@@ -123,6 +123,30 @@ const art: Record<string, ReactElement> = {
       <rect x="5" y="48" width="13" height="9" fill={C} />
     </g>
   ),
+  // Owl (γλαύξ) — Athena's owl: wisdom and watchful intelligence, for the agent.
+  Owl: (
+    <g>
+      <path
+        d="M-34 -6 C-38 34 -20 52 0 52 C20 52 38 34 34 -6 C30 -34 16 -44 0 -44 C-16 -44 -30 -34 -34 -6 Z"
+        fill={C}
+      />
+      <path d="M-30 -38 L-42 -58 L-16 -46 Z" fill={C} />
+      <path d="M30 -38 L42 -58 L16 -46 Z" fill={C} />
+      <circle cx="-15" cy="-14" r="15" fill={BONE} />
+      <circle cx="15" cy="-14" r="15" fill={BONE} />
+      <circle cx="-15" cy="-14" r="6" fill={INK} />
+      <circle cx="15" cy="-14" r="6" fill={INK} />
+      <path d="M0 -8 L-6 2 L6 2 Z" fill={INK} />
+      <path d="M-18 16 C-10 22 10 22 18 16" stroke={BONE} strokeWidth="2.5" fill="none" />
+      <path d="M-20 28 C-10 36 10 36 20 28" stroke={BONE} strokeWidth="2.5" fill="none" />
+      <path
+        d="M-10 50 L-10 58 M-14 58 L-6 58 M10 50 L10 58 M6 58 L14 58"
+        stroke={C}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </g>
+  ),
 };
 
 // slug → { emblem name, plate number }
@@ -135,6 +159,7 @@ const meta: Record<string, { name: keyof typeof art; plate: string }> = {
   authz: { name: 'Scales', plate: '06' },
   authkit: { name: 'Key', plate: '07' },
   media: { name: 'Mosaic', plate: '08' },
+  agent: { name: 'Owl', plate: '09' },
 };
 
 export interface Emblem {

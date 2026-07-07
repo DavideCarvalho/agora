@@ -31,7 +31,7 @@ export default function HomePage() {
             style={{ animationDelay: '120ms' }}
           >
             {libs.length} production-grade libraries for AdonisJS — context, diagnostics, resilience,
-            durable workflows, observability and authorization. Install one, or compose them all: they
+            durable workflows, observability, authorization and governed AI agents. Install one, or compose them all: they
             share context, emit to one diagnostics bus, and surface in one console.
           </p>
 

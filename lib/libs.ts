@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bot,
   Boxes,
   Image,
   KeyRound,
@@ -113,6 +114,18 @@ export const libs: AgoraLib[] = [
     role: 'Storage',
     icon: Image,
     iconName: 'Image',
+    packages: 1,
+    stage: 'alpha',
+  },
+  {
+    slug: 'agent',
+    pkg: 'agent',
+    name: 'Agent',
+    blurb:
+      'A governed, durable-ready AI agent for AdonisJS — streaming chat, tool-calling, fail-closed authorization, human-in-the-loop approvals, quota/cost accounting and multi-agent delegation. One loop, two runners.',
+    role: 'AI',
+    icon: Bot,
+    iconName: 'Bot',
     packages: 1,
     stage: 'alpha',
   },
