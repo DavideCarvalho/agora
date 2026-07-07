@@ -13,7 +13,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 const ink = 'var(--color-fd-foreground)';
 const muted = 'var(--color-fd-muted-foreground)';
-const cardBg = 'var(--color-fd-card)';
 const border = 'var(--color-fd-border)';
 const accent = 'var(--color-fd-primary)';
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
