@@ -16,6 +16,7 @@
 /content/docs/authz/
 /content/docs/media/
 /content/docs/agent/
+/content/docs/filter/
 
 # build
 /coverage

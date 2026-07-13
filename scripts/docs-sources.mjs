@@ -88,6 +88,18 @@ export const sources = [
     migrated: true,
   },
   {
+    slug: 'filter',
+    name: 'Filter',
+    description:
+      'A typed query-param filter language for Lucid — operators, defineFilter classes, offset & cursor pagination, relations via whereHas, full-text (tsvector) and vector-similarity search, and a typed client with codegen.',
+    icon: 'Filter',
+    repo: 'DavideCarvalho/adonis-filter',
+    ref: 'master',
+    path: 'docs',
+    repoDir: 'adonis-filter',
+    migrated: true,
+  },
+  {
     slug: 'agent',
     name: 'Agent',
     description:

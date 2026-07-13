@@ -147,6 +147,19 @@ const art: Record<string, ReactElement> = {
       />
     </g>
   ),
+  // Funnel (χώνη) — the strainer that lets only the allow-listed through.
+  Funnel: (
+    <g>
+      <rect x="-46" y="-44" width="92" height="12" fill={C} />
+      <path d="M-40 -32 L40 -32 L9 8 L9 40 L-9 40 L-9 8 Z" fill={C} />
+      <path d="M-28 -26 L28 -26 L6 2 L-6 2 Z" fill={BONE} />
+      <rect x="-6" y="8" width="3" height="32" fill={INK} />
+      <rect x="3" y="8" width="3" height="32" fill={INK} />
+      <circle cx="0" cy="50" r="5" fill={C} />
+      <circle cx="-10" cy="59" r="3" fill={C} />
+      <circle cx="10" cy="60" r="3" fill={C} />
+    </g>
+  ),
 };
 
 // slug → { emblem name, plate number }
@@ -160,6 +173,7 @@ const meta: Record<string, { name: keyof typeof art; plate: string }> = {
   authkit: { name: 'Key', plate: '07' },
   media: { name: 'Mosaic', plate: '08' },
   agent: { name: 'Owl', plate: '09' },
+  filter: { name: 'Funnel', plate: '10' },
 };
 
 export interface Emblem {

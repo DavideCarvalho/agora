@@ -2,6 +2,7 @@ import {
   Activity,
   Bot,
   Boxes,
+  Filter,
   Image,
   KeyRound,
   type LucideIcon,
@@ -115,6 +116,18 @@ export const libs: AgoraLib[] = [
     icon: Image,
     iconName: 'Image',
     packages: 1,
+    stage: 'alpha',
+  },
+  {
+    slug: 'filter',
+    pkg: 'filter',
+    name: 'Filter',
+    blurb:
+      'A typed query-param filter language for Lucid — Spatie/JSON:API input, operators and defineFilter classes, offset & cursor pagination, relations via whereHas, full-text (tsvector) and vector-similarity search, plus a type-safe client builder with codegen.',
+    role: 'Data',
+    icon: Filter,
+    iconName: 'Filter',
+    packages: 2,
     stage: 'alpha',
   },
   {
