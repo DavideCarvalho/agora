@@ -124,6 +124,9 @@ for (const src of selected) {
   rmSync(dest, { recursive: true, force: true });
   mkdirSync(dest, { recursive: true });
   cpSync(join(repo, src.path), dest, { recursive: true });
+  // Internal design specs / skill outputs live under docs/superpowers — never publish them
+  // (their .md files have no frontmatter title and break the strict page-schema build).
+  rmSync(join(dest, 'superpowers'), { recursive: true, force: true });
 
   let assets = 0;
   if (src.publicDir) {
