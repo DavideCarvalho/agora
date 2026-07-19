@@ -39,7 +39,20 @@ export const metadata: Metadata = {
   description,
   applicationName: appName,
   authors: [{ name: 'dudousxd' }],
-  keywords: ['AdonisJS', 'TypeScript', 'Laravel-style', 'dudousxd', 'Agora', 'monorepo', 'libraries'],
+  keywords: [
+    'AdonisJS',
+    'Adonis',
+    'AdonisJS libraries',
+    'AdonisJS packages',
+    'TypeScript',
+    'Node.js',
+    'IoC container',
+    'Laravel-inspired',
+    '@adonis-agora',
+    'Agora',
+    'monorepo',
+    'libraries',
+  ],
   // Link previews: Open Graph drives WhatsApp / Facebook / Discord / LinkedIn /
   // Slack; the Twitter card drives X. The preview image comes from the
   // file-based `app/opengraph-image.tsx` (+ `twitter-image.tsx`), which Next
