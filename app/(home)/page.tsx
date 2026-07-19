@@ -1,8 +1,8 @@
-import { ArrowRight, Plug, Settings2, Sparkles } from 'lucide-react';
-import Link from 'next/link';
-import { AgoraMark, GitHubMark } from '@/components/logo';
-import { libs, stageLabel, totalPackages } from '@/lib/libs';
-import { gitConfig, npmScope } from '@/lib/shared';
+import { ArrowRight, Plug, Settings2, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { AgoraMark, GitHubMark } from "@/components/logo";
+import { libs, stageLabel, totalPackages } from "@/lib/libs";
+import { gitConfig, npmScope } from "@/lib/shared";
 
 export default function HomePage() {
   return (
@@ -12,32 +12,37 @@ export default function HomePage() {
       <div className="agora-content mx-auto w-full max-w-6xl px-5 sm:px-8">
         {/* ---------------------------------------------------------- Hero */}
         <section className="pt-32 pb-16 sm:pt-40 sm:pb-20 text-center">
-          <p className="agora-kicker agora-rise" style={{ animationDelay: '0ms' }}>
+          <p
+            className="agora-kicker agora-rise"
+            style={{ animationDelay: "0ms" }}
+          >
             {npmScope} &middot; libraries for AdonisJS
           </p>
 
           <h1
             className="agora-rise mx-auto mt-6 max-w-3xl text-balance text-4xl font-medium leading-[1.05] sm:text-6xl"
-            style={{ animationDelay: '60ms' }}
+            style={{ animationDelay: "60ms" }}
           >
-            The AdonisJS ecosystem,{' '}
-            <span className="italic" style={{ color: 'var(--agora-primary)' }}>
-              composed.
+            The AdonisJS ecosystem,{" "}
+            <span className="italic" style={{ color: "var(--agora-primary)" }}>
+              in assembly.
             </span>
           </h1>
 
           <p
             className="agora-rise mx-auto mt-6 max-w-2xl text-balance text-base leading-relaxed text-fd-muted-foreground sm:text-lg"
-            style={{ animationDelay: '120ms' }}
+            style={{ animationDelay: "120ms" }}
           >
-            {libs.length} production-grade libraries for AdonisJS — context, diagnostics, resilience,
-            durable workflows, observability, authorization and governed AI agents. Install one, or compose them all: they
-            share context, emit to one diagnostics bus, and surface in one console.
+            In the old cities, the <span className="italic">agora</span> was the
+            square where everyone gathered — to trade, to argue, to decide. This
+            one gathers {libs.length} plug-n-play, fully-configurable libraries
+            for AdonisJS. Bring one to your app, or convene them all — they
+            share one context, one diagnostics bus, one console.
           </p>
 
           <div
             className="agora-rise mt-9 flex flex-wrap items-center justify-center gap-3"
-            style={{ animationDelay: '180ms' }}
+            style={{ animationDelay: "180ms" }}
           >
             <Link href="/docs" className="agora-cta">
               Read the docs
@@ -56,7 +61,7 @@ export default function HomePage() {
 
           <div
             className="agora-rise mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-fd-muted-foreground"
-            style={{ animationDelay: '240ms' }}
+            style={{ animationDelay: "240ms" }}
           >
             <Stat value={String(libs.length)} label="libraries" />
             <Dot />
@@ -88,11 +93,14 @@ export default function HomePage() {
         <section className="pb-24">
           <div className="mb-8 flex items-end justify-between gap-4">
             <div>
-              <p className="agora-kicker">The libraries</p>
-              <h2 className="mt-2 text-2xl font-medium sm:text-3xl">Everything in Agora</h2>
+              <p className="agora-kicker">The assembly</p>
+              <h2 className="mt-2 text-2xl font-medium sm:text-3xl">
+                Everyone in the agora
+              </h2>
             </div>
             <p className="hidden max-w-xs text-right text-sm text-fd-muted-foreground sm:block">
-              Each library ships on its own and documents itself. Pick one and dive in.
+              Each library stands on its own and documents itself. Step up to
+              any one and follow it in.
             </p>
           </div>
 
@@ -108,7 +116,9 @@ export default function HomePage() {
                   <span className="library-icon">
                     <lib.icon className="size-5" strokeWidth={1.75} />
                   </span>
-                  <span className="library-no">No. {String(i + 1).padStart(2, '0')}</span>
+                  <span className="library-no">
+                    No. {String(i + 1).padStart(2, "0")}
+                  </span>
                 </div>
 
                 <div>
@@ -118,7 +128,9 @@ export default function HomePage() {
                   </code>
                 </div>
 
-                <p className="text-sm leading-relaxed text-fd-muted-foreground">{lib.blurb}</p>
+                <p className="text-sm leading-relaxed text-fd-muted-foreground">
+                  {lib.blurb}
+                </p>
 
                 <div className="mt-auto flex items-center justify-between pt-2">
                   <span className="role-tag">{lib.role}</span>
@@ -138,10 +150,13 @@ export default function HomePage() {
             <span className="inline-flex items-center gap-2 text-sm text-fd-muted-foreground">
               <AgoraMark className="size-5" />
               <span className="font-display">Agora</span>
-              <span>— libraries for the AdonisJS ecosystem.</span>
+              <span>— where the AdonisJS ecosystem gathers.</span>
             </span>
             <span className="inline-flex items-center gap-1.5 text-xs text-fd-muted-foreground">
-              <Sparkles className="size-3.5" style={{ color: 'var(--agora-primary)' }} />
+              <Sparkles
+                className="size-3.5"
+                style={{ color: "var(--agora-primary)" }}
+              />
               Built for AdonisJS
             </span>
           </div>
@@ -161,7 +176,9 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 function Dot() {
-  return <span className="hidden size-1 rounded-full bg-fd-border sm:inline-block" />;
+  return (
+    <span className="hidden size-1 rounded-full bg-fd-border sm:inline-block" />
+  );
 }
 
 function Philosophy({
@@ -181,9 +198,9 @@ function Philosophy({
         <span
           className="grid size-10 place-items-center rounded-xl"
           style={{
-            color: 'var(--agora-primary)',
-            background: 'var(--agora-primary-soft)',
-            border: '1px solid hsl(250 90% 64% / 0.22)',
+            color: "var(--agora-primary)",
+            background: "var(--agora-primary-soft)",
+            border: "1px solid hsl(250 90% 64% / 0.22)",
           }}
         >
           {icon}
@@ -191,7 +208,9 @@ function Philosophy({
         <p className="agora-kicker">{kicker}</p>
       </div>
       <h3 className="mt-5 font-display text-2xl font-medium">{title}</h3>
-      <p className="mt-3 text-sm leading-relaxed text-fd-muted-foreground">{body}</p>
+      <p className="mt-3 text-sm leading-relaxed text-fd-muted-foreground">
+        {body}
+      </p>
     </div>
   );
 }
