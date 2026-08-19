@@ -1,6 +1,7 @@
 ---
 title: Agora integration
 description: How AuthKit wires into the Agora ecosystem — diagnostics events, request context, Authz, resilience, and durable GDPR workflows.
+icon: Blocks
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
@@ -12,7 +13,7 @@ library is absent.
 
 ## Diagnostics events (`agora:authkit:*`)
 
-AuthKit republishes **every audit event** onto the Agora [diagnostics bus](/docs/diagnostics)
+AuthKit republishes **every audit event type** onto the Agora [diagnostics bus](/docs/diagnostics)
 as `agora:authkit:<AuditEventType>` — for example:
 
 ```text
@@ -28,6 +29,15 @@ agora:authkit:organization.invitation_accepted
 The audit sink does the republish automatically. It is **fire-and-forget**: it never touches
 the request path, and `emit()` is guarded (`hasSubscribers`) so it is a true no-op when
 nothing is subscribed.
+
+<Callout type="warn">
+  The **payload is redacted** on this bridge. Only `{ type, accountId, actorId, clientId }`
+  cross it — `email`, `ip` and the free-form `metadata` (which can carry PII, e.g. the
+  invited address or an email change) are stripped, so a downstream store such as Telescope
+  never persists raw PII and account deletion needs no cross-library purge. The `onEvent`
+  hook and the audit webhook still receive the **complete** event; only the diagnostics
+  republish is redacted.
+</Callout>
 
 ### Subscribing
 
@@ -82,28 +92,35 @@ the principal is written **into** the store after the fact.
 
 `@adonis-agora/context` publishes a symmetric **write slot** for exactly this — a
 `globalThis` slot keyed by `Symbol.for('@agora/context:set')` (exported as `CONTEXT_SET`).
-AuthKit's client middleware uses that slot to populate the `userRef` once it resolves an
-identity, so you don't have to wire it yourself. Conceptually it does:
+AuthKit's client middleware uses that slot once it resolves an identity, so you don't have
+to wire anything yourself. It writes three things:
+
+- **`userRef`** — `{ type: 'user', id: identity.userId }`
+- **`globalRoles`** — the identity's roles claim
+- **`tenantId`** — derived from the first non-empty organization claim on the raw token:
+  `active_organization_id`, `org_id`, `organization_id`, `tenant_id`, `tid`
 
 ```ts
-// After the authenticator resolves an Identity, AuthKit writes the ref into the
-// ambient context via the published write slot — a no-op if @adonis-agora/context
-// is not installed or no context is active.
-import { Context } from '@adonis-agora/context'
-
-Context.set('userRef', { type: 'user', id: identity.userId })
-// Context.set('tenantId', identity.raw.org_id) // if you map orgs → tenants
+// What the bridge effectively writes, through the published write slot — a no-op
+// if @adonis-agora/context is not installed or no context is active.
+Context.set({
+  userRef: { type: 'user', id: identity.userId },
+  globalRoles: identity.globalRoles,
+  tenantId: identity.raw.active_organization_id, // first claim present, if any
+})
 ```
 
 <Callout type="info">
   The write is **best-effort**: if no context is active (a route the context middleware
   didn't cover), the value is silently dropped — it never throws. Make sure the context
   server middleware runs before `authkit_middleware`. See
-  [Context → customization](/docs/context/context/customization) for the write-slot contract.
+  [Context → customization](/docs/context/customization) for the write-slot contract.
 </Callout>
 
-If you map AuthKit organizations to context tenants, the active `org_id` claim is the natural
-source for `tenantId` — set it in your own middleware after `auth`.
+So mapping AuthKit organizations onto context tenants needs no middleware of your own: as
+long as the active organization travels in one of those claims, `tenantId` is already set for
+logging, durable jobs and Authz. Write your own value only when the tenant is *not* the
+organization on the token.
 
 ## Authz — the identity / userRef seam
 
@@ -120,8 +137,8 @@ export default defineConfig({
 ```
 
 The chain is: **OIDC claims → `Identity` → `resolveUser` → your user → `resolveUserRef` →
-Bouncer policy**. AuthKit's `globalRoles` (IdP claims) and `resolveAppRoles` (app-local
-roles) feed the role checks; Authz layers DB-backed permissions on top. Because both sides
+Bouncer policy**. AuthKit contributes the IdP's `globalRoles` claim; Authz owns roles and
+permissions in the database and layers them on top. Because both sides
 agree on the `userRef`, a durable job dispatched under a request's context (carrying that
 same ref) can re-evaluate the same policies on a worker.
 
@@ -192,9 +209,9 @@ behalf it is acting — useful for the audit trail of the erasure itself.
 
 | Seam | Library | Mechanism | Required? |
 | --- | --- | --- | --- |
-| Auth events | [Diagnostics](/docs/diagnostics) | `agora:authkit:*` channels via `onDiagnostic` | No (no-op when unsubscribed) |
+| Auth events | [Diagnostics](/docs/diagnostics) | `agora:authkit:*` channels via `onDiagnostic`, redacted payload | No (no-op when unsubscribed) |
 | Observability | [Telescope](/docs/telescope) | generic watcher + opt-in Security extension | No (optional peer) |
-| Current principal | [Context](/docs/context) | `CONTEXT_SET` write slot → `userRef` | No (silent if absent) |
+| Current principal | [Context](/docs/context) | `CONTEXT_SET` write slot → `userRef`, `globalRoles`, `tenantId` | No (silent if absent) |
 | Authorization | [Authz](/docs/authz) | `resolveUser` → `resolveUserRef` → Bouncer | No (separate library) |
 | Outbound resilience | [Resilience](/docs/resilience) | `resilience` policy on the client | No (optional peer) |
 | Erasure fan-out | [Durable](/docs/durable) | workflow triggered by `account.deleted` | No (your orchestration) |

@@ -1,6 +1,7 @@
 ---
 title: Client
 description: Wire a relying party with @adonis-agora/authkit-client.
+icon: PlugZap
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
@@ -41,11 +42,6 @@ const authkitClientConfig = defineConfig({
     )
     await user.load('roles')
     return user
-  },
-
-  resolveAppRoles: async (identity: Identity) => {
-    const rows = await UserRole.query().where('userId', identity.userId)
-    return rows.map((r) => r.role)
   },
 })
 
@@ -99,21 +95,22 @@ interface Identity {
 }
 ```
 
-Since **v0.3.0** all three resolvers (`jwt`, `pat`, `opaque`) populate `profile.avatarUrl`
-(from `picture`) and `sessionId` (from `sid`) — the `pat`/`opaque` paths now match `jwt`,
-so these fields are available regardless of token model.
+All three resolvers (`jwt`, `pat`, `opaque`) populate `profile.avatarUrl` (from `picture`)
+and `sessionId` (from `sid`), so those fields are available regardless of token model.
 
-## resolveUser & resolveAppRoles
+## resolveUser
 
 - **`resolveUser(identity, ctx)`** — map the identity to *your* user record (create on
-  first login, hydrate relations). Whatever you return becomes the authenticated user.
-- **`resolveAppRoles(identity)`** — app-local roles (distinct from the IdP's
-  `globalRoles`), e.g. for your authorization policies.
+  first login, hydrate relations). Whatever you return becomes the authenticated user, and
+  `ctx` carries the `accessToken` when one is available.
+- Roles are **not** resolved here: `globalRoles` come from the IdP claim (configurable via
+  `globalRolesClaim`), and anything finer-grained belongs to
+  [Authz](/docs/authz), which owns roles and permissions in the database.
 
 <Callout type="info">
   `resolveUser` is the seam Agora's [Authz](/docs/authz) hooks into via `resolveUserRef` —
   the same identity that becomes your app user also resolves the user reference Bouncer
-  checks against. See [Agora integration](/docs/authkit/agora-integration#authz-the-identityuserref-seam).
+  checks against. See [Agora integration](/docs/authkit/agora-integration#authz--the-identity--userref-seam).
 </Callout>
 
 ## Middleware

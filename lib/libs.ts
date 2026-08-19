@@ -79,7 +79,7 @@ export const libs: AgoraLib[] = [
     role: 'Workflows',
     icon: Workflow,
     iconName: 'Workflow',
-    packages: 2,
+    packages: 3,
     stage: 'beta',
   },
   {
@@ -91,7 +91,7 @@ export const libs: AgoraLib[] = [
     role: 'Observability',
     icon: Telescope,
     iconName: 'Telescope',
-    packages: 1,
+    packages: 2,
     stage: 'beta',
   },
   {
@@ -103,7 +103,7 @@ export const libs: AgoraLib[] = [
     role: 'Authorization',
     icon: ShieldCheck,
     iconName: 'ShieldCheck',
-    packages: 1,
+    packages: 2,
     stage: 'alpha',
   },
   {
@@ -115,7 +115,7 @@ export const libs: AgoraLib[] = [
     role: 'Storage',
     icon: Image,
     iconName: 'Image',
-    packages: 1,
+    packages: 3,
     stage: 'alpha',
   },
   {
@@ -139,7 +139,7 @@ export const libs: AgoraLib[] = [
     role: 'AI',
     icon: Bot,
     iconName: 'Bot',
-    packages: 1,
+    packages: 2,
     stage: 'alpha',
   },
   {

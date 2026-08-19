@@ -1,6 +1,7 @@
 ---
 title: WebAuthn / Passkeys
 description: Passkeys as a second factor — registration, the login challenge, and autofill.
+icon: Fingerprint
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
@@ -111,7 +112,7 @@ node ace authkit:settings:set auth_methods '{"passkeyAutofill":false}'
 
 **Custom login screens (React hosts):** use `usePasskeyAutofill` from
 `@adonis-agora/authkit-react` to replicate the same behaviour on a fully custom login
-page. See [React — usePasskeyAutofill](/docs/authkit/react#usepasskeyautofill).
+page. See [React — usePasskeyAutofill](/docs/authkit/react#8-usepasskeyautofill).
 
 **Browser support:** Chrome 108+, Safari 16+, Edge 108+. Browsers without support silently
 skip the ceremony — the standard login form is always the fallback.
