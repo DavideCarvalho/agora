@@ -441,15 +441,12 @@ const identity = await auth.getIdentity()
 if (identity) console.log(identity.userId, identity.sessionId, identity.raw)
 ```
 
-### Roles — `hasGlobalRole` / `hasAppRole`
+### Roles — `hasGlobalRole`
 
-Two role surfaces, mirroring Identity vs User:
-
-- **`hasGlobalRole(role)`** is synchronous and checks `identity.globalRoles` (IdP claims).
-  It only sees roles after the identity is resolved — call `authenticate()` / `check()` /
-  `getIdentity()` first.
-- **`hasAppRole(role)`** is `async`, consults `resolveAppRoles(identity)` (your app-local
-  roles), and resolves the identity for you.
+The authenticator exposes a single role check: **`hasGlobalRole(role)`**. It is synchronous
+and reads `identity.globalRoles` (the IdP claim, `roles` by default — configurable with
+`globalRolesClaim`), so it only sees roles once the identity is resolved. Call
+`authenticate()` / `check()` / `getIdentity()` first.
 
 ```ts
 async handle({ auth, response }: HttpContext) {
@@ -457,11 +454,11 @@ async handle({ auth, response }: HttpContext) {
   if (!auth.hasGlobalRole('admin')) {       // sync, from claims
     return response.forbidden({ message: 'Access denied' })
   }
-  if (await auth.hasAppRole('billing.manager')) {
-    // app-local capability
-  }
 }
 ```
+
+Anything finer-grained than an IdP claim — app-local roles, permissions, per-tenant grants —
+belongs to [Authz](/docs/authz), which owns them in the database and feeds Bouncer.
 
 ### Protecting a route group
 

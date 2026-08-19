@@ -11,7 +11,7 @@ orthogonal layers:
 
 | Layer | What it does |
 | --- | --- |
-| **Auth state** | `useAuth()`, gating components (`Authenticated`, `Can`), role helpers |
+| **Auth state** | `useAuth()`, gating components (`Authenticated`, `Guest`, `CanPermission`), role helpers |
 | **Headless hooks** | `useProfile()`, `useSessions()`, `useOrganizations()`, … — plain `useState`/`useEffect`, no React Query |
 | **Pre-built components** | `SignInButton`, `UserButton`, `OrganizationSwitcher`, … — themeable via `--authkit-*` CSS variables |
 
@@ -53,7 +53,6 @@ export default defineConfig({
       return {
         user: user ?? null,
         globalRoles: auth.identity?.globalRoles ?? [],
-        // appRoles?: optional, if the host resolves app roles
       }
     },
   },
@@ -61,8 +60,9 @@ export default defineConfig({
 ```
 
 The `user` object must match `AuthUser`:
-`{ id, email, name?, avatarUrl?, globalRoles, appRoles? }` — the output of the client's
-`identityToUser` / `resolveUser`.
+`{ id, email, name?, avatarUrl?, globalRoles }` — the output of the client's
+`identityToUser` / `resolveUser`. `AuthUser` also carries an index signature, so the host is
+free to attach extra domain fields to the same object.
 
 ## 2. useAuth()
 
@@ -89,7 +89,7 @@ function Header() {
 ## 3. Gating components
 
 ```tsx
-import { Authenticated, Guest, Can } from '@adonis-agora/authkit-react'
+import { Authenticated, Guest, CanPermission } from '@adonis-agora/authkit-react'
 
 <Authenticated fallback={<LoginButton />}>
   <Dashboard />
@@ -99,20 +99,32 @@ import { Authenticated, Guest, Can } from '@adonis-agora/authkit-react'
   <MarketingBanner />
 </Guest>
 
-{/* single global role */}
-<Can role="ADMIN">
-  <AdminPanel />
-</Can>
-
-{/* require all roles */}
-<Can roles={['ADMIN', 'BILLING']} mode="all" fallback={<NoAccess />}>
-  <BillingSettings />
-</Can>
-
-{/* an app-specific role */}
-<Can role="EDITOR" appRole>
+{/* an Authz permission — checked over `POST /authz/can`, fail-closed */}
+<CanPermission permission="posts.update" fallback={<NoAccess />}>
   <EditButton />
-</Can>
+</CanPermission>
+
+{/* the same permission, scoped to a resource, with a placeholder while in flight */}
+<CanPermission
+  permission="posts.update"
+  resource="post:42"
+  loadingFallback={<Spinner />}
+  fallback={<NoAccess />}
+>
+  <EditButton />
+</CanPermission>
+```
+
+`CanPermission` is the only gating component that talks to the server; it wraps the `useCan()`
+hook (`{ allowed, loading, error }`), which caches per principal and is invalidated with
+`invalidateCanCache()`. There is **no role-gating component** — roles already travel in the
+token, so gate on them inline with `useAuth()`:
+
+```tsx
+const { hasGlobalRole, hasAnyGlobalRole } = useAuth()
+
+{hasGlobalRole('ADMIN') && <AdminPanel />}
+{hasAnyGlobalRole(['ADMIN', 'BILLING']) && <BillingSettings />}
 ```
 
 ## 4. AuthProvider (optional)
@@ -343,11 +355,12 @@ import {
   hasGlobalRole,
   hasAnyGlobalRole,
   hasAllGlobalRoles,
-  hasAppRole,
-  hasAnyAppRole,
-  hasAllAppRoles,
 } from '@adonis-agora/authkit-react'
 
 hasGlobalRole(user, 'ADMIN')
 hasAnyGlobalRole(user, ['ADMIN', 'TEACHER'])
+hasAllGlobalRoles(user, ['ADMIN', 'BILLING'])
 ```
+
+These three are the whole role surface: roles come from the IdP's global-roles claim. For
+anything finer-grained, use an Authz permission (`useCan()` / `CanPermission`).

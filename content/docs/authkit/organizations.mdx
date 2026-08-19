@@ -311,22 +311,32 @@ import {
   OrganizationProfile,
 } from '@adonis-agora/authkit-react'
 
-// Dropdown to switch the active organization; optionally shows a "Create org" button
-function Header({ activeOrgId }: { activeOrgId: string }) {
+// Dropdown listing the user's organizations, with the "personal account" entry
+// that deactivates the active org.
+function Header() {
   return (
     <>
       <OrganizationSwitcher
-        allowCreate={false}            // default; set true when organizations_policy.allowSelfCreate is on
-        createLabel="New organization"
+        personalAccountLabel="Personal account"
         className="my-custom-class"
       />
 
       {/* Full management card: members, invitations, leave/invite controls */}
-      <OrganizationProfile orgId={activeOrgId} className="my-custom-class" />
+      <OrganizationProfile
+        inviteLabel="Invite member"
+        leaveLabel="Leave organization"
+        className="my-custom-class"
+      />
     </>
   )
 }
 ```
+
+Neither component takes an organization id: both read the **active** organization from
+`useOrganizations()` / `useSwitchOrganization()`, so switching in the dropdown re-renders the
+profile card. `OrganizationSwitcher` renders nothing when the user is unauthenticated or the
+IdP does not expose organizations; `OrganizationProfile` renders nothing while no
+organization is active.
 
 Both components use the same `--authkit-*` CSS variables as the rest of the component kit;
 see [React](/docs/authkit/react) for the theming reference.
