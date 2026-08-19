@@ -90,15 +90,14 @@ interface Identity {
 }
 ```
 
-Whatever resolver you pick, `resolveUser` and `resolveAppRoles` (see
-[Client](/docs/authkit/client)) are unchanged — the rest of your app never knows which token
-model produced the identity.
+Whatever resolver you pick, `resolveUser` (see [Client](/docs/authkit/client)) is
+unchanged — the rest of your app never knows which token model produced the identity.
 
-As of **v0.3.0** the `pat` and `opaque` resolvers populate `profile.avatarUrl` (from the
-introspection response's `picture`) and `sessionId` (from `sid`), matching what the `jwt`
-resolver already derives from the ID token. All three resolvers now yield the same fully
-populated `Identity` shape — `resolveUser` can rely on `identity.profile?.avatarUrl` and
-`identity.sessionId` regardless of token model.
+The `pat` and `opaque` resolvers populate `profile.avatarUrl` (from the introspection
+response's `picture`) and `sessionId` (from `sid`), matching what the `jwt` resolver derives
+from the ID token. All three yield the same fully populated `Identity` shape, so
+`resolveUser` can rely on `identity.profile?.avatarUrl` and `identity.sessionId` regardless
+of token model.
 
 ## Choosing a resolver
 
