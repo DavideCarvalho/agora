@@ -178,21 +178,31 @@ import { createAuthkit } from '@adonis-agora/authkit-sdk'
 
 const engine = await app.container.make(WorkflowEngine)
 
-engine.register('gdpr-erasure', '1', async (ctx, { accountId }: { accountId: string }) => {
+engine.register('gdpr-erasure', '1', async (ctx, input) => {
+  const { accountId } = input as { accountId: string }
+
   // 1. Run AuthKit's own cascade (idempotent; safe to replay).
-  await ctx.step('authkit-delete', async () => {
+  await ctx.localStep('authkit-delete', async () => {
     const authkit = await createAuthkit({ mode: 'embedded', app })
     return authkit.users.delete(accountId)
   })
 
   // 2. Fan out to external systems — each step is checkpointed independently.
-  await ctx.step('purge-warehouse', async () => purgeWarehouse(accountId))
-  await ctx.step('revoke-saas', async () => revokeSaasAccess(accountId))
-  await ctx.step('delete-blobs', async () => deleteUserBlobs(accountId))
+  await ctx.localStep('purge-warehouse', async () => purgeWarehouse(accountId))
+  await ctx.localStep('revoke-saas', async () => revokeSaasAccess(accountId))
+  await ctx.localStep('delete-blobs', async () => deleteUserBlobs(accountId))
 
   return { status: 'erased', accountId }
 })
 ```
+
+<Callout type="info">
+  `ctx.localStep` runs the body **in-process** and checkpoints its result — the right primitive
+  when the erasure code lives in the same app. `ctx.step` is a different thing: it is always
+  *dispatched*, and its second argument is the step's **input**, not a body — use it (with a
+  `@Step` reference or a step name) when the purge runs on a separate worker. See
+  [Workflows & steps](/docs/durable/concepts/workflows-and-steps).
+</Callout>
 
 A subscriber on `agora:authkit:account.deleted` (or `user.deleted` for admin deletions) is a
 natural trigger to start the workflow. Because the durable run carries the dispatching
