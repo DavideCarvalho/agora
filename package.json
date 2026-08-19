@@ -6,10 +6,11 @@
   "type": "module",
   "scripts": {
     "sync:docs": "node scripts/sync-docs.mjs",
+    "check:links": "node scripts/check-links.mjs",
     "sync:docs:local": "AGORA_DOCS_LOCAL=1 node scripts/sync-docs.mjs",
     "predev": "AGORA_DOCS_LOCAL=1 node scripts/sync-docs.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/sync-docs.mjs",
+    "prebuild": "node scripts/sync-docs.mjs && node scripts/check-links.mjs",
     "build": "next build",
     "start": "serve out",
     "lint": "biome check",

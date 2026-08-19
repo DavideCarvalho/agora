@@ -5,9 +5,10 @@
 //   node scripts/sync-docs.mjs filter     # sync one library (even if not migrated)
 //   AGORA_DOCS_LOCAL=1 node scripts/...    # copy from sibling repos instead of cloning
 //
-// For each library it: fetches the docs subtree, rewrites root-absolute /docs
-// links to be nested under /docs/<slug>, and turns the top-level meta.json into a
-// sidebar "root" tab carrying the library's name + icon.
+// For each library it: fetches the docs subtree, nests repo-local root-absolute
+// /docs links under /docs/<slug> (links that already name a library slug are left
+// alone), and turns the top-level meta.json into a sidebar "root" tab carrying the
+// library's name + icon. Run scripts/check-links.mjs afterwards to prove the result.
 
 import { execFileSync } from 'node:child_process';
 import {
@@ -75,11 +76,27 @@ function fetchRepo(src, tmp) {
   return tmp;
 }
 
-/** Rewrite root-absolute /docs links so they nest under the library slug. */
+// Every slug this site serves under /docs — the synced libraries plus the
+// hand-authored authkit copy. Used to tell an already-aggregator-absolute link
+// (`/docs/durable/stores/lucid`) apart from a repo-local one (`/docs/stores/lucid`).
+const KNOWN_SLUGS = new Set([...sources.map((s) => s.slug), 'authkit']);
+
+// `](/docs...` or `href="/docs...`, capturing the first path segment (if any).
+const DOCS_LINK = /(\]\(|href=")\/docs(\/[A-Za-z0-9._-]+)?/g;
+
+/**
+ * Rewrite root-absolute /docs links so they nest under the library slug.
+ *
+ * Idempotent and defensive: a link that already starts with a known library slug
+ * (`/docs/durable/...`, including cross-library links like `/docs/context/...`) is
+ * left alone; only repo-local links (`/docs/getting-started`) get the slug added.
+ */
 function rewriteLinks(content, slug) {
-  return content
-    .replaceAll('](/docs', `](/docs/${slug}`)
-    .replaceAll('href="/docs', `href="/docs/${slug}`);
+  return content.replace(DOCS_LINK, (match, open, first) => {
+    const segment = first?.slice(1);
+    if (segment && KNOWN_SLUGS.has(segment)) return match;
+    return `${open}/docs/${slug}${first ?? ''}`;
+  });
 }
 
 /** Point root-absolute asset refs at the vendored per-library public dir. */
