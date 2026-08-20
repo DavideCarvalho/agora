@@ -1,7 +1,8 @@
 // Source of truth for the docs sync (scripts/sync-docs.mjs).
 //
 // Agora follows the TanStack/aviary model: each library keeps its own docs in its
-// own repo (`docs/` at the repo root), and this site pulls them in at build time.
+// own repo (`docs/` at the repo root — o authkit é a exceção, ver o `path` dele),
+// and this site pulls them in at build time.
 // `migrated: true` means the library has been onboarded — only migrated libs are
 // synced by default. Flip the flag as each library is brought over.
 //
@@ -9,6 +10,22 @@
 // folder name used by the optional local mode (AGORA_DOCS_LOCAL=1).
 
 export const sources = [
+  {
+    slug: 'authkit',
+    name: 'AuthKit',
+    description:
+      'An AdonisJS OIDC/OAuth2 Authorization Server kit, OIDC client adapter, and React frontend ergonomics.',
+    icon: 'KeyRound',
+    repo: 'DavideCarvalho/adonis-authkit',
+    // `main`, não `master`: o authkit é o único dos repos com esse default branch.
+    ref: 'main',
+    // As docs do authkit são um app Fumadocs próprio (publicado em GitHub Pages
+    // pelo `docs.yml` do repo), então o conteúdo mora sob `apps/docs`, e não em
+    // `docs/` como nas demais libs.
+    path: 'apps/docs/content/docs',
+    repoDir: 'adonis-authkit',
+    migrated: true,
+  },
   {
     slug: 'context',
     name: 'Context',

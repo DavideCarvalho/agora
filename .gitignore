@@ -8,6 +8,7 @@
 # The hub content/docs/index.mdx + meta.json are tracked; per-lib dirs are generated.
 /.docs-tmp/
 /public/lib-assets/
+/content/docs/authkit/
 /content/docs/context/
 /content/docs/diagnostics/
 /content/docs/resilience/

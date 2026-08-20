@@ -1,4 +1,6 @@
 import defaultMdxComponents from 'fumadocs-ui/mdx';
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+import { Card, Cards } from 'fumadocs-ui/components/card';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
@@ -16,6 +18,13 @@ export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
     // Components the synced library docs use without always importing them.
+    // `Accordion(s)`/`Card(s)` entraram junto com o authkit, que os usa como tags
+    // nuas em ~40 páginas — sem registro aqui o build do export estático morre com
+    // "Expected component `Accordion` to be defined".
+    Accordion,
+    Accordions,
+    Card,
+    Cards,
     Tab,
     Tabs,
     Step,

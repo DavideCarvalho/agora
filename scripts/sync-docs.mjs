@@ -76,10 +76,12 @@ function fetchRepo(src, tmp) {
   return tmp;
 }
 
-// Every slug this site serves under /docs — the synced libraries plus the
-// hand-authored authkit copy. Used to tell an already-aggregator-absolute link
-// (`/docs/durable/stores/lucid`) apart from a repo-local one (`/docs/stores/lucid`).
-const KNOWN_SLUGS = new Set([...sources.map((s) => s.slug), 'authkit']);
+// Every slug this site serves under /docs. Used to tell an already-aggregator-absolute
+// link (`/docs/durable/stores/lucid`) apart from a repo-local one (`/docs/stores/lucid`).
+// O authkit era um caso à parte aqui — uma cópia mantida à mão dentro deste repo, que
+// derivou até ficar com 21 das 42 páginas da lib. Agora ele é sincronizado como as
+// demais, então basta a lista de fontes.
+const KNOWN_SLUGS = new Set(sources.map((s) => s.slug));
 
 // `](/docs...` or `href="/docs...`, capturing the first path segment (if any).
 const DOCS_LINK = /(\]\(|href=")\/docs(\/[A-Za-z0-9._-]+)?/g;
