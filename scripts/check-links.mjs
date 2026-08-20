@@ -1,7 +1,11 @@
 #!/usr/bin/env node
-// Fails the build when a root-absolute /docs link does not resolve to a real page.
+// Fails the build when a root-absolute /docs link does not resolve to a real page — or points at a
+// heading that page does not have.
 //
-//   node scripts/check-links.mjs
+//   node scripts/check-links.mjs [--strict]
+//
+// Without `--strict` it reports and exits 0. Pass `--strict` once a site's own
+// libraries are clean, so a new broken link fails the build instead of scrolling past.
 //
 // Runs after scripts/sync-docs.mjs (see the `prebuild` script). It walks
 // content/docs, derives the URL every page will be served at, and then checks
@@ -40,32 +44,90 @@ function pageUrl(file) {
 
 const known = new Set(pages.map(pageUrl));
 
+/** The id fumadocs gives a heading — github-slugger's rules. Note it does NOT collapse the runs of
+ *  hyphens a dropped character leaves behind, so "A — B" becomes "a--b". */
+function headingSlug(text) {
+  return text
+    .replace(/`/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s/g, '-');
+}
+
+/** Every heading id a page will expose, keyed by the URL it is served at. */
+const anchors = new Map(
+  pages.map((file) => [
+    pageUrl(file),
+    new Set(
+      readFileSync(file, 'utf8')
+        .split('\n')
+        .map((line) => /^#{2,6}\s+(.*)$/.exec(line))
+        .filter(Boolean)
+        .map((m) => headingSlug(m[1])),
+    ),
+  ]),
+);
+
 // `](/docs...)` or `href="/docs..."` — capture the target up to the closing delimiter.
 const LINK = /(?:\]\(|href=")(\/docs[^)"\s]*)/g;
 
+const STRICT = process.argv.includes('--strict');
+
 const broken = [];
+const staleAnchors = [];
 let checked = 0;
 
 for (const file of pages) {
   const text = readFileSync(file, 'utf8');
   for (const [, raw] of text.matchAll(LINK)) {
     checked += 1;
-    // Drop the anchor / query, then the trailing slash.
-    const target = raw.split('#')[0].split('?')[0].replace(/\/$/, '');
-    if (!target || known.has(target)) continue;
-    broken.push({ file: relative(ROOT, file), target: raw });
+    // Split off the anchor / query, then the trailing slash.
+    const [path, anchor] = raw.split('?')[0].split('#');
+    const target = path.replace(/\/$/, '');
+    if (!target) continue;
+    if (!known.has(target)) {
+      broken.push({ file: relative(ROOT, file), target: raw });
+      continue;
+    }
+    // The page resolves — but the heading it points at may not, in which case the link lands at the
+    // top of the right page and silently loses the reader. Reported, not fatal: a stale anchor is a
+    // navigation annoyance, and most of them live in a library repo this build only mirrors, so
+    // failing here would let one library's typo block every library's docs.
+    if (anchor && !anchors.get(target).has(anchor)) {
+      staleAnchors.push({ file: relative(ROOT, file), target: raw });
+    }
   }
 }
 
+if (staleAnchors.length > 0) {
+  console.warn(
+    `\n⚠ ${staleAnchors.length} link${staleAnchors.length === 1 ? '' : 's'} point at a heading that no longer exists:\n`,
+  );
+  for (const { file, target } of staleAnchors) console.warn(`  ${file}  →  ${target}`);
+  console.warn('\n  The page resolves, so the reader lands at its top instead of the section.\n');
+}
+
 if (broken.length > 0) {
-  console.error(`\n✖ ${broken.length} broken internal link${broken.length === 1 ? '' : 's'}:\n`);
-  for (const { file, target } of broken) console.error(`  ${file}  →  ${target}`);
+  const mark = STRICT ? '✖' : '⚠';
+  console.error(`\n${mark} ${broken.length} broken internal link${broken.length === 1 ? '' : 's'}:\n`);
+  for (const { file, target, reason } of broken) {
+    console.error(`  ${file}  →  ${target}${reason ? `  (${reason})` : ''}`);
+  }
   console.error(
     `\n  ${checked} /docs links checked against ${known.size} pages.` +
       '\n  Links inside a library repo may be written either repo-local (/docs/guide) or' +
-      '\n  aggregator-absolute (/docs/<lib>/guide); both are accepted, missing pages are not.\n',
+      '\n  aggregator-absolute (/docs/<lib>/guide); both are accepted, missing pages are not.' +
+      (STRICT ? '\n' : '\n  Reporting only — pass --strict to make this fail the build.\n'),
   );
-  process.exit(1);
+  if (STRICT) process.exit(1);
 }
 
-console.log(`✓ ${checked} internal /docs links resolve across ${known.size} pages`);
+if (broken.length === 0) {
+  console.log(
+    `✓ ${checked} internal /docs links resolve across ${known.size} pages` +
+      (staleAnchors.length ? ` (${staleAnchors.length} with a stale anchor, listed above)` : ''),
+  );
+}
