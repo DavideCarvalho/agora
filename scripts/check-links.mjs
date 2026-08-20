@@ -34,6 +34,30 @@ function walk(dir) {
 
 const pages = walk(DOCS_DIR).filter((f) => f.endsWith('.mdx') || f.endsWith('.md'));
 
+// Frontmatter that does not parse fails the Next build with a js-yaml stack and no
+// filename, so catch the one mistake that actually happens: an unquoted value holding
+// a colon-space, which YAML reads as a nested mapping. Always fatal — the build would
+// die on it anyway, and dying here says which file.
+const badFrontmatter = [];
+for (const file of pages) {
+  const fm = /^---\n([\s\S]*?)\n---/.exec(readFileSync(file, 'utf8'));
+  if (!fm) continue;
+  for (const line of fm[1].split('\n')) {
+    const kv = /^([A-Za-z_][\w-]*):\s+(.*)$/.exec(line);
+    if (!kv || /^["'[{]/.test(kv[2]) || !/:\s/.test(kv[2])) continue;
+    badFrontmatter.push({ file: relative(ROOT, file), key: kv[1] });
+  }
+}
+
+if (badFrontmatter.length > 0) {
+  console.error(`\n✖ ${badFrontmatter.length} frontmatter value${badFrontmatter.length === 1 ? '' : 's'} YAML cannot parse:\n`);
+  for (const { file, key } of badFrontmatter) {
+    console.error(`  ${file}  →  \`${key}:\` holds an unquoted ": " — wrap the value in quotes, or use a dash`);
+  }
+  console.error('');
+  process.exit(1);
+}
+
 /** The URL fumadocs will serve a content file at. */
 function pageUrl(file) {
   const parts = relative(DOCS_DIR, file).split(sep);
@@ -44,9 +68,12 @@ function pageUrl(file) {
 
 const known = new Set(pages.map(pageUrl));
 
-/** The id fumadocs gives a heading — github-slugger's rules. Note it does NOT collapse the runs of
- *  hyphens a dropped character leaves behind, so "A — B" becomes "a--b". */
+/** The id fumadocs gives a heading. An explicit `## Title [#custom-id]` wins outright; otherwise
+ *  github-slugger's rules, which notably do NOT collapse the runs of hyphens a dropped character
+ *  leaves behind, so "A — B" becomes "a--b". */
 function headingSlug(text) {
+  const explicit = /\[#([^\]]+)\]\s*$/.exec(text);
+  if (explicit) return explicit[1];
   return text
     .replace(/`/g, '')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
