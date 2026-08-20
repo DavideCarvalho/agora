@@ -47,7 +47,7 @@ export const sources = [
     name: 'Durable',
     description: 'Durable, resumable, cross-process workflows for AdonisJS — built on @adonisjs/queue.',
     icon: 'Workflow',
-    repo: 'DavideCarvalho/adonis-durable',
+    repo: 'DavideCarvalho/adonis-agora-durable',
     ref: 'master',
     path: 'docs',
     repoDir: 'adonis-durable',
