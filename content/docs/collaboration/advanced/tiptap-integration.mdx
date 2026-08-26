@@ -1,0 +1,76 @@
+---
+title: Tiptap collaboration
+description: Wire the writing editor to a shared Y.Doc — real-time collaborative editing with cursors and live updates.
+icon: Braces
+---
+
+# Tiptap collaboration
+
+This is the concrete integration for the `writing_editor.tsx` pattern: turn a single-user Tiptap editor into a real-time shared one with a `Y.Doc`.
+
+## 1. Install the Tiptap collaboration extensions
+
+The client package already ships `yjs`/`y-protocols`. Add the Tiptap glue:
+
+```sh
+pnpm add @tiptap/extension-collaboration y-prosemirror
+```
+
+## 2. Wrap the tree with the provider
+
+Where the writing page (or layout) renders the editor, mount the provider once:
+
+```tsx
+import { CollaborationProvider } from '@adonis-agora/collaboration-client'
+
+export default function WritingPage({ research }) {
+  return (
+    <CollaborationProvider>
+      <WritingEditor researchId={research.id} />
+    </CollaborationProvider>
+  )
+}
+```
+
+## 3. Get the shared doc and feed it to Tiptap
+
+In `writing_editor.tsx`, replace the standalone editor with a collaborative one:
+
+```tsx
+import { useCollabDoc, useAwareness } from '@adonis-agora/collaboration-client'
+import Collaboration from '@tiptap/extension-collaboration'
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
+
+export function WritingEditor({ researchId }: { researchId: string }) {
+  const docName = `researches/${researchId}/writing`
+  const { doc, status } = useCollabDoc({ docName })
+  const { peers } = useAwareness({ docName })
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      TextAlign,
+      Collaboration.configure({ document: doc }),       // sync into the Y.Doc
+      CollaborationCursor.configure({ user: { name: currentUserName, color: currentUserColor } }),
+      Placeholder,
+      CharacterCount,
+    ],
+    editable: status === 'connected',                    // lock until synced
+  })
+
+  return <EditorContent editor={editor} />
+}
+```
+
+## 4. Why this works
+
+`useCollabDoc` resolves the engine from `GET /collaboration/token`, opens the WebSocket and returns the shared `Y.Doc` plus connection status. `Collaboration.configure({ document: doc })` makes Tiptap read/write into that doc, so every keystroke is a Yjs operation that syncs and converges. `CollaborationCursor` maps `useAwareness` peers onto cursors.
+
+The `doc` must be available before the editor mounts — `useCollabDoc` returns the session's `Y.Doc` immediately (it starts connecting lazily), so `Collaboration.configure({ document: doc })` always has a document to attach to.
+
+> **Note on `editable`:** keep the editor read-only until `status === 'connected'` to avoid local edits racing the initial sync snapshot.
+
+## Payload shape
+
+The saved document is a standard Tiptap/Yjs doc (an `XmlFragment` named `default`). Versions (`createVersion`), comments and `getDocumentText` (for LanguageTool/RAG) all work against it, since the Yjs driver serializes the full state.
