@@ -1,6 +1,6 @@
 ---
 title: Payments
-description: Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice (NFe/NFSe) emission, method routing and webhook-driven business logic.
+description: Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice emission, method routing and webhook-driven business logic.
 icon: CreditCard
 ---
 
@@ -12,7 +12,7 @@ import { Cards, Card } from 'fumadocs-ui/components/card';
 AdonisJS, built for the Brazilian market. One contract — `charge`, `refund`,
 `createSubscription`, `parseWebhook` — normalized across **Stripe**, **AbacatePay**,
 **Asaas** and **Woovi** (Pix Automático), so your services talk to one interface instead of
-four SDKs. A charge can pay via Pix through Woovi and emit the fiscal invoice (NFe/NFSe)
+four SDKs. A charge can pay via Pix through Woovi and emit the invoice
 through a completely different provider, in a single call.
 
 <Callout type="info" title="The one rule">
@@ -38,7 +38,7 @@ four guarantees:
   grant credits, activate a subscription — runs at the right moment, exactly once.
 - **Billing mirrors the gateway.** Subscriptions, payments and trials sync into Lucid
   tables automatically, Cashier-style, with billable mixins on your models.
-- **Fiscal notes are a separate concern.** Pay through one provider, emit the NFe/NFSe
+- **Invoices are a separate concern.** Pay through one provider, emit the invoice
   through another — the `invoice` option on the charge call joins them.
 
 ## Quickstart
@@ -142,7 +142,7 @@ your app ──charge()──▶ gateway (PENDING)
   <Card title="Providers" href="/docs/payments/providers" description="Stripe, AbacatePay, Asaas and Woovi specifics — methods, subscriptions, externalReference." />
   <Card title="Webhooks" href="/docs/payments/webhooks" description="Signature validation, the idempotency ledger, and the three ways to run your business logic." />
   <Card title="Billing" href="/docs/payments/billing" description="Billable mixins, the billing tables, webhook sync, and durable-backed dispatch." />
-  <Card title="Invoices" href="/docs/payments/invoices" description="Emit fiscal NFe/NFSe attached to a charge, through a provider independent of the gateway." />
+  <Card title="Invoices" href="/docs/payments/invoices" description="Emit an invoice attached to a charge, through a provider independent of the gateway." />
   <Card title="Diagnostics" href="/docs/payments/diagnostics" description="Every milestone on the observability bus — gateway-action vs business events, Telescope." />
   <Card title="Custom providers" href="/docs/payments/custom-providers" description="Write a gateway or invoice provider as a config factory, or extend a bundled driver." />
   <Card title="Testing" href="/docs/payments/testing" description="The fake driver, in-memory store and mutable clock — exercise billing without a gateway or DB." />

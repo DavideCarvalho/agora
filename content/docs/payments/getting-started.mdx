@@ -24,19 +24,35 @@ The configure command does five things:
 5. registers the payment env validations.
 </Step>
 
-<Step title="Set your gateway credentials">
-Add the secrets to `.env` — the driver configs fall back to these names, so a minimal
-`config/payments.ts` needs no edits at all:
+<Step title="Configure a gateway">
+Credentials are wired through `config/payments.ts` — **you** name your `.env` variables
+however you like and reference them with `env.get(...)`. The library's built-in fallbacks
+(`ASAAS_API_KEY`, `STRIPE_KEY`, …) are a convenience when you don't pass a value, not a
+contract.
 
-```ini title=".env"
-STRIPE_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-WOOVI_APP_ID=your-woovi-app-id
-ASAAS_API_KEY=your-asaas-api-key
-ABACATE_API_KEY=your-abacate-api-key
-ABACATE_PUBLIC_KEY=your-abacate-public-key
-FOCUS_NFE_TOKEN=your-focus-token
+```ini title=".env" — your names, your choice
+PAYMENTS_ASAAS_KEY=your-asaas-api-key
+PAYMENTS_ASAAS_WEBHOOK_TOKEN=your-asaas-webhook-token
 ```
+
+```ts title="config/payments.ts"
+import env from '#start/env'
+import { defineConfig, payments } from '@adonis-agora/payments'
+
+export default defineConfig({
+  default: 'asaas',
+  providers: {
+    asaas: payments.asaas({
+      apiKey: env.get('PAYMENTS_ASAAS_KEY'),
+      webhookToken: env.get('PAYMENTS_ASAAS_WEBHOOK_TOKEN'),
+    }),
+  },
+  methods: { pix: 'asaas', credit_card: 'asaas' },
+})
+```
+
+Or pass values from anywhere — the driver configs are plain objects, so an API key can come
+from a vault, another config file, or a literal (not recommended for secrets).
 </Step>
 
 <Step title="Run the migrations">
@@ -135,5 +151,5 @@ make safe. See [Webhooks](./webhooks) and [Billing](./billing) for the details.
 - [Providers](./providers) — Stripe, AbacatePay, Asaas, Woovi specifics.
 - [Webhooks](./webhooks) — signature validation, idempotency, and the three ways to run your business logic.
 - [Billing](./billing) — subscriptions, trials, the billable mixins.
-- [Invoices](./invoices) — emitting NFe/NFSe with the charge.
+- [Invoices](./invoices) — emitting invoices with the charge.
 - [Diagnostics](./diagnostics) — every milestone on the observability bus.

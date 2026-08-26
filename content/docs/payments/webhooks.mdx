@@ -29,6 +29,14 @@ prints the exact URL and the event list per configured provider (filtered by the
 declared capabilities — a Woovi provider never advertises refund events, for example).
 Paste them into each gateway's dashboard.
 
+Stripe is the one gateway whose dashboard lets you create the endpoint over the API — the
+command can do it for you (needs `STRIPE_KEY`; the signing secret is echoed to put in
+`.env`):
+
+```sh
+node ace payments:webhook --create
+```
+
 ## Validation per provider
 
 Each gateway signs webhooks its own way. Configure the credential in the driver config

@@ -9,7 +9,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 1. **Which gateways do I accept payments through?** — `providers` (a named map of driver factories).
 2. **Which gateway handles each payment method?** — `methods` (e.g. `pix → woovi`, `credit_card → stripe`).
-3. **Who emits my fiscal invoices?** — `invoice` (independent of the gateway).
+3. **Who emits my invoices?** — `invoice` (independent of the gateway).
 4. **How are webhooks processed?** — `billing` (durable/in-process, and where your business logic runs).
 
 A minimal config is two blocks:
@@ -52,12 +52,18 @@ providers: {
 
 ### Driver config options
 
-| Driver | Key config | Env fallback |
+| Driver | Key config | Convenience env fallback |
 | --- | --- | --- |
 | Stripe | `apiKey`, `currency`, `webhookSecret` | `STRIPE_KEY`, `STRIPE_WEBHOOK_SECRET` |
 | AbacatePay | `apiKey`, `webhookSecret`/`publicKey` | `ABACATE_API_KEY`, `ABACATE_PUBLIC_KEY` |
 | Asaas | `apiKey`, `sandbox`, `webhookToken` | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_ACCESS_TOKEN` |
 | Woovi | `appId`, `webhookSecret`, `webhookPublicKey` | `WOOVI_APP_ID`, `WOOVI_WEBHOOK_SECRET`, `WOOVI_WEBHOOK_PUBLIC_KEY` |
+
+Every credential is a **config value first** — name your `.env` variables however you want
+and reference them with `env.get('YOUR_NAME')`. The "env fallback" column is only what a
+driver reads when you don't pass the value, so a bare `payments.asaas()` works with the
+ecosystem's conventional names. It's a convenience default, not a contract: pass
+`apiKey`/`webhookToken`/… explicitly and your naming wins.
 
 The webhook credentials are what make the mounted route **enforce** signatures — see
 [Webhooks → Validation](./webhooks#validation-per-provider).
@@ -87,10 +93,10 @@ misconfiguration from failing *at the gateway*:
    resolve the driver — not after a request to the gateway. The manager checks
    `driver.supportedMethods` before returning the driver.
 
-## Invoice — fiscal notes independent of the gateway
+## Invoice — independent of the gateway
 
-A payment and its invoice (NFe/NFSe) are **decoupled**: the charge can pay through Asaas
-while the fiscal note is emitted through a dedicated provider like Focus or Tecnospeed.
+A payment and its invoice are **decoupled**: the charge can pay through Asaas
+while the invoice is emitted through a dedicated provider like Focus or Tecnospeed.
 
 ```ts title="config/payments.ts"
 invoice: {

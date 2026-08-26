@@ -34,7 +34,7 @@ The catalog spans two layers, and the distinction matters for how you react:
 | `payment.failed` | business | a webhook confirmed a failed payment | gatewayId, provider, amount, currency, reason, externalReference |
 | `payment.refunded` | business | a webhook confirmed a refund | gatewayId, provider, amount, currency |
 | `payment.updated` | business | a webhook reported a payment update | gatewayId, provider, status |
-| `invoice.emitted` | gateway-action | an invoice (NFe/NFSe) was emitted | gatewayId, provider, number, url |
+| `invoice.emitted` | gateway-action | an invoice was emitted | gatewayId, provider, number, url |
 | `webhook.received` | lifecycle | a gateway webhook arrived | id, provider, type |
 | `webhook.processed` | lifecycle | a webhook finished processing | id, provider, type |
 | `webhook.failed` | lifecycle | a webhook handler threw | id, provider, type, error |

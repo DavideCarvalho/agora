@@ -51,11 +51,17 @@ await payments.driver('credit_card').charge({
   timing-safe against `webhookSecret` (the dashboard's "public key"). Events
   `checkout.completed`, `checkout.refunded`, `subscription.completed/renewed/cancelled`.
 - **Subscriptions**: recurring — no transparent checkout for the recurring charge yet.
+- **Transparent checkout**: `charge` uses `POST /v2/transparents/create` — PIX and Boleto
+  inline, no redirect. The response carries the QR (`brCodeBase64` → `pixQrCode`,
+  `brCode` → `pixCopiaECola`) or the barcode (`url` → `hostedUrl`). Needs the payer's
+  `name` + `taxId` — pass them via the charge's `customer` block or create the gateway
+  customer with them.
 
 ```ts title="app/services/checkout_service.ts"
 await payments.driver('pix').charge({
   customerId: 'cus_123',
   amount: 1990,
+  customer: { name: 'Jane Doe', taxId: '123.456.789-00' },
   invoice: true,
 })
 ```
@@ -78,6 +84,9 @@ native NFS-e.
 - **Subscriptions**: native recurring billing. The gateway generates charges and sends a
   webhook per charge (with the subscription id). Pass `card` for transparent checkout —
   a tokenized card auto-charged each cycle.
+- **Invoices**: **native NFS-e** — configure `invoice.asaas({ apiKey })` as the invoice
+  provider so `invoice: true` emits through Asaas itself (or use automatic emission per
+  subscription in the dashboard; the `invoice` option also works through any provider).
 - **Requires** a customer for every charge and subscription.
 
 ```ts title="app/services/checkout_service.ts"
@@ -130,7 +139,7 @@ await payments.driver('credit_card').charge({
 - **Subscriptions**: Pix Automático — recurring Pix via webhooks, **no card**. Pass
   `startDate` to set the monthly charge day (`dayGenerateCharge`).
 - **Invoices**: no invoice concept — a charge *is* the billing record; use an invoice
-  provider with `invoice: true` if you need a fiscal note.
+  provider with `invoice: true` if you need an invoice.
 
 ```ts title="app/services/checkout_service.ts"
 await payments.driver('pix').charge({
