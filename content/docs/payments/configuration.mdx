@@ -1,77 +1,102 @@
 ---
 title: Configuration
-description: The config/payments.ts reference — providers, method routing, invoice section and the billing layer (durable, webhook handlers).
+description: The config/payments.ts reference — named providers built with lazy factories, method routing with capability checks, the invoice section, and the billing layer (durable webhook processing, business handlers).
 ---
 
-`config/payments.ts` is built with `defineConfig` from `@adonis-agora/payments`. It has
-four sections: **providers** (the gateways), **methods** (method → provider routing),
-**invoice** (fiscal note emission) and **billing** (the subscription layer).
+import { Callout } from 'fumadocs-ui/components/callout';
 
-## Providers
+`config/payments.ts` is the whole wiring surface of the library. It answers four questions:
 
-Every payment gateway is a named factory in `providers`. Each factory lazily imports its
-SDK, so only the gateways you configure are ever loaded.
+1. **Which gateways do I accept payments through?** — `providers` (a named map of driver factories).
+2. **Which gateway handles each payment method?** — `methods` (e.g. `pix → woovi`, `credit_card → stripe`).
+3. **Who emits my fiscal invoices?** — `invoice` (independent of the gateway).
+4. **How are webhooks processed?** — `billing` (durable/in-process, and where your business logic runs).
 
-```ts
+A minimal config is two blocks:
+
+```ts title="config/payments.ts"
+import env from '#start/env'
 import { defineConfig, payments } from '@adonis-agora/payments'
 
 export default defineConfig({
   default: 'stripe',
   providers: {
-    stripe: payments.stripe({ apiKey: env.get('STRIPE_KEY'), currency: 'brl' }),
-    abacate: payments.abacate({
-      apiKey: env.get('ABACATE_API_KEY'),
-      publicKey: env.get('ABACATE_PUBLIC_KEY'),
-    }),
-    asaas: payments.asaas({
-      apiKey: env.get('ASAAS_API_KEY'),
-      sandbox: env.get('NODE_ENV') !== 'production',
-    }),
-    woovi: payments.woovi({ appId: env.get('WOOVI_APP_ID') }),
+    stripe: payments.stripe({ apiKey: env.get('STRIPE_KEY') }),
   },
 })
 ```
 
-**Custom providers** are plain factories — return anything implementing the
-`PaymentsDriver` contract:
+`defineConfig` is a typed identity — every option below is type-checked as you write it.
 
-```ts
+## Providers — lazy driver factories
+
+`providers` is a map of name → **factory**. The factory receives a context and returns a
+driver instance. The important property: each built-in factory **lazily imports its gateway
+SDK** inside the thunk, so a config with four gateways only loads the SDK of the one you
+actually call. Stripe's SDK isn't in memory if you only charge Pix through Woovi.
+
+```ts title="config/payments.ts"
 providers: {
-  myGateway: () => import('#services/my_gateway').then((m) => new m.MyGatewayDriver()),
-}
+  stripe: payments.stripe({ apiKey: env.get('STRIPE_KEY'), currency: 'brl' }),
+  asaas: payments.asaas({
+    apiKey: env.get('ASAAS_API_KEY'),
+    sandbox: env.get('NODE_ENV') !== 'production',
+  }),
+  woovi: payments.woovi({ appId: env.get('WOOVI_APP_ID') }),
+},
 ```
 
-## Methods
+- `default` names the provider used when a call doesn't specify one.
+- Every driver is an optional peer: only the SDKs of the drivers you configure are
+  installed, and only the ones you *call* are loaded.
 
-Route a payment method to a provider. The charge call then resolves the driver per
-method: `payments.driver('pix')` returns the provider configured for `pix`.
+### Driver config options
 
-```ts
+| Driver | Key config | Env fallback |
+| --- | --- | --- |
+| Stripe | `apiKey`, `currency`, `webhookSecret` | `STRIPE_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| AbacatePay | `apiKey`, `webhookSecret`/`publicKey` | `ABACATE_API_KEY`, `ABACATE_PUBLIC_KEY` |
+| Asaas | `apiKey`, `sandbox`, `webhookToken` | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_ACCESS_TOKEN` |
+| Woovi | `appId`, `webhookSecret`, `webhookPublicKey` | `WOOVI_APP_ID`, `WOOVI_WEBHOOK_SECRET`, `WOOVI_WEBHOOK_PUBLIC_KEY` |
+
+The webhook credentials are what make the mounted route **enforce** signatures — see
+[Webhooks → Validation](./webhooks#validation-per-provider).
+
+## Methods — routing a payment method to a provider
+
+A charge doesn't always know which gateway will handle it — the *customer* picks the
+method (Pix vs card). `methods` maps each canonical method to a provider name:
+
+```ts title="config/payments.ts"
 methods: {
   pix: 'woovi',          // Pix via Woovi/OpenPix
   credit_card: 'stripe', // card via Stripe
   boleto: 'asaas',       // boleto via Asaas
   debit_card: 'asaas',
-  undefined: 'asaas',    // customer picks at checkout
-}
+  undefined: 'asaas',    // customer chooses at checkout
+},
 ```
 
-The canonical method names are `pix`, `credit_card`, `debit_card`, `boleto` and
-`undefined` (customer chooses). The router validates that the routed provider actually
-supports the method — routing `credit_card` to a Pix-only gateway (AbacatePay, Woovi)
-throws a clear error instead of failing at the gateway.
+Then `getPayments().driver('pix')` resolves to the routed provider. Two rules keep a
+misconfiguration from failing *at the gateway*:
 
-## Invoice
+1. **Unknown method/provider** → the manager throws with a helpful list of what's
+   configured, instead of a confusing SDK error.
+2. **Method not supported by the routed gateway** → early throw. Routing `credit_card` to
+   a Pix-only gateway (AbacatePay, Woovi) is a config error, and it's caught when you
+   resolve the driver — not after a request to the gateway. The manager checks
+   `driver.supportedMethods` before returning the driver.
 
-Invoice emission is optional and independent of the payment gateway: a charge can pay
-via one provider and emit the fiscal note (NFe/NFSe) via another.
+## Invoice — fiscal notes independent of the gateway
 
-```ts
+A payment and its invoice (NFe/NFSe) are **decoupled**: the charge can pay through Asaas
+while the fiscal note is emitted through a dedicated provider like Focus or Tecnospeed.
+
+```ts title="config/payments.ts"
 invoice: {
   default: 'focus',
   providers: {
     focus: invoice.focus({ token: env.get('FOCUS_NFE_TOKEN') }),
-    tecnospeed: invoice.tecnospeed({ token: env.get('TECNOSPEED_TOKEN') }),
   },
   defaults: {
     service: { description: 'Software license' },
@@ -79,54 +104,75 @@ invoice: {
 }
 ```
 
-See [Invoices](./invoices) for how to request emission per charge.
+A charge then asks for emission with `invoice: true` (default provider) or a named one.
+See [Invoices](./invoices) for the full option surface.
 
-## Billing
+## Billing — the subscription layer
 
-The Cashier-style subscription layer. When enabled, the provider wires the Lucid store,
-the webhook processor and the dispatcher.
+The Cashier-style billing layer (Lucid stores, mixins, idempotent webhook processing).
+When enabled, the provider wires the store, the processor and the dispatcher.
 
-```ts
+```ts title="config/payments.ts"
 billing: {
   enabled: true,
   /**
-   * 'auto' — use @adonis-agora/durable to process webhooks when it is installed in the
-   * app, falling back to an in-process dispatcher with retries.
+   * 'auto' — process webhooks through @adonis-agora/durable when its provider is
+   * registered in the app, falling back to an in-process dispatcher with retries.
    * true — require durable (throw when missing).
    * false — always use the in-process dispatcher.
    */
   durable: 'auto',
   /**
-   * Business webhook handlers run inside the lib-mounted route (errors mark the event
-   * failed + retry). Accepts a DI service class (the lib calls its `.handle(event)`) or a
-   * plain function — an alternative to the `app/payment_handlers/` folder and the events.
+   * Business webhook handlers run inside the mounted route. A DI service class (the
+   * lib calls its `.handle(event)`) or a plain function.
    */
   handlers: {
     'payment.succeeded': PaymentSucceededHandler,
-    'payment.refunded': (event) => { ... },
+    'payment.refunded': (event) => { /* ... */ },
   },
 }
 ```
 
-## Webhook business logic — where it runs
+### `durable` — webhooks survive restarts
 
-Three equivalent ways to react to a confirmed payment, [documented in Webhooks](./webhooks):
+Webhook processing is exactly the kind of work that must not be lost when a deploy or a
+crash interrupts it. `'auto'` (the default) uses `@adonis-agora/durable` when its engine is
+actually resolvable in the app — durable checkpoints every step, so a webhook half-way
+through a handler resumes where it stopped instead of re-running. Without durable, the
+fallback is an in-process dispatcher with exponential-backoff retries.
 
-1. **Convention folder** `app/payment_handlers/` — drop a file per event, auto-discovered
-   (scaffold with `node ace make:webhook-handler payment.succeeded`).
-2. **`billing.handlers`** (above) — DI services or functions, error-driven retry.
-3. **Diagnostics events** — `onDiagnostic('payments', 'payment.succeeded', ...)`.
+### `handlers` — where your business logic runs
 
-The recommended money-flow pattern: the handler (or the event subscriber) only **dispatches
-a durable workflow** (`@OnDiagnostic` on the workflow, or `engine.start` in the handler) —
-durable owns retry + exactly-once, and the webhook responds fast.
+The route validates the signature, syncs the billing tables, then runs **your** logic. Two
+equivalent authoring forms (plus a third — the `app/payment_handlers/` folder — covered
+in [Webhooks](./webhooks#running-your-business-logic)):
 
-## Custom invoice providers
+- A **DI service class** — the lib resolves it from the container and calls its
+  `handle(event)` method. Inject whatever you need; no boilerplate:
 
-`invoice.providers` accepts plain factories too:
+  ```ts title="config/payments.ts"
+  import PaymentSucceededHandler from '#payment_handlers/payment_succeeded'
 
-```ts
-providers: {
-  myInvoice: () => import('#services/my_invoice').then((m) => new m.MyInvoiceProvider()),
-}
-```
+  handlers: {
+    'payment.succeeded': PaymentSucceededHandler,
+  }
+  ```
+
+- A **plain function** — for logic that doesn't need DI:
+
+  ```ts title="config/payments.ts"
+  handlers: {
+    'payment.refunded': (event) => {
+      void notifyRefund(event.data)
+    },
+  }
+  ```
+
+A throwing handler marks the event `failed` in the ledger and the dispatcher retries — so
+handler failures surface instead of being silently swallowed.
+
+<Callout type="info" title="The money-flow pattern">
+Webhooks must respond fast. The recommended shape is: the handler only **dispatches a
+durable workflow** (durable owns retry + exactly-once) and returns — never doing the heavy
+grant inline. See [Webhooks → The money-flow pattern](./webhooks#the-money-flow-pattern-handlers-dispatch-to-durable).
+</Callout>

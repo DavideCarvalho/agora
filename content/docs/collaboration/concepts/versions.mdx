@@ -1,0 +1,19 @@
+---
+title: Versions
+description: Named checkpoints in document history — snapshots on Yjs, native change graph on Automerge.
+icon: History
+---
+
+# Versions
+
+Every document can be **versioned**: create a named checkpoint, list history, restore a previous state, diff two versions.
+
+- **Yjs** — `createVersion` stores a full binary snapshot; `restoreVersion` swaps the live document and connected clients converge in real time.
+- **Automerge** — history is native (every change has a hash); a version is a marker over the change graph.
+
+One API hides both:
+
+```ts
+const v = await manager.createVersion(docName, userId, 'before review')
+await manager.restoreVersion(docName, v.id, userId)
+```

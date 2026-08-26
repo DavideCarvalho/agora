@@ -1,0 +1,16 @@
+---
+title: Edge (PartyKit / PartyServer)
+description: Move the WebSocket to Cloudflare Workers — browsers connect to the edge, not your server.
+icon: Cloud
+---
+
+# Edge (PartyKit / PartyServer)
+
+Deploy a Worker (Cloudflare Durable Objects) speaking the same Yjs wire protocol. Browsers connect **directly to the edge**; the `PartyKitDriver` on the Adonis side is the worker's HTTP client for state and versions.
+
+```sh
+node ace collaboration:init --engine=partykit   # generates partykit-worker/
+npx partykit deploy                             # deploys to the edge
+```
+
+Trade-off: global latency for a separate deployment you must own and secure (JWT shared secret, `/state` sync back to Adonis).

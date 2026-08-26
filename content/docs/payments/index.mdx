@@ -72,3 +72,36 @@ await getPayments().driver('credit_card').charge({
   invoice: 'tecnospeed',
 })
 ```
+
+## Design principles
+
+A few decisions shape everything else in the docs:
+
+- **The driver contract is the seam.** Every gateway normalizes onto the same
+  `PaymentsDriver` — your services talk to one interface, not four SDKs. Adding a gateway
+  is a config entry, not a code change.
+- **Money is integer cents.** `amount: 1990` is R$ 19,90. Drivers convert to gateway
+  decimals via `toDecimal`/`fromDecimal` — never float-multiply money.
+- **The webhook is the only source of truth for *confirmation*.** A charge returns
+  `PENDING`; the webhook processor (idempotent ledger, durable dispatch) is what turns it
+  into revenue. Trust nothing else.
+- **Fiscal notes are decoupled from payments.** Pay through one provider, emit the NFe/NFSe
+  through another — the `invoice` option on the charge call joins them.
+- **Everything observability-friendly.** Every milestone publishes on
+  `@adonis-agora/diagnostics`; Telescope records it; the library never imports diagnostics,
+  it reads the slot structurally.
+
+## The happy path, end to end
+
+```text
+your app ──charge()──▶ gateway (PENDING)
+   ▲                        │
+   │  webhook (paid)        │
+   └──parseWebhook──────────┘
+       │
+       ├─ validate signature  (forged callbacks rejected)
+       ├─ ledger the event    (redeliveries are no-ops)
+       ├─ sync billing tables (billing_payments/subscriptions)
+       ├─ run your handler    (grant credits / activate)
+       └─ publish diagnostics (agora:payments:payment.succeeded)
+```

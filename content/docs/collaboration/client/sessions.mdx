@@ -1,0 +1,21 @@
+---
+title: Sessions
+description: Document sessions, token flow, reconnects and presence.
+icon: FileText
+---
+
+# Sessions
+
+`useCollabDoc` connects to a document and returns the shared `Y.Doc` plus status. Sessions are cached per document and survive unmounts.
+
+```tsx
+const { doc, status, error } = useCollabDoc({ docName: 'researches/42/writing' })
+```
+
+Tokens expire: on disconnect the session rebuilds the transport with a **fresh token** and exponential backoff (cap 15s).
+
+```tsx
+const { peers } = useAwareness({ docName })   // peer-to-peer presence
+const { comments, create, resolve } = useComments({ docName, space: 'text' })
+const { versions, create: createVersion } = useVersions({ docName })
+```

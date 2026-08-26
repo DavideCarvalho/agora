@@ -1,0 +1,30 @@
+---
+title: Documents
+description: Documents are identified by name — patterns, per-document engines and declarative authorization.
+icon: FileText
+---
+
+# Documents
+
+A document is identified by a **name** — typically a path-like string such as `researches/42/writing`. Names contain slashes, so they always travel via query/body, never as a path param.
+
+## Routing
+
+The library resolves each document name to an engine and an authorization rule. Two ways:
+
+```ts
+// Function
+engineFor: (docName) => (docName.startsWith('lousas/') ? 'automerge' : 'yjs')
+
+// Declarative patterns (also carries per-doc authorize)
+documents: {
+  'researches/:id/writing': defineDocument({
+    engine: 'yjs',
+    async authorize(ctx, { id }) {
+      // params are extracted for you — no manual regex
+    },
+  }),
+}
+```
+
+Anything that matches no pattern falls back to the global `engine` and `authorize`.

@@ -1,0 +1,11 @@
+---
+title: Binary state
+description: The machine-to-machine state endpoints used by edge workers.
+icon: Server
+---
+
+# Binary state
+
+`GET/POST /collaboration/state?doc=` carries the raw document binary. In edge mode, the PartyKit worker loads its initial state here and persists post-debounce.
+
+Because it is machine-to-machine, `POST /state` requires the worker's **shared secret** (`config.partykit.jwtSecret`), not a user session.

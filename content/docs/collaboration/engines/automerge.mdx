@@ -1,0 +1,17 @@
+---
+title: Automerge
+description: A JSON-like CRDT document with native change-graph history.
+icon: Database
+---
+
+# Automerge
+
+The server keeps one `A.Doc` per room and broadcasts saved binaries; clients merge via the Automerge CRDT. **History is native** — every change produces a hash, so versions are markers over the real graph rather than full snapshots.
+
+```ts
+// client
+const { doc, status, error, change } = useAutomergeDoc({ docName: 'fichas/1' })
+change((d) => { d.content = 'edited' })
+```
+
+**Choose Automerge when** the document is structured data (nested JSON you reason about). Automerge cannot back a `Y.Doc` — so no Tiptap, no awareness-based canvas. See the note in [Engines overview](/docs/collaboration/engines/overview): a whiteboard is usually better served by Yjs.

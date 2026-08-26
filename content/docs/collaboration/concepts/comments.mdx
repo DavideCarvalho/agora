@@ -1,0 +1,21 @@
+---
+title: Comments
+description: Anchored comments per space — text ranges, canvas objects and timestamps — persisted in your storage.
+icon: MessageSquare
+---
+
+# Comments
+
+Comments are **anchored** to a place in the document, not free-floating. An anchor is one of:
+
+| Kind | Anchor |
+|---|---|
+| `text-range` | `{ start, end, selectedText }` |
+| `canvas-object` | `{ shapeId, relativeX, relativeY }` |
+| `timestamp` | `{ at, end? }` |
+
+Each comment belongs to a document **space** (e.g. `text`, `canvas`). The library persists the anchor and lifecycle (created/resolved/removed); your app decides what an anchor means. Comments are **REST**, not CRDT state — they live in your storage.
+
+```ts
+const { comments, create, resolve, remove } = useComments({ docName, space: 'text' })
+```

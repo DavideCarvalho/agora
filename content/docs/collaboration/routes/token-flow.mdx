@@ -1,0 +1,17 @@
+---
+title: Token flow
+description: How the client obtains a short-lived WebSocket credential — and why the permission seam holds on REST too.
+icon: KeyRound
+---
+
+# Token flow
+
+Browsers cannot attach headers to a WebSocket handshake. So the client asks for a credential first:
+
+1. `GET /collaboration/token?doc=researches/42/writing`
+2. Your auth middleware resolves the user (same-origin: session cookie)
+3. The library runs `authorize(user, docName)` — same seam as the handshake
+4. Returns `{ token, wsUrl, engine }` (JWT for edge, base64 for self-hosted)
+5. The client opens the WebSocket with `?token=`
+
+Fail-closed: without a resolved user, the endpoint returns 401. For manual control, disable auto-registration and call `collaborationRoutes(router, { middleware })`.

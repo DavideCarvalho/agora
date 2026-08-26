@@ -1,0 +1,20 @@
+---
+title: CRDTs
+description: Why conflict-free replicated data types let multiple users edit the same document and always converge.
+icon: GitMerge
+---
+
+# CRDTs
+
+A **CRDT** (conflict-free replicated data type) is a data structure with a mathematically guaranteed merge: given the same operations, every replica converges to the same state — no central "last write wins", no locking.
+
+The library wraps two CRDTs:
+
+- **Yjs** — shared types optimized for rich text (`Y.XmlFragment`) and key/value maps. Default engine.
+- **Automerge** — a JSON-like document where every change gets a hash (native history).
+
+## Why it matters
+
+Without a CRDT, two users editing the same paragraph produce a conflict someone must resolve. With one, the merge is defined by the data structure itself: both edits survive, in a deterministic order. The library just needs to ship the bytes around.
+
+See [Engines](/docs/collaboration/engines) for how the choice shapes your data model.

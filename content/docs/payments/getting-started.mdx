@@ -1,27 +1,34 @@
 ---
 title: Getting started
-description: Install @adonis-agora/payments, configure providers, run the billing migrations, register webhooks and make your first charge.
+description: Install @adonis-agora/payments, configure a gateway, run the billing migrations, register webhooks and make your first charge in about five minutes.
 ---
 
-## Install
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
 
+This guide takes you from zero to a charge that accepts Pix and card, with webhooks wired
+and your business logic reacting to a confirmed payment.
+
+<Steps>
+<Step title="Install">
 ```sh
 node ace add @adonis-agora/payments
 ```
 
-This installs the package and runs the configure command, which:
+The configure command does five things:
 
 1. registers the `payments_provider` in `adonisrc.ts`;
-2. registers the ace commands (`make:billable`, `payments:webhook`, `payments:sync`);
+2. registers the ace commands (`make:billable`, `make:webhook-handler`, `payments:webhook`, `payments:sync`);
 3. publishes `config/payments.ts`;
 4. publishes the billing migrations under `database/migrations/`;
 5. registers the payment env validations.
+</Step>
 
-## Configure
+<Step title="Set your gateway credentials">
+Add the secrets to `.env` — the driver configs fall back to these names, so a minimal
+`config/payments.ts` needs no edits at all:
 
-Set your gateway credentials in `.env`:
-
-```ini
+```ini title=".env"
 STRIPE_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 WOOVI_APP_ID=your-woovi-app-id
@@ -30,79 +37,103 @@ ABACATE_API_KEY=your-abacate-api-key
 ABACATE_PUBLIC_KEY=your-abacate-public-key
 FOCUS_NFE_TOKEN=your-focus-token
 ```
+</Step>
 
-## Run the migrations
-
+<Step title="Run the migrations">
 The billing layer persists subscriptions, payments and the webhook idempotency ledger:
 
 ```sh
 node ace migration:run
 ```
 
-## Register webhooks
+If you only want payments without the subscription layer, delete the published migration —
+the drivers work standalone.
+</Step>
 
-Each provider needs a webhook endpoint registered in its dashboard. See the exact URL
-and event list with:
+<Step title="Register webhooks">
+Each gateway dashboard needs the endpoint URL and event list. Print them for every
+configured provider:
 
 ```sh
 node ace payments:webhook
 ```
 
-The provider mounts `POST /payments/webhook/:provider` automatically.
+The provider mounts `POST /payments/webhook/:provider` automatically — register it in each
+gateway's dashboard and point it at `/payments/webhook/<provider>` (e.g.
+`https://you.app/payments/webhook/asaas`).
+</Step>
 
-## Reacting to webhooks — your business logic
-
-The route validates + syncs, but your business logic (grant credits, activate a
-subscription) needs a home. Three equivalent options ([details](./webhooks)):
-
-1. **Convention folder** — scaffold a handler and drop it in `app/payment_handlers/`
-   (register the codegen hook once in `adonisrc.ts`):
-
-   ```sh
-   node ace make:webhook-handler payment.succeeded
-   ```
-
-   ```ts
-   // adonisrc.ts
-   hooks: { init: [() => import('@adonis-agora/payments/hooks/webhook_handlers')] }
-   ```
-
-2. **`billing.handlers`** in `config/payments.ts` — a DI service class (the lib calls its
-   `.handle`) or a plain function.
-3. **Events** — `onDiagnostic('payments', 'payment.succeeded', fn)`.
-
-The recommended money-flow pattern: the handler only **dispatches a durable workflow**
-(durable owns retry + exactly-once) — see the [Webhooks doc](./webhooks) for the
-`@OnDiagnostic` example.
-
-## Your first charge
-
-```ts
+<Step title="Make your first charge">
+```ts title="app/services/checkout_service.ts"
 import { getPayments } from '@adonis-agora/payments/services/main'
 
 const payments = getPayments()
 
-// Create a customer at the routed provider for `pix`
+// A customer at the routed provider for `pix`
 const customer = await payments.driver('pix').createCustomer({
   name: 'Jane Doe',
   email: 'jane@example.com',
   taxId: '123.456.789-00',
 })
 
-// Charge via Pix (Woovi) and emit an invoice through the default invoice provider
+// Charge via Pix and emit an invoice through the default invoice provider
 const payment = await payments.driver('pix').charge({
   customerId: customer.id,
-  amount: 1990, // R$ 19,90
+  amount: 1990, // R$ 19,90 — integer cents, never floats
   invoice: true,
 })
 
-// payment.pixCopiaECola → the Pix copy-paste code to show the customer
+// payment.pixCopiaECola → the copy-paste code to show the customer
 ```
+</Step>
+</Steps>
+
+## Where does a payment *become confirmed*?
+
+The charge above creates a `PENDING` payment at the gateway. Nothing has been paid yet —
+the customer still has to scan the QR code, or enter their card. The moment the money
+actually moves, the gateway calls your webhook endpoint, and the library:
+
+1. **validates** the signature (rejecting forged callbacks),
+2. **records** the event in the idempotency ledger (a redelivery is a no-op),
+3. **syncs** the local billing tables to the confirmed state,
+4. runs **your business logic** (grant the credits, activate the subscription).
+
+That last step is where the app's value lives, and it has three equivalent homes —
+[documented in depth in Webhooks](./webhooks#running-your-business-logic). The fastest
+path to something real is the convention folder:
+
+```sh
+node ace make:webhook-handler payment.succeeded
+```
+
+```ts title="app/payment_handlers/payment_succeeded.ts"
+@inject()
+export default class PaymentSucceededHandler {
+  static readonly eventType = 'payment.succeeded'
+  async handle(event: WebhookEvent): Promise<void> {
+    // dispatch a durable workflow — durable owns retry + exactly-once
+  }
+}
+```
+
+Register the codegen hook once so the folder is discovered:
+
+```ts title="adonisrc.ts"
+hooks: { init: [() => import('@adonis-agora/payments/hooks/webhook_handlers')] }
+```
+
+<Callout type="info" title="Never trust a payment until the webhook">
+A `PENDING` charge is a *promise*, not revenue. Grant access only after the gateway
+confirms via webhook — that's the guarantee the processor's idempotency ledger exists to
+make safe. See [Webhooks](./webhooks) and [Billing](./billing) for the details.
+</Callout>
 
 ## Next steps
 
-- [Configuration](./configuration) — providers, methods, invoices, billing.
+- [Configuration](./configuration) — providers, method routing, invoices, the billing layer.
 - [Providers](./providers) — Stripe, AbacatePay, Asaas, Woovi specifics.
-- [Billing](./billing) — subscriptions, trials, webhook sync.
+- [Webhooks](./webhooks) — signature validation, idempotency, and the three ways to run your business logic.
+- [Billing](./billing) — subscriptions, trials, the billable mixins.
 - [Invoices](./invoices) — emitting NFe/NFSe with the charge.
-- [Webhooks](./webhooks) — signature validation and processing.
+- [Diagnostics](./diagnostics) — every milestone on the observability bus.

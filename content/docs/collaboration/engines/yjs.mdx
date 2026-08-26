@@ -1,0 +1,15 @@
+---
+title: Yjs (Hocuspocus)
+description: The default engine — embedded Hocuspocus on your Adonis server, y-protocols over WebSocket.
+icon: FileText
+---
+
+# Yjs (Hocuspocus)
+
+The default. The server embeds a Hocuspocus instance; browsers connect a WebSocket at `/collaboration` and speak the binary `y-protocols`.
+
+- Rich text via `Y.XmlFragment` (Tiptap/ProseMirror bindings)
+- Scenes via `Y.Map` (Excalidraw/tldraw mirror their state into a doc key)
+- Version control = full-state snapshots
+
+**Choose Yjs when** the document is text or a canvas of objects.

@@ -1,0 +1,16 @@
+---
+title: Typed registry
+description: The generated .adonisjs/collaboration/documents.ts — document names as a type union.
+icon: Type
+---
+
+# Typed registry
+
+An Assembler `init` hook scans `app/collaboration/documents/` and generates `.adonisjs/collaboration/documents.ts`:
+
+```ts
+import type { CollabDocumentName } from '.adonisjs/collaboration/documents.js'
+function open(name: CollabDocumentName) { /* autocomplete + exhaustiveness */ }
+```
+
+`CollabDocumentName` is a union of every document name in your app. It refreshes with `node ace codegen`, the dev server, tests and the build — deriving the list from disk instead of a hand-maintained registry.

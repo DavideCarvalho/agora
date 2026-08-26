@@ -1,42 +1,58 @@
 ---
 title: Providers
-description: Gateway specifics for Stripe, AbacatePay, Asaas and Woovi — supported methods, webhooks, subscriptions, externalReference and invoice behavior.
+description: Gateway specifics for Stripe, AbacatePay, Asaas and Woovi — supported methods, webhook events, subscriptions, externalReference routing and invoice behavior.
 ---
 
-Every provider implements the same `PaymentsDriver` contract — `createCustomer`,
-`charge`, `refund`, `createCheckout`, `createSubscription`, `cancelSubscription`,
-`findPayment`, `findSubscription`, `listInvoices`, `parseWebhook` — normalizing each
-gateway's API onto the shared domain types.
+import { Callout } from 'fumadocs-ui/components/callout';
 
-Each driver also declares `supportedMethods`, which the router uses to reject a method
-the gateway can't handle.
+All four built-in drivers speak the same `PaymentsDriver` contract — `charge`, `refund`,
+`createSubscription`, `parseWebhook`, … — but each gateway has its own personality. This
+page is the per-gateway cheat sheet: what methods it accepts, how its webhooks arrive,
+what `externalReference` means there, and how invoices behave.
+
+A quick map of the differences that usually matter:
+
+| | Stripe | AbacatePay | Asaas | Woovi (OpenPix) |
+| --- | --- | --- | --- | --- |
+| Methods | pix, card, boleto, undefined | pix, boleto, undefined | pix, boleto, card, debit | pix, undefined |
+| Subscriptions | recurring | recurring | native recurring | Pix Automático (no card) |
+| Webhook auth | HMAC (SDK) | HMAC-SHA256 | shared token | RSA-SHA256 or HMAC |
+| `externalReference` | `metadata.external_reference` | — | `externalReference` (propagated) | `correlationID` |
+| Invoices | hosted | no concept (use a provider) | native NFS-e + provider | no concept (use a provider) |
 
 ## Stripe
 
-- **Methods**: pix, credit_card, boleto, undefined
-- **Setup**: `payments.stripe({ apiKey, currency })` — `STRIPE_KEY`, `STRIPE_WEBHOOK_SECRET`
-- **Webhooks**: HMAC signature via `constructEvent`; register `checkout.session.completed`,
-  `invoice.payment_succeeded`, `customer.subscription.*`
-- **Invoices**: no native fiscal emission — use an invoice provider with `invoice: true`
+- **Methods**: pix, credit_card, boleto, undefined.
+- **Setup**: `payments.stripe({ apiKey, currency })` — `STRIPE_KEY`; `currency` defaults
+  to `brl`.
+- **Webhooks**: HMAC verified by the SDK's `constructEvent` — needs `webhookSecret`
+  (`STRIPE_WEBHOOK_SECRET`). Events `checkout.session.completed`,
+  `invoice.payment_succeeded`, `customer.subscription.*`.
+- **`externalReference`**: mapped into `metadata.external_reference` on the PaymentIntent
+  and the subscription, and read back from the webhook payload.
+- **Subscriptions**: SDK-backed recurring billing — pass the Stripe Price id as `planId`.
 
-```ts
+```ts title="app/services/checkout_service.ts"
 await payments.driver('credit_card').charge({
   customerId: 'cus_123',
   amount: 1990,
-  paymentMethodId: 'pm_123', // token from Stripe.js
+  card: { token: 'tok_visa' },
   invoice: true,
 })
 ```
 
 ## AbacatePay
 
-- **Methods**: pix, boleto, undefined — **no credit card** (routing `credit_card` here throws)
-- **Setup**: `payments.abacate({ apiKey, publicKey })` — `ABACATE_API_KEY`, `ABACATE_PUBLIC_KEY`
-- **Webhooks**: HMAC-SHA256 with the public key (`x-webhook-signature`); events
-  `checkout.completed`, `subscription.completed/renewed/cancelled`
-- **Requires** a customer for every charge
+- **Methods**: pix, boleto, undefined — **no credit card** (routing `credit_card` here
+  throws at the manager, not at the gateway).
+- **Setup**: `payments.abacate({ apiKey, webhookSecret })` — `ABACATE_API_KEY` /
+  `ABACATE_PUBLIC_KEY`.
+- **Webhooks**: HMAC-SHA256 (base64) over the raw body in `x-webhook-signature`, verified
+  timing-safe against `webhookSecret` (the dashboard's "public key"). Events
+  `checkout.completed`, `checkout.refunded`, `subscription.completed/renewed/cancelled`.
+- **Subscriptions**: recurring — no transparent checkout for the recurring charge yet.
 
-```ts
+```ts title="app/services/checkout_service.ts"
 await payments.driver('pix').charge({
   customerId: 'cus_123',
   amount: 1990,
@@ -46,29 +62,25 @@ await payments.driver('pix').charge({
 
 ## Asaas
 
-- **Methods**: pix, boleto, credit_card, debit_card, undefined
-- **Setup**: `payments.asaas({ apiKey, sandbox })` — `ASAAS_API_KEY`; sandbox defaults to
-  `NODE_ENV !== 'production'`
-- **Webhooks**: validated by token (`asaas-access-token` / `asaas-webhook-token`);
-  events `PAYMENT_CREATED`, `PAYMENT_RECEIVED`, `PAYMENT_OVERDUE`, `PAYMENT_REFUNDED`,
-  `SUBSCRIPTION_*`
-- **Subscriptions**: native recurring billing — charges are generated automatically and
-  the webhook arrives per charge (with the `subscription` id); pass `card` for transparent
-  checkout (tokenized card auto-charged each cycle)
-- **Invoices**: Asaas emits NFS-e natively; use the `invoice` option with an invoice
-  provider, or Asaas's own invoice settings
-- **Requires** a customer for every charge and subscription
-- **`externalReference`**: sent as the Asaas `externalReference` field — propagated to
-  every installment of a subscription's charges, so webhooks route each payment back to
-  your record
+The Brazilian workhorse: Pix, boleto, card and debit, native recurring billing, and
+native NFS-e.
 
-```ts
-await payments.driver('boleto').charge({
-  customerId: 'cus_123',
-  amount: 1990,
-  invoice: true,
-})
+- **Methods**: pix, boleto, credit_card, debit_card, undefined.
+- **Setup**: `payments.asaas({ apiKey, sandbox, webhookToken })` — `ASAAS_API_KEY`;
+  sandbox defaults to `NODE_ENV !== 'production'` (the sandbox API host is used).
+- **Webhooks**: authenticated by a shared token you set in the dashboard
+  (`asaas-access-token` / `asaas-webhook-token` header), compared timing-safe against
+  `webhookToken`. Events `PAYMENT_CREATED`, `PAYMENT_RECEIVED`, `PAYMENT_OVERDUE`,
+  `PAYMENT_REFUNDED`, `SUBSCRIPTION_*`.
+- **`externalReference`**: sent as the Asaas `externalReference` field — and crucially
+  **propagated to every installment** of a subscription's charges, so a webhook for the
+  3rd monthly charge still routes back to your subscription record.
+- **Subscriptions**: native recurring billing. The gateway generates charges and sends a
+  webhook per charge (with the subscription id). Pass `card` for transparent checkout —
+  a tokenized card auto-charged each cycle.
+- **Requires** a customer for every charge and subscription.
 
+```ts title="app/services/checkout_service.ts"
 await payments.driver('credit_card').createSubscription({
   customerId: 'cus_123',
   planId: 'plan_pro',
@@ -77,35 +89,61 @@ await payments.driver('credit_card').createSubscription({
   externalReference: 'sub:sub_local_1',
   card: {
     token: 'tok_123',
-    holder: { name: 'A', email: 'a@b.com', cpfCnpj: '123', postalCode: '000', addressNumber: '1', phone: '999' },
+    holder: {
+      name: 'A', email: 'a@b.com', cpfCnpj: '123',
+      postalCode: '000', addressNumber: '1', phone: '999',
+    },
     remoteIp: '1.2.3.4',
+  },
+})
+```
+
+### Transparent checkout — `card`
+
+Asaas' card flow is "tokenize in the frontend, charge with the token" — the card number
+never touches your server. `card` carries the token plus the holder info the gateway
+requires for the charge (and for issuing the NFS-e):
+
+```ts
+await payments.driver('credit_card').charge({
+  customerId: 'cus_123',
+  amount: 1990,
+  card: {
+    token: cardTokenFromFrontend,
+    holder: { name, email, cpfCnpj, postalCode, addressNumber, phone },
+    remoteIp,
   },
 })
 ```
 
 ## Woovi (OpenPix)
 
-- **Methods**: pix, undefined — **Pix only**
-- **Setup**: `payments.woovi({ appId })` — `WOOVI_APP_ID`
-- **Webhooks**: `PIX_AUTOMATIC_APPROVED`, `PIX_AUTOMATIC_COBR_COMPLETED`,
-  `PIX_AUTOMATIC_COBR_REJECTED`, `CHARGE_COMPLETED`, `CHARGE_EXPIRED`; the payload uses
-  `globalID` for the subscription/charge id and `correlationID` for your reference
-- **Subscriptions**: Pix Automático — recurring Pix via webhooks, no card; pass
-  `startDate` to set the charge day (`dayGenerateCharge`)
-- **Invoices**: no invoice concept — charges are the billing record; use an invoice
-  provider with `invoice: true`
+- **Methods**: pix, undefined — **Pix only**.
+- **Setup**: `payments.woovi({ appId, webhookPublicKey })` — `WOOVI_APP_ID`.
+- **Webhooks**: two signing schemes. The recommended one is RSA-SHA256 in
+  `x-webhook-signature`, verified against `webhookPublicKey` (the account public key from
+  `GET /api/v1/webhook/public-keys`, PEM or base64-PEM). The deprecated per-webhook HMAC
+  (`X-OpenPix-Signature`, HMAC-SHA1 base64) is supported via `webhookSecret` and takes a
+  back seat when both are set.
+- **`externalReference`**: maps to Woovi's `correlationID` — the id you pass comes back on
+  the charge and its webhook, so it's your routing key.
+- **Subscriptions**: Pix Automático — recurring Pix via webhooks, **no card**. Pass
+  `startDate` to set the monthly charge day (`dayGenerateCharge`).
+- **Invoices**: no invoice concept — a charge *is* the billing record; use an invoice
+  provider with `invoice: true` if you need a fiscal note.
 
-```ts
+```ts title="app/services/checkout_service.ts"
 await payments.driver('pix').charge({
   customerId: 'your-correlation-id',
   amount: 1990,
+  externalReference: 'payment_local_1',
   invoice: true,
 })
-
-await payments.driver('pix').createSubscription({
-  customerId: 'your-correlation-id',
-  planId: 'plan_pro',
-  amount: 4990,
-  startDate: '2026-09-01',
-})
 ```
+
+<Callout type="info" title="`externalReference` is how webhooks find your records">
+Every gateway can echo back a string you choose. Set it to your local payment id
+(`payment.id`, `sub:<subscriptionId>`), and the webhook's normalized
+`event.data.externalReference` routes the confirmation back to the right row — no parsing
+gateway-specific payloads. See [Webhooks → externalReference](./webhooks#routing-payments-back-to-your-records-externalreference).
+</Callout>

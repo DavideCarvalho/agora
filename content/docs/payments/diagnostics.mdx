@@ -1,69 +1,99 @@
 ---
 title: Diagnostics
-description: Every payments milestone on the @adonis-agora/diagnostics bus — the event catalog, business events, and watching in Telescope.
+description: Every payments milestone on the @adonis-agora/diagnostics bus — the gateway-action vs business event layers, the structural emit slot, and watching in Telescope.
 ---
 
-Every payment milestone emits on the `@adonis-agora/diagnostics` bus as
-`agora:payments:<event>` — when diagnostics is installed in the app. The library reads
-the diagnostics slot **structurally** (it never imports the package), so when diagnostics
-is absent the emits are inert no-ops.
+import { Callout } from 'fumadocs-ui/components/callout';
 
-## What is emitted
+Every payments milestone emits on the `@adonis-agora/diagnostics` bus as
+`agora:payments:<event>`. The library reads the diagnostics slot **structurally** — it
+never imports the package — so when diagnostics isn't installed the emits are inert
+no-ops, and when it is, everything downstream (Telescope, OTel, custom watchers) lights up
+at once.
 
-| Event | When | Payload highlights |
-| --- | --- | --- |
-| `charge.created` | a charge succeeded at the gateway | gatewayId, provider, amount, currency, method |
-| `charge.refunded` | a refund completed | gatewayId, provider, amount, currency |
-| `subscription.created` | a subscription was created (API or webhook) | gatewayId, provider, customerId, planId |
-| `subscription.updated` | a subscription changed (webhook) | gatewayId, provider, customerId, status |
-| `subscription.canceled` | a subscription was canceled (API or webhook) | gatewayId, provider |
-| `payment.succeeded` | a webhook confirmed a payment | gatewayId, provider, amount, currency, externalReference |
-| `payment.failed` | a webhook confirmed a failed payment | gatewayId, provider, amount, currency, reason, externalReference |
-| `payment.refunded` | a webhook confirmed a refund | gatewayId, provider, amount, currency |
-| `payment.updated` | a webhook reported a payment update | gatewayId, provider, status |
-| `invoice.emitted` | an invoice (NFe/NFSe) was emitted | gatewayId, provider, number, url |
-| `webhook.received` | a gateway webhook arrived | id, provider, type |
-| `webhook.processed` | a webhook finished processing | id, provider, type |
-| `webhook.failed` | a webhook handler threw | id, provider, type, error |
+## Two layers of events
 
-The runtime catalog is exported as `PAYMENTS_DIAGNOSTIC_EVENTS`.
+The catalog spans two layers, and the distinction matters for how you react:
 
-## Subscribing for business logic
+- **Gateway-action** events fire when *your code calls the gateway* — `charge.created` when
+  a charge is created, `charge.refunded`, `subscription.created`/`canceled`,
+  `invoice.emitted`. They describe what the app *did*.
+- **Business** events fire when a *webhook confirms a state change* — `payment.succeeded`,
+  `payment.failed`, `payment.refunded`, `payment.updated`, `subscription.updated`. They
+  describe what the gateway *says happened*. These are the ones webhook handlers and
+  notification flows react to.
 
-The `payment.*`/`subscription.*` events are the **normalized business events** — apps
-react to them with `onDiagnostic` (framework-agnostic, works in HTTP, workers and ace
-commands). See [Webhooks → Running your business logic](./webhooks) for the three ways to
-handle them (events, `billing.handlers`, or the `app/payment_handlers/` folder).
+| Event | Layer | When | Payload highlights |
+| --- | --- | --- | --- |
+| `charge.created` | gateway-action | a charge succeeded at the gateway | gatewayId, provider, amount, currency, method |
+| `charge.refunded` | gateway-action | a refund completed | gatewayId, provider, amount, currency |
+| `subscription.created` | both | created via API or confirmed by webhook | gatewayId, provider, customerId, planId |
+| `subscription.updated` | business | a subscription changed (webhook) | gatewayId, provider, customerId, status |
+| `subscription.canceled` | both | canceled via API or confirmed by webhook | gatewayId, provider |
+| `payment.succeeded` | business | a webhook confirmed a payment | gatewayId, provider, amount, currency, externalReference |
+| `payment.failed` | business | a webhook confirmed a failed payment | gatewayId, provider, amount, currency, reason, externalReference |
+| `payment.refunded` | business | a webhook confirmed a refund | gatewayId, provider, amount, currency |
+| `payment.updated` | business | a webhook reported a payment update | gatewayId, provider, status |
+| `invoice.emitted` | gateway-action | an invoice (NFe/NFSe) was emitted | gatewayId, provider, number, url |
+| `webhook.received` | lifecycle | a gateway webhook arrived | id, provider, type |
+| `webhook.processed` | lifecycle | a webhook finished processing | id, provider, type |
+| `webhook.failed` | lifecycle | a webhook handler threw | id, provider, type, error |
+
+The runtime catalog is exported as `PAYMENTS_DIAGNOSTIC_EVENTS` — a single source of truth
+for watchers and tools that iterate the full list.
+
+## Reacting to the business events
+
+The `payment.*`/`subscription.*` events are the normalized business surface. Subscribe
+with `onDiagnostic` (framework-agnostic — HTTP, workers, ace commands all work):
+
+```ts title="start/payments.ts (preloaded)"
+import { onDiagnostic } from '@adonis-agora/diagnostics'
+
+onDiagnostic('payments', 'payment.succeeded', ({ payload }) => {
+  const payment = await Payment.find(payload.externalReference)
+  // grant access...
+})
+```
+
+<Callout type="warn" title="Events are fire-and-forget">
+A throwing subscriber does not fail the webhook — the event was already ledgered. For work
+that must not be lost, use the webhook handlers (which mark failed + retry) or dispatch a
+durable workflow. See [Webhooks → Running your business logic](./webhooks#running-your-business-logic-four-options).
+</Callout>
+
+## How emission works — the structural slot
+
+`@adonis-agora/payments` never imports `@adonis-agora/diagnostics`. Instead it reads a
+well-known process-wide slot:
+
+```ts
+const EMIT_SLOT = Symbol.for('@agora/diagnostics:emit')
+```
+
+When diagnostics is loaded, it publishes its `emit(lib, event, payload)` function on that
+slot; payments calls it structurally. If the slot is empty, the emit is a no-op. The same
+trick is used for claims (so a lib-specific Telescope watcher can opt channels out of the
+generic watcher) and for tracing. Zero dependency, zero overhead when nobody listens.
 
 ## Watching in Telescope
 
 `@adonis-agora/telescope` ships a generic `DiagnosticsWatcher` that records every
-`agora:<lib>:<event>` publish automatically — no per-library watcher needed. Install the
+`agora:<lib>:<event>` publish automatically — no per-library watcher needed. Install
 telescope and the `agora:payments:*` entries show up in the timeline as `diagnostic`
 entries with the payload preserved.
 
-## Typed Telescope watcher
+### The typed `payments` watcher
 
-For typed `payments` entries (instead of the generic `diagnostic` ones), ship-with watcher:
+For richer, typed `payments` entries instead of the generic `diagnostic` ones, use the
+ship-with watcher:
 
-```ts
-import { PaymentsWatcher } from '@adonis-agora/payments/telescope'
-
-// ctx.record is telescope's recording surface (e.g. a store's `record`)
-new PaymentsWatcher().register(ctx)
-```
-
-On `register()` it claims every payments channel via `claimPaymentsDiagnostics`, so the
-generic `DiagnosticsWatcher` skips them (no double-recording); `dispose()` releases the
-claims and detaches. Wiring example for an AdonisJS app (`start/telescope.ts`):
-
-```ts
-import emitter from '@adonisjs/core/services/emitter'
+```ts title="start/telescope.ts"
 import app from '@adonisjs/core/services/app'
 import { TelescopeService } from '@adonis-agora/telescope'
 import { PaymentsWatcher } from '@adonis-agora/payments/telescope'
 
-emitter.on('http:server_ready', async () => {
+app.booted(async () => {
   const store = (await app.container.make(TelescopeService)).telescopeStore
   new PaymentsWatcher().register({
     record: (entry) => void store.record(entry).catch(() => {}),
@@ -71,28 +101,18 @@ emitter.on('http:server_ready', async () => {
 })
 ```
 
+On `register()` it claims every payments channel via `claimPaymentsDiagnostics` (the
+reference-counted claims registry), so the generic `DiagnosticsWatcher` skips them — no
+event is recorded twice. `dispose()` releases the claims and detaches every subscription.
+
 ## Custom watcher / subscriber
 
 The events are plain `node:diagnostics_channel` channels, so anything can subscribe:
 
 ```ts
-import { channelName, onDiagnostic } from '@adonis-agora/diagnostics'
+import { onDiagnostic } from '@adonis-agora/diagnostics'
 
 onDiagnostic('payments', 'charge.created', (event) => {
   console.log('charge created', event.payload)
 })
-```
-
-## Claiming for a lib-specific Telescope watcher
-
-If you build a bespoke Telescope watcher for payments (typed entries instead of the
-generic `diagnostic` entries), claim the channels so the generic watcher skips them and
-avoids double-recording:
-
-```ts
-import { PAYMENTS_DIAGNOSTIC_EVENTS, claimPaymentsDiagnostics } from '@adonis-agora/payments'
-
-const release = claimPaymentsDiagnostics(PAYMENTS_DIAGNOSTIC_EVENTS)
-// ...register your watcher...
-// release() when the watcher stops
 ```

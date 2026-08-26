@@ -1,0 +1,23 @@
+---
+title: Editors
+description: Editor-agnostic views — the same adapter works on Yjs or Automerge.
+icon: PenTool
+---
+
+# Editors
+
+`useCollabEditor` couples an editor adapter to a document; the server's engine decides the transport underneath.
+
+```tsx
+const { state, update, status, peers } = useCollabEditor({
+  docName: 'lousas/1',
+  editorId: 'excalidraw',
+  adapter: createExcalidrawAdapter(),
+})
+```
+
+| Adapter | Surface |
+|---|---|
+| `createExcalidrawAdapter()` | Scene (`elements`, `appState`) |
+| `createTldrawAdapter()` | tldraw snapshot (`records` + schema) |
+| `createTextAdapter()` | Plain text |
