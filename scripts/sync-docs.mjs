@@ -146,6 +146,9 @@ for (const src of selected) {
   // Internal design specs / skill outputs live under docs/superpowers — never publish them
   // (their .md files have no frontmatter title and break the strict page-schema build).
   rmSync(join(dest, 'superpowers'), { recursive: true, force: true });
+  // Internal plans (docs/plans/*.md) have no frontmatter title and break the
+  // strict page-schema build too — never publish them.
+  rmSync(join(dest, 'plans'), { recursive: true, force: true });
 
   let assets = 0;
   if (src.publicDir) {
