@@ -1,0 +1,62 @@
+---
+title: Testing
+description: Test the billing layer with the fake driver, in-memory store and testing utilities.
+---
+
+The package ships a testing kit under `@adonis-agora/payments/testing` — no test-runner
+dependency, so it works with Japa or Vitest.
+
+## FakePaymentsDriver
+
+An in-memory `PaymentsDriver` that records every call and returns canned responses:
+
+```ts
+import { FakePaymentsDriver } from '@adonis-agora/payments/testing'
+import { WebhookProcessor } from '@adonis-agora/payments'
+
+const driver = new FakePaymentsDriver({ provider: 'stripe' })
+const payment = await driver.charge({ amount: 1990 })
+expect(driver.chargeCalls).toHaveLength(1)
+```
+
+It also queues webhook events for `parseWebhook`:
+
+```ts
+const driver = new FakePaymentsDriver({
+  webhookEvents: [{
+    id: 'evt_1',
+    provider: 'stripe',
+    type: 'payment.succeeded',
+    data: { gatewayId: 'pi_1', amount: 1990, currency: 'brl' },
+    raw: {},
+  }],
+})
+const event = driver.parseWebhook('{}', {})
+```
+
+## InMemoryBillingStore
+
+An in-memory `BillingStore` mirroring the Lucid models — exercise the webhook processor
+and the billing layer without a database:
+
+```ts
+import { InMemoryBillingStore } from '@adonis-agora/payments/testing'
+
+const store = new InMemoryBillingStore()
+const processor = new WebhookProcessor({ store, driver })
+
+await processor.process(event)
+expect(await store.findPaymentByGatewayId('pi_1')).toMatchObject({ status: 'paid' })
+```
+
+## MutableClock
+
+A clock you can advance manually for deterministic time-based tests (trials, retry
+windows):
+
+```ts
+import { MutableClock } from '@adonis-agora/payments/testing'
+
+const clock = new MutableClock()
+clock.advance(1000 * 60 * 60 * 24) // +1 day
+```

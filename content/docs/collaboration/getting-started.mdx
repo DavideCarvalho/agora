@@ -1,19 +1,46 @@
 ---
 title: Getting started
-description: Instale e configure o @adonis-agora/collaboration no seu app AdonisJS.
+description: Install and configure @adonis-agora/collaboration in your AdonisJS app — providers, commands, the config file, storage and authorization.
 icon: Rocket
 ---
 
 # Getting started
 
+Collaboration lets multiple users edit the same document in real time. The library brings **CRDT conflict resolution** (via Yjs or Automerge), **version control**, **anchored comments** and **presence** to an AdonisJS app, exposing a REST + WebSocket surface your frontend consumes through React hooks.
+
+This guide walks through installing the package, wiring it into Adonis, and writing a `config/collaboration.ts` that matches how your app models documents.
+
+## Install
+
+The package is installed like any AdonisJS package:
+
 ```sh
 node ace add @adonis-agora/collaboration
-node ace configure @adonis-agora/collaboration   # provider + commands + codegen hook + config
-node ace collaboration:init                       # diretórios + migrations + (opcional) worker edge
-node ace make:collab-document researches/writing  # tipos compartilhados do documento
 ```
 
-## Configuração mínima
+`add` installs the dependency. Next, wire it into the application:
+
+```sh
+node ace configure @adonis-agora/collaboration
+```
+
+`configure` does three things:
+
+1. registers the service **provider** in `adonisrc.ts` (boots the collaboration layer);
+2. registers the **ace commands** (`collaboration:init`, `make:collab-document`);
+3. registers the **codegen hook** and publishes `config/collaboration.ts`.
+
+You can confirm the wiring by listing commands:
+
+```sh
+node ace list | grep collab
+# collaboration:init
+# make:collab-document
+```
+
+## The config file
+
+The published `config/collaboration.ts` starts with a minimal, **fail-closed** shape — the library never authorizes by default, so you must fill `authorize`.
 
 ```ts
 // config/collaboration.ts
@@ -21,21 +48,44 @@ import { defineConfig, lucidStorage } from '@adonis-agora/collaboration'
 
 export default defineConfig({
   engine: 'yjs',
+  path: '/collaboration',
+  redisUrl: process.env.REDIS_URL,
+  debounce: 2000,
   storage: lucidStorage({ connection: 'entretextos' }),
-  redisUrl: process.env.REDIS_URL,   // presença server-side cross-instance
 
   async authorize(ctx, docName) {
-    // Sua política por documento. A lib nunca autoriza por padrão.
+    // Called on every WebSocket handshake and on REST token issuance.
+    // Return per-document permissions.
     return { canRead: true, canWrite: true, canComment: true }
   },
 })
 ```
 
-## Rotas REST
+### `engine`
 
-Registradas automaticamente pelo provider em `/collaboration` (desabilite com `routes.enabled: false` e use `collaborationRoutes(router)` manualmente). O Tuyau tipa essas rotas.
+The CRDT backend. `yjs` (embedded Hocuspocus) is the default and best for rich text. See [Engines](/docs/collaboration/engines) for when to pick Automerge or edge engines.
 
-## Documentos declarativos (opcional)
+### `storage`
+
+Document states, versions and comments need a persistence backend. `lucidStorage({ connection })` resolves the Lucid connection from inside the library (same pattern as `stores.lucid` from Durable) — the app no longer imports `db` by hand. In development, omitting `storage` falls back to an in-memory store (data is lost on restart).
+
+### `redisUrl`
+
+Optional. When set, the provider spins up a Redis-backed presence store so `manager.listPresence()` works across multiple Node instances. Without it, presence is client-only (Yjs awareness).
+
+### `authorize`
+
+The heart of the security model. It receives the handshake context (at minimum `userId`) and the document name, and returns:
+
+- `canRead` — may the user open the document?
+- `canWrite` — may they edit the shared content?
+- `canComment` — may they add anchored comments?
+
+A connection is dropped when `canRead` is false. The same callback is used when issuing the WebSocket token over REST, so the permission seam holds on both paths.
+
+## Declarative documents
+
+If every document type has its own engine or authorization rules, repeat the regex at your own risk. Instead, declare patterns and let the library extract params:
 
 ```ts
 documents: {
@@ -50,3 +100,19 @@ documents: {
   }),
 }
 ```
+
+`defineDocument` keys are URL-like patterns (`:name` segments). The library matches the incoming `docName` against each pattern, extracts the params, and uses the document's engine and `authorize`. Anything that doesn't match falls back to the global `engine`/`authorize`.
+
+## REST routes
+
+The provider registers ten endpoints under `/collaboration` automatically — see [REST routes](/docs/collaboration/routes). Because they are normal routes, the Tuyau codegen types them for you.
+
+## Client
+
+On the frontend, `@adonis-agora/collaboration-client` exposes React hooks that resolve the engine from the server and speak the right transport. See [Client hooks](/docs/collaboration/client).
+
+## Next steps
+
+- Generate shared types for your first document: `node ace make:collab-document researches/writing`
+- Add the editor page with `useCollabDoc` / `useCollabEditor`
+- Enable presence with `redisUrl` when you run multiple instances

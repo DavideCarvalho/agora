@@ -1,24 +1,38 @@
 ---
 title: Collaboration
-description: Collaborative editing (CRDT) for AdonisJS — Yjs (Hocuspocus), Automerge and edge engines, Redis presence, version control, anchored comments, ace codegen and React client hooks.
+description: Collaborative editing (CRDT) for AdonisJS — Yjs/Automerge/edge engines, Redis presence, version control, anchored comments, codegen and React client hooks.
 icon: Users
 ---
 
 # Collaboration
 
-Pacote do ecossistema Agora para edição colaborativa (CRDT) em AdonisJS. Documentos identificados por nome (`researches/42/writing`), engine por documento, version control unificado, comentários ancorados e hooks React no client.
+**Collaboration** is the Agora package that turns an AdonisJS app into a real-time, multi-user editing backend. It solves the hard parts of collaboration for you — CRDT conflict resolution, version history, anchored comments and presence — behind one uniform API, and ships the React hooks to consume it.
 
-## Features
+## What you get
 
-- **Engines CRDT**: `yjs` (Hocuspocus embutido), `automerge`, `partykit`/`partyserver` (edge)
-- **Presença server-side** (Redis, cross-instance) + awareness client-side
-- **Version control** unificado (snapshots Yjs / heads Automerge)
-- **Comentários ancorados** por espaço (`text-range`, `canvas-object`, `timestamp`)
-- **Rotas REST builtin** auto-registradas (token, comments, versions) — tipáveis pelo Tuyau
-- **Codegen ace**: `collaboration:init`, `make:collab-document`, registry tipado em `.adonisjs/`
-- **Client React**: `useCollabDoc`, `useCollabEditor` (adapters Excalidraw/tldraw/text), `useAutomergeDoc`
+- **CRDT engines** that converge on their own: `yjs` (embedded Hocuspocus, best for rich text and canvases), `automerge` (structured JSON documents with native history), and edge engines (`partykit`/`partyserver`) that move the WebSocket to Cloudflare Workers.
+- **Per-document routing** — declare which engine and authorization each document type uses, and the library extracts params and resolves the right driver for you.
+- **Unified version control** — snapshots on Yjs, native change graph on Automerge, one API (`createVersion`, `restore`, `diff`).
+- **Anchored comments** per space (`text-range`, `canvas-object`, `timestamp`), persisted in your storage.
+- **Presence** — peer-to-peer awareness on the client, plus Redis-backed cross-instance presence on the server when you set `redisUrl`.
+- **Built-in REST routes** (token, comments, versions, state) that Tuyau types for you.
+- **Codegen** — ace commands plus a typed registry in `.adonisjs/` that stays in sync with your document files.
+- **React client hooks** — `useCollabDoc`, `useAwareness`, `useComments`, `useVersions`, and editor-agnostic `useCollabEditor` with Excalidraw/tldraw/text adapters.
 
-## Navegação
+## How it fits together
+
+```
+Browser ──useCollabDoc──► GET /collaboration/token ──► authorize(user, doc)
+                            │  { token, wsUrl, engine }
+                            ▼
+Browser ──WebSocket──► engine transport (Hocuspocus | Automerge | PartyKit edge)
+                            │
+              Adonis ── storage (Lucid) ── versions ── comments ── presence (Redis)
+```
+
+The client never hard-codes an engine: the server resolves it per document and the hooks pick the matching transport. Your UI edits a scene or a doc — not a wire protocol.
+
+## Navigation
 
 - [Getting started](/docs/collaboration/getting-started)
 - [Engines](/docs/collaboration/engines)

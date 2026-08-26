@@ -1,0 +1,67 @@
+---
+title: Invoices
+description: Emit fiscal invoices (NFe/NFSe) attached to a charge, through a provider independent of the payment gateway.
+---
+
+Invoice emission (NFe/NFSe) is attached to the charge call and resolved by **provider
+name**, independent of the payment gateway. A charge can pay via one provider and emit
+the fiscal note via another.
+
+## Requesting an invoice
+
+The `invoice` option on `charge`, `createSubscription` and `createCheckout`:
+
+```ts
+// Use the default invoice provider (config.invoice.default)
+await payments.driver('pix').charge({
+  customerId: 'cus_x',
+  amount: 1990,
+  invoice: true,
+})
+
+// Use a named invoice provider — payment via woovi, note via tecnospeed
+await payments.driver('pix').charge({
+  customerId: 'cus_x',
+  amount: 1990,
+  invoice: 'tecnospeed',
+})
+
+// With per-charge overrides
+await payments.driver('credit_card').charge({
+  customerId: 'cus_x',
+  amount: 1990,
+  invoice: {
+    provider: 'focus',
+    service: { description: 'Software license', code: '1.01' },
+    tax: { iss: 5 },
+  },
+})
+```
+
+## What comes back
+
+The emitted invoice is attached to the returned payment as `payment.invoice`:
+
+```ts
+const payment = await payments.driver('pix').charge({
+  customerId: 'cus_x',
+  amount: 1990,
+  invoice: true,
+})
+
+payment.invoice?.number  // '12345'
+payment.invoice?.key     // access key (chave de acesso)
+payment.invoice?.url     // hosted PDF
+```
+
+## Invoice providers
+
+Built-in providers are configured in `config.invoice.providers`:
+
+- **Focus** (`invoice.focus({ token })`) — NF-e / NFS-e / NFC-e across hundreds of
+  municipalities via REST; no SDK dependency.
+- **Asaas** emits NFS-e natively — configure automatic emission per subscription in the
+  Asaas dashboard, and the `invoice` option still works through any configured provider.
+
+Custom providers are plain factories implementing the `InvoiceProvider` contract
+(`emit(input)`, `find(id)`).

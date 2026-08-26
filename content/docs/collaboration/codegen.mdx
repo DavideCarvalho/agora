@@ -1,23 +1,35 @@
 ---
 title: Codegen
-description: Comandos ace (collaboration:init, make:collab-document) e o registry tipado em .adonisjs/.
+description: Ace commands and the typed document registry — generated types that keep frontend and backend in sync.
 icon: WandSparkles
 ---
 
 # Codegen
 
-## Comandos
+AdonisJS v7 generates code from your application and writes it into `.adonisjs/`. The collaboration package plugs into that system so your documents are **typed in one place and re-used everywhere** — backend, codegen registry and frontend.
 
-- `collaboration:init` — diretórios base, migrations, worker PartyKit
-- `make:collab-document <name>` — tipos compartilhados em `app/collaboration/documents/`
+## Commands
 
-## Registry tipado
+- `collaboration:init` — scaffolds the base documents directory, migrations (when a database is configured) and the PartyKit worker (`--engine=partykit`)
+- `make:collab-document <name>` — generates the shared types for one document type
 
-Hook `init` do Assembler gera `.adonisjs/collaboration/documents.ts`:
+```sh
+node ace make:collab-document researches/writing
+# creates app/collaboration/documents/writing_types.ts
+```
+
+The generated file exports the document's `docName`, allowed comment **spaces** and **anchor kinds** — the single source of truth that both your `authorize` logic and your frontend comments UI import.
+
+## The typed registry
+
+A second, larger payoff: an Assembler `init` hook (registered by `configure`) scans `app/collaboration/documents/` and generates `.adonisjs/collaboration/documents.ts`:
 
 ```ts
 import type { CollabDocumentName } from '.adonisjs/collaboration/documents.js'
+
 function open(name: CollabDocumentName) { /* autocomplete + exhaustiveness */ }
 ```
 
-Atualize com `node ace codegen` (ou dev server/build).
+`CollabDocumentName` is a union of every document name in your app. It refreshes on the same lifecycle as the rest of AdonisJS codegen — `node ace codegen`, the dev server, tests and the production build. Add a document, and every call site narrows automatically.
+
+> **Why generate instead of a hand-maintained registry?** A central list goes stale the moment someone adds a document without editing it. Codegen derives the list from the files on disk — the same reasoning the framework uses for controllers and transformers.

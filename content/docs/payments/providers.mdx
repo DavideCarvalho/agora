@@ -1,0 +1,111 @@
+---
+title: Providers
+description: Gateway specifics for Stripe, AbacatePay, Asaas and Woovi — supported methods, webhooks, subscriptions, externalReference and invoice behavior.
+---
+
+Every provider implements the same `PaymentsDriver` contract — `createCustomer`,
+`charge`, `refund`, `createCheckout`, `createSubscription`, `cancelSubscription`,
+`findPayment`, `findSubscription`, `listInvoices`, `parseWebhook` — normalizing each
+gateway's API onto the shared domain types.
+
+Each driver also declares `supportedMethods`, which the router uses to reject a method
+the gateway can't handle.
+
+## Stripe
+
+- **Methods**: pix, credit_card, boleto, undefined
+- **Setup**: `payments.stripe({ apiKey, currency })` — `STRIPE_KEY`, `STRIPE_WEBHOOK_SECRET`
+- **Webhooks**: HMAC signature via `constructEvent`; register `checkout.session.completed`,
+  `invoice.payment_succeeded`, `customer.subscription.*`
+- **Invoices**: no native fiscal emission — use an invoice provider with `invoice: true`
+
+```ts
+await payments.driver('credit_card').charge({
+  customerId: 'cus_123',
+  amount: 1990,
+  paymentMethodId: 'pm_123', // token from Stripe.js
+  invoice: true,
+})
+```
+
+## AbacatePay
+
+- **Methods**: pix, boleto, undefined — **no credit card** (routing `credit_card` here throws)
+- **Setup**: `payments.abacate({ apiKey, publicKey })` — `ABACATE_API_KEY`, `ABACATE_PUBLIC_KEY`
+- **Webhooks**: HMAC-SHA256 with the public key (`x-webhook-signature`); events
+  `checkout.completed`, `subscription.completed/renewed/cancelled`
+- **Requires** a customer for every charge
+
+```ts
+await payments.driver('pix').charge({
+  customerId: 'cus_123',
+  amount: 1990,
+  invoice: true,
+})
+```
+
+## Asaas
+
+- **Methods**: pix, boleto, credit_card, debit_card, undefined
+- **Setup**: `payments.asaas({ apiKey, sandbox })` — `ASAAS_API_KEY`; sandbox defaults to
+  `NODE_ENV !== 'production'`
+- **Webhooks**: validated by token (`asaas-access-token` / `asaas-webhook-token`);
+  events `PAYMENT_CREATED`, `PAYMENT_RECEIVED`, `PAYMENT_OVERDUE`, `PAYMENT_REFUNDED`,
+  `SUBSCRIPTION_*`
+- **Subscriptions**: native recurring billing — charges are generated automatically and
+  the webhook arrives per charge (with the `subscription` id); pass `card` for transparent
+  checkout (tokenized card auto-charged each cycle)
+- **Invoices**: Asaas emits NFS-e natively; use the `invoice` option with an invoice
+  provider, or Asaas's own invoice settings
+- **Requires** a customer for every charge and subscription
+- **`externalReference`**: sent as the Asaas `externalReference` field — propagated to
+  every installment of a subscription's charges, so webhooks route each payment back to
+  your record
+
+```ts
+await payments.driver('boleto').charge({
+  customerId: 'cus_123',
+  amount: 1990,
+  invoice: true,
+})
+
+await payments.driver('credit_card').createSubscription({
+  customerId: 'cus_123',
+  planId: 'plan_pro',
+  amount: 4990,
+  startDate: '2026-09-01',
+  externalReference: 'sub:sub_local_1',
+  card: {
+    token: 'tok_123',
+    holder: { name: 'A', email: 'a@b.com', cpfCnpj: '123', postalCode: '000', addressNumber: '1', phone: '999' },
+    remoteIp: '1.2.3.4',
+  },
+})
+```
+
+## Woovi (OpenPix)
+
+- **Methods**: pix, undefined — **Pix only**
+- **Setup**: `payments.woovi({ appId })` — `WOOVI_APP_ID`
+- **Webhooks**: `PIX_AUTOMATIC_APPROVED`, `PIX_AUTOMATIC_COBR_COMPLETED`,
+  `PIX_AUTOMATIC_COBR_REJECTED`, `CHARGE_COMPLETED`, `CHARGE_EXPIRED`; the payload uses
+  `globalID` for the subscription/charge id and `correlationID` for your reference
+- **Subscriptions**: Pix Automático — recurring Pix via webhooks, no card; pass
+  `startDate` to set the charge day (`dayGenerateCharge`)
+- **Invoices**: no invoice concept — charges are the billing record; use an invoice
+  provider with `invoice: true`
+
+```ts
+await payments.driver('pix').charge({
+  customerId: 'your-correlation-id',
+  amount: 1990,
+  invoice: true,
+})
+
+await payments.driver('pix').createSubscription({
+  customerId: 'your-correlation-id',
+  planId: 'plan_pro',
+  amount: 4990,
+  startDate: '2026-09-01',
+})
+```

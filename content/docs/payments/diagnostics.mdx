@@ -1,0 +1,98 @@
+---
+title: Diagnostics
+description: Every payments milestone on the @adonis-agora/diagnostics bus — the event catalog, business events, and watching in Telescope.
+---
+
+Every payment milestone emits on the `@adonis-agora/diagnostics` bus as
+`agora:payments:<event>` — when diagnostics is installed in the app. The library reads
+the diagnostics slot **structurally** (it never imports the package), so when diagnostics
+is absent the emits are inert no-ops.
+
+## What is emitted
+
+| Event | When | Payload highlights |
+| --- | --- | --- |
+| `charge.created` | a charge succeeded at the gateway | gatewayId, provider, amount, currency, method |
+| `charge.refunded` | a refund completed | gatewayId, provider, amount, currency |
+| `subscription.created` | a subscription was created (API or webhook) | gatewayId, provider, customerId, planId |
+| `subscription.updated` | a subscription changed (webhook) | gatewayId, provider, customerId, status |
+| `subscription.canceled` | a subscription was canceled (API or webhook) | gatewayId, provider |
+| `payment.succeeded` | a webhook confirmed a payment | gatewayId, provider, amount, currency, externalReference |
+| `payment.failed` | a webhook confirmed a failed payment | gatewayId, provider, amount, currency, reason, externalReference |
+| `payment.refunded` | a webhook confirmed a refund | gatewayId, provider, amount, currency |
+| `payment.updated` | a webhook reported a payment update | gatewayId, provider, status |
+| `invoice.emitted` | an invoice (NFe/NFSe) was emitted | gatewayId, provider, number, url |
+| `webhook.received` | a gateway webhook arrived | id, provider, type |
+| `webhook.processed` | a webhook finished processing | id, provider, type |
+| `webhook.failed` | a webhook handler threw | id, provider, type, error |
+
+The runtime catalog is exported as `PAYMENTS_DIAGNOSTIC_EVENTS`.
+
+## Subscribing for business logic
+
+The `payment.*`/`subscription.*` events are the **normalized business events** — apps
+react to them with `onDiagnostic` (framework-agnostic, works in HTTP, workers and ace
+commands). See [Webhooks → Running your business logic](./webhooks) for the three ways to
+handle them (events, `billing.handlers`, or the `app/payment_handlers/` folder).
+
+## Watching in Telescope
+
+`@adonis-agora/telescope` ships a generic `DiagnosticsWatcher` that records every
+`agora:<lib>:<event>` publish automatically — no per-library watcher needed. Install the
+telescope and the `agora:payments:*` entries show up in the timeline as `diagnostic`
+entries with the payload preserved.
+
+## Typed Telescope watcher
+
+For typed `payments` entries (instead of the generic `diagnostic` ones), ship-with watcher:
+
+```ts
+import { PaymentsWatcher } from '@adonis-agora/payments/telescope'
+
+// ctx.record is telescope's recording surface (e.g. a store's `record`)
+new PaymentsWatcher().register(ctx)
+```
+
+On `register()` it claims every payments channel via `claimPaymentsDiagnostics`, so the
+generic `DiagnosticsWatcher` skips them (no double-recording); `dispose()` releases the
+claims and detaches. Wiring example for an AdonisJS app (`start/telescope.ts`):
+
+```ts
+import emitter from '@adonisjs/core/services/emitter'
+import app from '@adonisjs/core/services/app'
+import { TelescopeService } from '@adonis-agora/telescope'
+import { PaymentsWatcher } from '@adonis-agora/payments/telescope'
+
+emitter.on('http:server_ready', async () => {
+  const store = (await app.container.make(TelescopeService)).telescopeStore
+  new PaymentsWatcher().register({
+    record: (entry) => void store.record(entry).catch(() => {}),
+  })
+})
+```
+
+## Custom watcher / subscriber
+
+The events are plain `node:diagnostics_channel` channels, so anything can subscribe:
+
+```ts
+import { channelName, onDiagnostic } from '@adonis-agora/diagnostics'
+
+onDiagnostic('payments', 'charge.created', (event) => {
+  console.log('charge created', event.payload)
+})
+```
+
+## Claiming for a lib-specific Telescope watcher
+
+If you build a bespoke Telescope watcher for payments (typed entries instead of the
+generic `diagnostic` entries), claim the channels so the generic watcher skips them and
+avoids double-recording:
+
+```ts
+import { PAYMENTS_DIAGNOSTIC_EVENTS, claimPaymentsDiagnostics } from '@adonis-agora/payments'
+
+const release = claimPaymentsDiagnostics(PAYMENTS_DIAGNOSTIC_EVENTS)
+// ...register your watcher...
+// release() when the watcher stops
+```

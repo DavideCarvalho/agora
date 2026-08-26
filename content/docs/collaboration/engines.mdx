@@ -1,32 +1,63 @@
 ---
 title: Engines
-description: Yjs (Hocuspocus), Automerge e edge (PartyKit/PartyServer) — e como escolher por documento.
+description: How the CRDT engines work — Yjs (Hocuspocus), Automerge and edge (PartyKit/PartyServer) — and how to choose per document.
 icon: Layers
 ---
 
 # Engines
 
-| Engine | Onde roda | Melhor para |
-|---|---|---|
-| `yjs` (default) | Hocuspocus embutido no server HTTP do Adonis | Texto rico (Tiptap/ProseMirror), Google Docs-like |
-| `automerge` | Broadcast próprio no server | Documentos estruturados (objetos/JSON aninhados, histórico nativo) |
-| `partykit` / `partyserver` | Cloudflare Workers + Durable Objects (edge) | Latência global, origin separado |
+An **engine** is the CRDT backend that owns conflict resolution for a document. The library wraps each engine behind a driver and exposes a uniform API (state, versions, comments, presence). Which engine you pick is an architectural decision: it determines the data model your frontend edits, how history works, and where traffic flows.
 
-## Por documento
+## Why CRDT at all
 
-Use `engineFor` ou `documents` para rotear por tipo de documento:
+Two users editing the same text will produce conflicting changes. A CRDT gives you conflict resolution that **converges**: given the same set of operations, every replica ends up identical, without a central "last write wins" authorizer. Yjs and Automerge are the two mature CRDTs in this space; they differ in data model and trade-offs.
 
-```ts
-engineFor: (docName) => (docName.startsWith('lousas/') ? 'automerge' : 'yjs')
-```
+## The engines
 
-O client resolve a engine pelo token (`GET /collaboration/token` retorna `engine`) e escolhe o transporte certo automaticamente.
+| Engine | Runs on | Data model | History | Best for |
+|---|---|---|---|---|
+| `yjs` (default) | Embedded Hocuspocus on the Adonis HTTP server | Shared types (Map, Array, XmlFragment for rich text) | Snapshots you take (`createVersion`) | Rich text, Tiptap/ProseMirror, Excalidraw/tldraw scenes |
+| `automerge` | Custom room broadcast on the Adonis server | JSON-like document (`A.Doc`) | Native (every change is a hash) | Structured documents — nested objects, schemas, form-like data |
+| `partykit` / `partyserver` | Cloudflare Workers + Durable Objects (edge) | Same as Yjs (wire-compatible) | Snapshots (like yjs) | Global latency; browsers connect to the edge, not your server |
 
-## Edge (PartyKit)
+### Yjs (Hocuspocus)
+
+The default. The server embeds a Hocuspocus instance on your HTTP server; browsers connect a WebSocket at `/collaboration` and speak the `y-protocols` binary protocol. Version control is implemented on top of full-state snapshots: `createVersion` stores a snapshot, `restoreVersion` swaps the live document, connected clients converge in real time.
+
+**Pick Yjs when** the document is text (Tiptap/ProseMirror), or a scene of objects (Excalidraw, tldraw) — the ecosystem has first-class bindings that expect a `Y.Doc`.
+
+### Automerge
+
+The server keeps one `A.Doc` per room and broadcasts saved binaries; clients merge via the Automerge CRDT. **History is native**: every change produces a hash, so versions are markers over the real change graph rather than full snapshots.
+
+**Pick Automerge when** the document is structured data — a JSON object whose fields you reason about (a "ficha", form, schema). Note: Automerge cannot back Tiptap or a `Y.Doc`-based canvas; the client exposes a dedicated `useAutomergeDoc` hook for it.
+
+### PartyKit / PartyServer (edge)
+
+Deploy a Worker (Cloudflare Durable Objects) that speaks the same Yjs wire protocol. Browsers connect **directly to the edge**, not to your Adonis server — the `PartyKitDriver` on the Adonis side is an HTTP client of the worker for state/versions. This trades server round-trips for a separate deployment you must own.
 
 ```sh
-node ace collaboration:init --engine=partykit   # gera o worker em partykit-worker/
-npx partykit deploy                             # deploya o worker (origin separado)
+node ace collaboration:init --engine=partykit   # generates partykit-worker/
+npx partykit deploy                             # deploys to the edge
 ```
 
-O `PartyKitDriver` é o cliente HTTP do worker; version control e comentários ficam no Adonis.
+## Per-document routing
+
+You are not locked to one engine per app. Two mechanisms:
+
+```ts
+// 1. engineFor — a function
+engineFor: (docName) => (docName.startsWith('lousas/') ? 'automerge' : 'yjs')
+
+// 2. documents — declarative patterns (also carries per-doc authorize)
+documents: {
+  'lousas/:id': defineDocument({ engine: 'automerge' }),
+  'researches/:id/writing': defineDocument({ engine: 'yjs' }),
+}
+```
+
+The client is engine-agnostic: `GET /collaboration/token` returns the resolved `engine`, and the client hooks pick the matching transport automatically.
+
+## A note on "whiteboard → Automerge"
+
+A common instinct is "canvas = Automerge". Reality check: Excalidraw and tldraw ship **Yjs** bindings, so a whiteboard is usually best served by `yjs`. Automerge shines for *structured objects*, not for free-form canvas scenes. Decide by data model, not by vibe.

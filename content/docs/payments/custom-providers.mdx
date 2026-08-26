@@ -1,0 +1,208 @@
+---
+title: Custom providers
+description: Write a custom payment or invoice provider as a plain config factory, using the exported building blocks (httpRequest, toDecimal, ensureCustomer, ...).
+---
+
+The library is built so you never have to wait for a new gateway or invoice provider to
+ship: **custom drivers** are plain factories in `config/payments.ts`, and the building
+blocks they need (`httpRequest`, `toDecimal`, `emitInvoiceIfRequested`, `ensureCustomer`, ...)
+are exported from the package root.
+
+## Reusing a gateway customer
+
+Every charge/subscription flow needs a gateway customer id; `ensureCustomer` does the
+"reuse the stored id, or create at the gateway" branch for you (the app owns the
+user→customer mapping and persists the new id):
+
+```ts
+import { ensureCustomer } from '@adonis-agora/payments'
+
+const customer = await ensureCustomer(driver, user.asaasCustomerId, {
+  name: user.fullName,
+  email: user.email,
+  taxId: user.cpfCnpj ?? undefined,
+})
+user.asaasCustomerId = customer.id
+await user.save()
+```
+
+## Custom payment gateway
+
+Implement the `PaymentsDriver` contract and register it as a factory:
+
+```ts
+// app/services/payments/my_gateway_driver.ts
+import {
+  type PaymentsDriver,
+  type ChargeInput,
+  type Customer,
+  type Payment,
+  type WebhookEvent,
+  toDecimal,
+  httpRequest,
+  isNotFound,
+  emitInvoiceIfRequested,
+  type EmitInvoiceContext,
+} from '@adonis-agora/payments'
+
+export class MyGatewayDriver implements PaymentsDriver {
+  readonly provider = 'my_gateway'
+  readonly supportedMethods = ['pix', 'credit_card'] as const
+  readonly capabilities = { refunds: true }
+
+  #invoiceCtx: EmitInvoiceContext
+  #baseUrl = 'https://api.mygateway.com/v1'
+
+  constructor(ctx: EmitInvoiceContext, private apiKey: string) {
+    this.#invoiceCtx = ctx
+  }
+
+  async createCustomer(input: { name?: string; email?: string; taxId?: string }) {
+    const data = await httpRequest<{ id: string }>('/customers', {
+      baseUrl: this.#baseUrl,
+      method: 'POST',
+      body: { ...input },
+      bearerToken: this.apiKey,
+    })
+    return { id: data.id }
+  }
+
+  async charge(input: ChargeInput): Promise<Payment> {
+    const data = await httpRequest<{ id: string; amount: number; currency: string; status: string }>(
+      '/charges',
+      {
+        baseUrl: this.#baseUrl,
+        method: 'POST',
+        body: { amount: toDecimal(input.amount), customer: input.customerId },
+        bearerToken: this.apiKey,
+      },
+    )
+    const payment: Payment = {
+      id: data.id,
+      gatewayId: data.id,
+      provider: this.provider,
+      amount: { amount: input.amount, currency: data.currency },
+      status: data.status === 'paid' ? 'paid' : 'pending',
+      payload: data as unknown as Record<string, unknown>,
+      createdAt: new Date().toISOString(),
+    }
+    await emitInvoiceIfRequested(this.#invoiceCtx, input, payment, this)
+    return payment
+  }
+
+  // ... findCustomer, refund, createCheckout, createSubscription,
+  //     cancelSubscription, updateSubscription, findSubscription,
+  //     listInvoices, parseWebhook
+}
+
+export function myGateway(config: { apiKey: string }) {
+  return (ctx: EmitInvoiceContext) => Promise.resolve(new MyGatewayDriver(ctx, config.apiKey))
+}
+```
+
+Then register it:
+
+```ts
+// config/payments.ts
+import { defineConfig } from '@adonis-agora/payments'
+import { myGateway } from '#services/payments/my_gateway_driver'
+
+export default defineConfig({
+  default: 'my_gateway',
+  providers: {
+    my_gateway: myGateway({ apiKey: env.get('MY_GATEWAY_KEY') }),
+  },
+  methods: {
+    pix: 'my_gateway',
+    credit_card: 'my_gateway',
+  },
+})
+```
+
+## Custom invoice provider
+
+Implement the `InvoiceProvider` contract and register it under `invoice.providers`:
+
+```ts
+// app/services/invoices/tecnospeed_driver.ts
+import { type InvoiceProvider, type InvoiceEmitInput, type Invoice, httpRequest } from '@adonis-agora/payments'
+
+export class TecnospeedDriver implements InvoiceProvider {
+  readonly provider = 'tecnospeed'
+
+  async emit(input: InvoiceEmitInput): Promise<Invoice> {
+    const data = await httpRequest<{ numero: string; link: string }>('/nfse', {
+      baseUrl: 'https://api.tecnospeed.com.br/v1',
+      method: 'POST',
+      body: {
+        tomador: { cpf_cnpj: input.customer.taxId, nome: input.customer.name },
+        valor: input.amount / 100,
+        descricao: input.service.description,
+      },
+      bearerToken: process.env.TECNOSPEED_TOKEN!,
+    })
+    return {
+      id: data.numero,
+      gatewayId: data.numero,
+      provider: this.provider,
+      number: data.numero,
+      url: data.link,
+      status: 'issued',
+      amount: { amount: input.amount, currency: input.currency },
+      createdAt: new Date().toISOString(),
+      payload: {},
+    }
+  }
+
+  async find() {
+    return null
+  }
+}
+```
+
+```ts
+// config/payments.ts
+invoice: {
+  default: 'tecnospeed',
+  providers: {
+    tecnospeed: () => import('#services/invoices/tecnospeed_driver').then((m) => new m.TecnospeedDriver()),
+  },
+}
+```
+
+## Extend an existing driver
+
+When a gateway ships a feature the library hasn't caught up with yet (e.g. AbacatePay
+starts supporting credit cards), extend the bundled driver instead of rewriting it:
+
+```ts
+// app/services/payments/abacate_with_card.ts
+import { AbacateDriver } from '@adonis-agora/payments/drivers/abacate'
+import type { ChargeInput, Payment } from '@adonis-agora/payments'
+
+export class AbacateWithCardDriver extends AbacateDriver {
+  override readonly supportedMethods = ['pix', 'boleto', 'credit_card', 'undefined'] as const
+
+  override async charge(input: ChargeInput): Promise<Payment> {
+    if (input.method === 'credit_card' || input.card) {
+      // Implementa o fluxo de cartão que a lib ainda não cobre nativamente.
+      // Você pode chamar o super para o fluxo PIX padrão.
+      return this.chargeWithCard(input)
+    }
+    return super.charge(input)
+  }
+}
+```
+
+```ts
+// config/payments.ts
+providers: {
+  abacate: () => import('#services/payments/abacate_with_card').then((m) => new m.AbacateWithCardDriver()),
+},
+methods: {
+  credit_card: 'abacate',
+}
+```
+
+The router's `supportedMethods` validation now accepts `credit_card` for this provider,
+and the rest of the library (routing, invoices, webhooks) works unchanged.

@@ -1,0 +1,74 @@
+---
+title: Payments
+description: Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice (NFe/NFSe) emission, method routing and webhook-driven business logic.
+icon: CreditCard
+---
+
+Multi-gateway payments and Cashier-style billing for AdonisJS, built for the Brazilian
+market. Accept Pix, card, boleto and subscriptions through **Stripe**, **AbacatePay**,
+**Asaas** and **Woovi** (Pix Automático) — and emit fiscal invoices (NFe/NFSe) through
+dedicated providers like **Focus**, **Tecnospeed**, **eNotas** and **PlugNotas**, or
+natively through Asaas.
+
+## What it gives you
+
+- **Provider-agnostic payment drivers** — one contract (`charge`, `refund`, `checkout`,
+  `createSubscription`, `parseWebhook`) normalized across gateways, Omnipay-style.
+- **Method-based routing** — `config.methods` routes `pix` → `woovi`, `credit_card` →
+  `stripe`, `boleto` → `asaas`; the router rejects a method a gateway doesn't support
+  (e.g. `credit_card` on a Pix-only gateway throws).
+- **Cashier-style billing** — Lucid mixins (`withBillable`, `withSubscription`),
+  migrations, and an idempotent webhook processor that keeps subscriptions and payments
+  in sync with the gateway.
+- **Invoice emission attached to the charge** — `charge({ ..., invoice: true })` emits
+  through the default invoice provider; `invoice: 'tecnospeed'` names a specific one,
+  independent of the payment gateway.
+- **Durable-ready webhooks** — webhooks process through `@adonis-agora/durable` when it's
+  installed in the app, falling back to an in-process dispatcher with exponential-backoff
+  retries otherwise.
+- **Diagnostics integration** — every milestone (charge, refund, subscription, invoice,
+  webhook) emits on `agora:payments:<event>` through `@adonis-agora/diagnostics` when
+  it's installed, so Telescope watchers can observe the library without importing it.
+
+## Quick look
+
+```ts
+// config/payments.ts
+import { defineConfig, payments, invoice } from '@adonis-agora/payments'
+
+export default defineConfig({
+  default: 'stripe',
+  providers: {
+    stripe: payments.stripe({ apiKey: env.get('STRIPE_KEY') }),
+    woovi: payments.woovi({ appId: env.get('WOOVI_APP_ID') }),
+    asaas: payments.asaas({ apiKey: env.get('ASAAS_API_KEY') }),
+  },
+  methods: {
+    pix: 'woovi',
+    credit_card: 'stripe',
+    boleto: 'asaas',
+  },
+  invoice: {
+    default: 'focus',
+    providers: { focus: invoice.focus({ token: env.get('FOCUS_NFE_TOKEN') }) },
+  },
+})
+```
+
+```ts
+import { getPayments } from '@adonis-agora/payments/services/main'
+
+// Pix via Woovi + invoice via Focus (default)
+await getPayments().driver('pix').charge({
+  customerId: 'cus_x',
+  amount: 1990,
+  invoice: true,
+})
+
+// Card via Stripe + invoice via a named provider
+await getPayments().driver('credit_card').charge({
+  customerId: 'cus_x',
+  amount: 1990,
+  invoice: 'tecnospeed',
+})
+```

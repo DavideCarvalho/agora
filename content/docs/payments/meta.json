@@ -1,0 +1,19 @@
+{
+  "title": "Payments",
+  "pages": [
+    "index",
+    "getting-started",
+    "configuration",
+    "providers",
+    "custom-providers",
+    "billing",
+    "invoices",
+    "webhooks",
+    "diagnostics",
+    "testing",
+    "roadmap"
+  ],
+  "root": true,
+  "description": "Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice (NFe/NFSe) emission, method routing and webhook-driven business logic.",
+  "icon": "CreditCard"
+}

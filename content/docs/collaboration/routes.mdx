@@ -1,31 +1,57 @@
 ---
 title: REST routes
-description: Endpoints builtin (token, comments, versions, state) — auto-registrados e tipáveis pelo Tuyau.
+description: The built-in endpoints — token flow, comments, versions and binary state — auto-registered and typeable by Tuyau.
 icon: Route
 ---
 
 # REST routes
 
-Dez endpoints builtin, auto-registrados em `/collaboration`:
+Collaboration is not only a WebSocket. The library ships **ten REST endpoints** that the provider registers automatically under `/collaboration`. Because they are ordinary routes, the Tuyau codegen types them for your frontend — no manual client.
 
-| Método | Rota | Uso |
+## The endpoints
+
+| Method | Route | Use |
 |---|---|---|
-| GET | `/collaboration/token?doc=` | Token efêmero do WebSocket (JWT quando edge) |
-| GET/POST | `/collaboration/comments` | Listar/criar comentários ancorados |
-| PATCH/DELETE | `/collaboration/comments/:id?doc=` | Resolver/remover comentário |
-| GET/POST | `/collaboration/versions` | Listar/criar versões |
-| POST | `/collaboration/versions/restore` | Restaurar versão |
-| GET/POST | `/collaboration/state?doc=` | Estado binário (worker edge consome) |
+| GET | `/collaboration/token?doc=` | Ephemeral WebSocket token |
+| GET | `/collaboration/comments?doc=&space=` | List anchored comments |
+| POST | `/collaboration/comments` | Create a comment |
+| PATCH | `/collaboration/comments/:id?doc=` | Resolve/reopen |
+| DELETE | `/collaboration/comments/:id?doc=` | Remove |
+| GET | `/collaboration/versions?doc=` | List versions |
+| POST | `/collaboration/versions` | Create a version |
+| POST | `/collaboration/versions/restore` | Restore a version |
+| GET | `/collaboration/state?doc=` | Binary state (edge worker) |
+| POST | `/collaboration/state?doc=` | Persist state (edge worker) |
 
-`docName` sempre via query/body (nomes contêm barras — nunca path param).
+> **Why `doc` is a query param, never a path segment.** Document names contain slashes (`researches/42/writing`). A path param would swallow the slashes; a query/body param keeps the name intact.
 
-## Modo manual
+## The token flow
+
+A browser cannot attach custom headers to a WebSocket handshake. So the client asks for a short-lived credential first:
+
+1. `GET /collaboration/token?doc=researches/42/writing`
+2. Your auth middleware resolves the user (same-origin: the session cookie; cross-origin: your header/token)
+3. The library runs `authorize(user, docName)` — the same permission seam as the handshake
+4. It returns `{ token, wsUrl, engine }`; for edge engines the token is a signed JWT, for self-hosted a base64 payload
+5. The client opens the WebSocket with `?token=...`
+
+Fail-closed: without a resolved user, the endpoint returns `401`.
+
+## Manual mode
+
+Auto-registration is the default. If you prefer full control — a different prefix, extra middleware, or a guard — disable it and register the routes where you want:
 
 ```ts
-// config: routes: { enabled: false }
-import { collaborationRoutes } from '@adonis-agora/collaboration'
+// config/collaboration.ts
+routes: { enabled: false }
 
+// start/routes.ts
+import { collaborationRoutes } from '@adonis-agora/collaboration'
 collaborationRoutes(router, { prefix: '/api/collab', middleware: [authMiddleware] })
 ```
 
-O `resolveUser` default é fail-closed (401); passe `routes.resolveUser` ou rode seu auth middleware antes. O POST `/state` é machine-to-machine e exige o shared secret do worker.
+You can also supply `resolveUser` per route via `routes.resolveUser` in the config when your auth shape differs from `ctx.auth.user`.
+
+## Binary state (`/state`)
+
+`GET/POST /collaboration/state?doc=` carries the raw document binary. In self-hosted mode this is how the PartyKit worker loads its initial state and persists post-debounce. Because it is machine-to-machine, `POST /state` requires the worker's **shared secret** (`config.partykit.jwtSecret`), not a user session.

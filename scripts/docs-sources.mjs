@@ -139,6 +139,17 @@ export const sources = [
     repoDir: 'adonis-collaboration',
     migrated: true,
   },
+  {
+    slug: 'payments',
+    name: 'Payments',
+    description: 'Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice (NFe/NFSe) emission, method routing and webhook-driven business logic.',
+    icon: 'CreditCard',
+    repo: 'DavideCarvalho/adonis-agora-payments',
+    ref: 'master',
+    path: 'docs',
+    repoDir: 'adonis-payments',
+    migrated: true,
+  },
   // NOTE: authkit is NOT synced here — its docs (apps/docs/content/docs) are a
   // coupled Fumadocs app with live React demos + app path-aliases, not portable.
   // The /docs/authkit page is hand-authored in content/docs/authkit/ instead.

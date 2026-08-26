@@ -1,0 +1,88 @@
+---
+title: Billing
+description: The Cashier-style subscription layer — Billable mixins, Lucid stores, idempotent webhook processing and the billing events.
+---
+
+The billing layer is Cashier-style: Lucid models + mixins, an idempotent webhook
+processor that keeps the local tables in sync with the gateway, and a dispatcher that
+runs webhooks through `@adonis-agora/durable` when it's installed.
+
+## Models
+
+The configure command publishes a migration creating four tables:
+
+- `billing_customers` — the morph link between your users and gateway customers
+- `billing_subscriptions` — subscriptions with `status`, `plan_id`, `trial_ends_at`, `ends_at`
+- `billing_payments` — every payment, keyed by gateway id
+- `billing_webhook_events` — the idempotency ledger (keyed by gateway event id)
+
+## The Billable model
+
+Compose `withBillable()` into your user model (or scaffold one):
+
+```sh
+node ace make:billable user
+```
+
+```ts
+import { BaseModel, compose } from '@adonisjs/lucid/orm'
+import { column } from '@adonisjs/lucid/orm'
+import { withBillable } from '@adonis-agora/payments'
+
+export default class User extends compose(BaseModel, withBillable()) {
+  @column({ isPrimary: true }) declare id: string
+}
+```
+
+The mixin adds `billingCustomerId` and `billingProvider`, so a user knows its gateway
+customer id:
+
+```ts
+const customer = await payments.driver('pix').createCustomer({
+  name: user.name,
+  email: user.email,
+  taxId: user.taxId,
+})
+user.billingCustomerId = customer.id
+user.billingProvider = 'woovi'
+await user.save()
+```
+
+## Subscriptions
+
+Create a subscription at the gateway and sync it locally via the webhook processor:
+
+```ts
+const subscription = await payments.driver('pix').createSubscription({
+  customerId: user.billingCustomerId!,
+  planId: 'plan_pro',
+  amount: 4990,
+  startDate: '2026-09-01',
+  invoice: true,
+})
+```
+
+The webhook processor listens for `subscription.created/updated/canceled` and
+`payment.succeeded/failed/refunded` and upserts the local rows automatically.
+
+## Webhook processing
+
+Every event is recorded in `billing_webhook_events` (keyed by gateway event id) before
+processing — replays are skipped, so a redelivered webhook never double-syncs. Handlers
+run after the built-in sync and can send emails, release access, etc.:
+
+```ts
+// start/events.ts
+import { onDiagnostic } from '@adonis-agora/diagnostics'
+
+onDiagnostic('payments', 'payment.succeeded', ({ payload }) => {
+  // grant access, send receipt...
+})
+```
+
+## Durable integration
+
+By default (`billing.durable = 'auto'`), webhooks are processed as durable workflow runs
+when `@adonis-agora/durable` is installed **and** its provider is registered in the app.
+Otherwise they fall back to an in-process dispatcher that retries with exponential
+backoff — so a transient failure never loses a payment notification.
