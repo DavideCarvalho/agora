@@ -1,0 +1,25 @@
+---
+title: Routes
+description: The built-in REST endpoints — token flow, comments, versions and binary state — auto-registered and typeable by Tuyau.
+icon: Route
+---
+
+# Routes
+
+Collaboration is not only a WebSocket. The library ships **ten REST endpoints** auto-registered under `/collaboration`. Because they are ordinary routes, Tuyau types them for your frontend.
+
+| Method | Route | Use |
+|---|---|---|
+| GET | `/collaboration/token?doc=` | Ephemeral WebSocket token |
+| GET/POST | `/collaboration/comments` | List/create comments |
+| PATCH/DELETE | `/collaboration/comments/:id?doc=` | Resolve/remove |
+| GET/POST | `/collaboration/versions` | List/create versions |
+| POST | `/collaboration/versions/restore` | Restore a version |
+| GET/POST | `/collaboration/state?doc=` | Binary state (edge) |
+
+`docName` always via query/body — names contain slashes.
+
+## Deep dives
+
+- [Token flow](/docs/collaboration/routes/token-flow)
+- [Binary state](/docs/collaboration/routes/state)

@@ -4,92 +4,122 @@ description: Multi-gateway payments and Cashier-style billing for AdonisJS — S
 icon: CreditCard
 ---
 
-Multi-gateway payments and Cashier-style billing for AdonisJS, built for the Brazilian
-market. Accept Pix, card, boleto and subscriptions through **Stripe**, **AbacatePay**,
-**Asaas** and **Woovi** (Pix Automático) — and emit fiscal invoices (NFe/NFSe) through
-dedicated providers like **Focus**, **Tecnospeed**, **eNotas** and **PlugNotas**, or
-natively through Asaas.
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Cards, Card } from 'fumadocs-ui/components/card';
 
-## What it gives you
+**`@adonis-agora/payments`** brings multi-gateway payments and Cashier-style billing to
+AdonisJS, built for the Brazilian market. One contract — `charge`, `refund`,
+`createSubscription`, `parseWebhook` — normalized across **Stripe**, **AbacatePay**,
+**Asaas** and **Woovi** (Pix Automático), so your services talk to one interface instead of
+four SDKs. A charge can pay via Pix through Woovi and emit the fiscal invoice (NFe/NFSe)
+through a completely different provider, in a single call.
 
-- **Provider-agnostic payment drivers** — one contract (`charge`, `refund`, `checkout`,
-  `createSubscription`, `parseWebhook`) normalized across gateways, Omnipay-style.
-- **Method-based routing** — `config.methods` routes `pix` → `woovi`, `credit_card` →
-  `stripe`, `boleto` → `asaas`; the router rejects a method a gateway doesn't support
-  (e.g. `credit_card` on a Pix-only gateway throws).
-- **Cashier-style billing** — Lucid mixins (`withBillable`, `withSubscription`),
-  migrations, and an idempotent webhook processor that keeps subscriptions and payments
-  in sync with the gateway.
-- **Invoice emission attached to the charge** — `charge({ ..., invoice: true })` emits
-  through the default invoice provider; `invoice: 'tecnospeed'` names a specific one,
-  independent of the payment gateway.
-- **Durable-ready webhooks** — webhooks process through `@adonis-agora/durable` when it's
-  installed in the app, falling back to an in-process dispatcher with exponential-backoff
-  retries otherwise.
-- **Diagnostics integration** — every milestone (charge, refund, subscription, invoice,
-  webhook) emits on `agora:payments:<event>` through `@adonis-agora/diagnostics` when
-  it's installed, so Telescope watchers can observe the library without importing it.
+<Callout type="info" title="The one rule">
+A payment is **confirmed only by the webhook**. A `charge()` returns a `PENDING` record —
+the money hasn't moved until the gateway calls your endpoint. The processor's idempotency
+ledger and durable dispatch are what make "trust only the webhook" safe: forged callbacks
+are rejected, redeliveries are no-ops, and a half-processed confirmation survives restarts.
+See [Webhooks](/docs/payments/webhooks).
+</Callout>
 
-## Quick look
+## The problem it solves
 
-```ts
-// config/payments.ts
-import { defineConfig, payments, invoice } from '@adonis-agora/payments'
+Payment integrations are usually a mess of gateway SDKs, hand-rolled status mirrors, and
+webhook controllers that duplicate each other. `@adonis-agora/payments` collapses that into
+four guarantees:
+
+- **One driver contract, four gateways.** Every gateway normalizes onto the same
+  `PaymentsDriver`. Adding a gateway is a config entry, not a code change — and a driver
+  declares which methods it supports, so routing a card to a Pix-only gateway fails at the
+  manager, not at the gateway.
+- **Money moves only on confirmation.** The idempotent webhook processor (a gateway-event
+  ledger written *before* any work runs) makes redeliveries no-ops. Your business logic —
+  grant credits, activate a subscription — runs at the right moment, exactly once.
+- **Billing mirrors the gateway.** Subscriptions, payments and trials sync into Lucid
+  tables automatically, Cashier-style, with billable mixins on your models.
+- **Fiscal notes are a separate concern.** Pay through one provider, emit the NFe/NFSe
+  through another — the `invoice` option on the charge call joins them.
+
+## Quickstart
+
+The minimal loop — install, configure a gateway, run the migrations, charge — with one
+provider and no invoice provider:
+
+<Steps>
+<Step>
+
+Install and configure:
+
+```bash
+node ace add @adonis-agora/payments
+```
+
+This registers the `payments_provider` in `adonisrc.ts`, publishes `config/payments.ts`,
+the billing migrations, and the ace commands.
+</Step>
+
+<Step>
+
+Set a gateway secret and make your first charge:
+
+```ini title=".env"
+ASAAS_API_KEY=your-asaas-api-key
+```
+
+```ts title="config/payments.ts"
+import env from '#start/env'
+import { defineConfig, payments } from '@adonis-agora/payments'
 
 export default defineConfig({
-  default: 'stripe',
+  default: 'asaas',
   providers: {
-    stripe: payments.stripe({ apiKey: env.get('STRIPE_KEY') }),
-    woovi: payments.woovi({ appId: env.get('WOOVI_APP_ID') }),
     asaas: payments.asaas({ apiKey: env.get('ASAAS_API_KEY') }),
   },
   methods: {
-    pix: 'woovi',
-    credit_card: 'stripe',
-    boleto: 'asaas',
-  },
-  invoice: {
-    default: 'focus',
-    providers: { focus: invoice.focus({ token: env.get('FOCUS_NFE_TOKEN') }) },
+    pix: 'asaas',
+    credit_card: 'asaas',
   },
 })
 ```
 
-```ts
+```ts title="app/services/checkout_service.ts"
 import { getPayments } from '@adonis-agora/payments/services/main'
 
-// Pix via Woovi + invoice via Focus (default)
-await getPayments().driver('pix').charge({
-  customerId: 'cus_x',
-  amount: 1990,
-  invoice: true,
+const customer = await getPayments().driver('pix').createCustomer({
+  name: 'Jane Doe',
+  email: 'jane@example.com',
+  taxId: '123.456.789-00',
 })
 
-// Card via Stripe + invoice via a named provider
-await getPayments().driver('credit_card').charge({
-  customerId: 'cus_x',
-  amount: 1990,
-  invoice: 'tecnospeed',
+// charge via Pix — the customer scans the QR, then the webhook confirms
+const payment = await getPayments().driver('pix').charge({
+  customerId: customer.id,
+  amount: 1990, // R$ 19,90 — integer cents, never floats
 })
 ```
+</Step>
 
-## Design principles
+<Step>
 
-A few decisions shape everything else in the docs:
+Register the webhook and react to confirmations:
 
-- **The driver contract is the seam.** Every gateway normalizes onto the same
-  `PaymentsDriver` — your services talk to one interface, not four SDKs. Adding a gateway
-  is a config entry, not a code change.
-- **Money is integer cents.** `amount: 1990` is R$ 19,90. Drivers convert to gateway
-  decimals via `toDecimal`/`fromDecimal` — never float-multiply money.
-- **The webhook is the only source of truth for *confirmation*.** A charge returns
-  `PENDING`; the webhook processor (idempotent ledger, durable dispatch) is what turns it
-  into revenue. Trust nothing else.
-- **Fiscal notes are decoupled from payments.** Pay through one provider, emit the NFe/NFSe
-  through another — the `invoice` option on the charge call joins them.
-- **Everything observability-friendly.** Every milestone publishes on
-  `@adonis-agora/diagnostics`; Telescope records it; the library never imports diagnostics,
-  it reads the slot structurally.
+```sh
+node ace payments:webhook   # prints the URL + event list per provider
+node ace make:webhook-handler payment.succeeded
+```
+
+```ts title="app/payment_handlers/payment_succeeded.ts"
+@inject()
+export default class PaymentSucceededHandler {
+  static readonly eventType = 'payment.succeeded'
+  async handle(event: WebhookEvent): Promise<void> {
+    // dispatch a durable workflow — durable owns retry + exactly-once
+  }
+}
+```
+</Step>
+</Steps>
 
 ## The happy path, end to end
 
@@ -105,3 +135,15 @@ your app ──charge()──▶ gateway (PENDING)
        ├─ run your handler    (grant credits / activate)
        └─ publish diagnostics (agora:payments:payment.succeeded)
 ```
+
+<Cards>
+  <Card title="Getting Started" href="/docs/payments/getting-started" description="Install, configure a gateway, run the migrations, register webhooks and make your first charge." />
+  <Card title="Configuration" href="/docs/payments/configuration" description="Providers, method routing, the invoice section, and the billing layer — durable + handlers." />
+  <Card title="Providers" href="/docs/payments/providers" description="Stripe, AbacatePay, Asaas and Woovi specifics — methods, subscriptions, externalReference." />
+  <Card title="Webhooks" href="/docs/payments/webhooks" description="Signature validation, the idempotency ledger, and the three ways to run your business logic." />
+  <Card title="Billing" href="/docs/payments/billing" description="Billable mixins, the billing tables, webhook sync, and durable-backed dispatch." />
+  <Card title="Invoices" href="/docs/payments/invoices" description="Emit fiscal NFe/NFSe attached to a charge, through a provider independent of the gateway." />
+  <Card title="Diagnostics" href="/docs/payments/diagnostics" description="Every milestone on the observability bus — gateway-action vs business events, Telescope." />
+  <Card title="Custom providers" href="/docs/payments/custom-providers" description="Write a gateway or invoice provider as a config factory, or extend a bundled driver." />
+  <Card title="Testing" href="/docs/payments/testing" description="The fake driver, in-memory store and mutable clock — exercise billing without a gateway or DB." />
+</Cards>
