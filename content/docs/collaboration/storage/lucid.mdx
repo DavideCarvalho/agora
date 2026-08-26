@@ -1,10 +1,10 @@
 ---
-title: Storage
-description: Where document states, versions and comments persist.
+title: Lucid storage
+description: Persist document states, versions and comments in the app's database via Lucid.
 icon: Database
 ---
 
-# Storage
+# Lucid storage
 
 The `CollaborationStorage` interface is the persistence seam. `lucidStorage({ connection })` resolves the Lucid connection from inside the library — the same pattern as `stores.lucid` from Durable, and it removes the `import db` in your config.
 
@@ -12,4 +12,4 @@ The `CollaborationStorage` interface is the persistence seam. `lucidStorage({ co
 storage: lucidStorage({ connection: 'entretextos' })
 ```
 
-In development you may omit `storage` for an in-memory fallback (data is lost on restart).
+Tables are created on first use (IF NOT EXISTS), so there is no migration to ship for a quick start. In development you may omit `storage` for an in-memory fallback (data is lost on restart).
