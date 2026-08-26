@@ -11,8 +11,8 @@ description: Where the payments library is headed — drivers hardening, more in
 - **Webhook business logic** — the three options (folder, `billing.handlers`, events) are
   shipped; next: an out-of-the-box `@OnDiagnostic` durable trigger example once the
   durable event-trigger release lands
-- **Commands** — `payments:webhook --create` (Stripe) is shipped; `payments:sync`
-  reconciliation polish next
+- **Commands** — `payments:webhook --create` (Stripe) and `payments:sync --all`
+  (reconcile every customer) are shipped; more reconciliation polish next
 - **Dashboard** — billing overview UI (Agora dashboard pattern)
 - **Usage-based billing** — metered subscriptions
 - **Splits & subaccounts** — Asaas split, Woovi subaccounts
