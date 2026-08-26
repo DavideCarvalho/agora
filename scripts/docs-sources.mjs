@@ -129,18 +129,6 @@ export const sources = [
     migrated: true,
   },
   {
-    slug: 'payments',
-    name: 'Payments',
-    description:
-      'Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice (NFe/NFSe) emission and method-based routing.',
-    icon: 'CreditCard',
-    repo: 'DavideCarvalho/adonis-payments',
-    ref: 'master',
-    path: 'docs',
-    repoDir: 'adonis-payments',
-    migrated: true,
-  },
-  {
     slug: 'collaboration',
     name: 'Collaboration',
     description: 'Collaborative editing (CRDT) for AdonisJS — Yjs/Automerge/edge engines, Redis presence, version control, anchored comments, codegen and React client hooks.',
