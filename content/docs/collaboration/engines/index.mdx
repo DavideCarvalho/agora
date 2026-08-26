@@ -19,7 +19,7 @@ An engine is the CRDT backend that owns conflict resolution for a document. The 
 ## Choosing per document
 
 ```ts
-engineFor: (docName) => (docName.startsWith('lousas/') ? 'automerge' : 'yjs')
+engineFor: (docName) => (docName.startsWith('whiteboards/') ? 'automerge' : 'yjs')
 ```
 
 The client resolves the engine from `GET /collaboration/token` and picks the matching transport automatically.
