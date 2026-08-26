@@ -1,0 +1,31 @@
+---
+title: REST routes
+description: Endpoints builtin (token, comments, versions, state) — auto-registrados e tipáveis pelo Tuyau.
+icon: Route
+---
+
+# REST routes
+
+Dez endpoints builtin, auto-registrados em `/collaboration`:
+
+| Método | Rota | Uso |
+|---|---|---|
+| GET | `/collaboration/token?doc=` | Token efêmero do WebSocket (JWT quando edge) |
+| GET/POST | `/collaboration/comments` | Listar/criar comentários ancorados |
+| PATCH/DELETE | `/collaboration/comments/:id?doc=` | Resolver/remover comentário |
+| GET/POST | `/collaboration/versions` | Listar/criar versões |
+| POST | `/collaboration/versions/restore` | Restaurar versão |
+| GET/POST | `/collaboration/state?doc=` | Estado binário (worker edge consome) |
+
+`docName` sempre via query/body (nomes contêm barras — nunca path param).
+
+## Modo manual
+
+```ts
+// config: routes: { enabled: false }
+import { collaborationRoutes } from '@adonis-agora/collaboration'
+
+collaborationRoutes(router, { prefix: '/api/collab', middleware: [authMiddleware] })
+```
+
+O `resolveUser` default é fail-closed (401); passe `routes.resolveUser` ou rode seu auth middleware antes. O POST `/state` é machine-to-machine e exige o shared secret do worker.

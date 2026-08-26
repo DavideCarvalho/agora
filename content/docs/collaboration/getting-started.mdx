@@ -1,0 +1,52 @@
+---
+title: Getting started
+description: Instale e configure o @adonis-agora/collaboration no seu app AdonisJS.
+icon: Rocket
+---
+
+# Getting started
+
+```sh
+node ace add @adonis-agora/collaboration
+node ace configure @adonis-agora/collaboration   # provider + commands + codegen hook + config
+node ace collaboration:init                       # diretórios + migrations + (opcional) worker edge
+node ace make:collab-document researches/writing  # tipos compartilhados do documento
+```
+
+## Configuração mínima
+
+```ts
+// config/collaboration.ts
+import { defineConfig, lucidStorage } from '@adonis-agora/collaboration'
+
+export default defineConfig({
+  engine: 'yjs',
+  storage: lucidStorage({ connection: 'entretextos' }),
+  redisUrl: process.env.REDIS_URL,   // presença server-side cross-instance
+
+  async authorize(ctx, docName) {
+    // Sua política por documento. A lib nunca autoriza por padrão.
+    return { canRead: true, canWrite: true, canComment: true }
+  },
+})
+```
+
+## Rotas REST
+
+Registradas automaticamente pelo provider em `/collaboration` (desabilite com `routes.enabled: false` e use `collaborationRoutes(router)` manualmente). O Tuyau tipa essas rotas.
+
+## Documentos declarativos (opcional)
+
+```ts
+documents: {
+  'researches/:id/writing': defineDocument({
+    engine: 'yjs',
+    async authorize(ctx, { id }) {
+      const research = await findAccessibleResearch(ctx.userId, id)
+      return research
+        ? { canRead: true, canWrite: true, canComment: true }
+        : { canRead: false, canWrite: false, canComment: false }
+    },
+  }),
+}
+```

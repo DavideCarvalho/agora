@@ -1,0 +1,27 @@
+---
+title: Collaboration
+description: Collaborative editing (CRDT) for AdonisJS — Yjs (Hocuspocus), Automerge and edge engines, Redis presence, version control, anchored comments, ace codegen and React client hooks.
+icon: Users
+---
+
+# Collaboration
+
+Pacote do ecossistema Agora para edição colaborativa (CRDT) em AdonisJS. Documentos identificados por nome (`researches/42/writing`), engine por documento, version control unificado, comentários ancorados e hooks React no client.
+
+## Features
+
+- **Engines CRDT**: `yjs` (Hocuspocus embutido), `automerge`, `partykit`/`partyserver` (edge)
+- **Presença server-side** (Redis, cross-instance) + awareness client-side
+- **Version control** unificado (snapshots Yjs / heads Automerge)
+- **Comentários ancorados** por espaço (`text-range`, `canvas-object`, `timestamp`)
+- **Rotas REST builtin** auto-registradas (token, comments, versions) — tipáveis pelo Tuyau
+- **Codegen ace**: `collaboration:init`, `make:collab-document`, registry tipado em `.adonisjs/`
+- **Client React**: `useCollabDoc`, `useCollabEditor` (adapters Excalidraw/tldraw/text), `useAutomergeDoc`
+
+## Navegação
+
+- [Getting started](/docs/collaboration/getting-started)
+- [Engines](/docs/collaboration/engines)
+- [REST routes](/docs/collaboration/routes)
+- [Codegen](/docs/collaboration/codegen)
+- [Client hooks](/docs/collaboration/client)

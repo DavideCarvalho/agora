@@ -8,6 +8,7 @@ import {
   type LucideIcon,
   ShieldCheck,
   Telescope,
+  Users,
   Workflow,
   Zap,
 } from 'lucide-react';
@@ -103,6 +104,18 @@ export const libs: AgoraLib[] = [
     role: 'Authorization',
     icon: ShieldCheck,
     iconName: 'ShieldCheck',
+    packages: 2,
+    stage: 'alpha',
+  },
+  {
+    slug: 'collaboration',
+    pkg: 'collaboration',
+    name: 'Collaboration',
+    blurb:
+      'Collaborative editing (CRDT) for AdonisJS — Yjs/Automerge/edge engines, Redis presence, version control, anchored comments, codegen and React client hooks.',
+    role: 'Realtime collaboration',
+    icon: Users,
+    iconName: 'Users',
     packages: 2,
     stage: 'alpha',
   },

@@ -1,0 +1,23 @@
+---
+title: Codegen
+description: Comandos ace (collaboration:init, make:collab-document) e o registry tipado em .adonisjs/.
+icon: WandSparkles
+---
+
+# Codegen
+
+## Comandos
+
+- `collaboration:init` — diretórios base, migrations, worker PartyKit
+- `make:collab-document <name>` — tipos compartilhados em `app/collaboration/documents/`
+
+## Registry tipado
+
+Hook `init` do Assembler gera `.adonisjs/collaboration/documents.ts`:
+
+```ts
+import type { CollabDocumentName } from '.adonisjs/collaboration/documents.js'
+function open(name: CollabDocumentName) { /* autocomplete + exhaustiveness */ }
+```
+
+Atualize com `node ace codegen` (ou dev server/build).

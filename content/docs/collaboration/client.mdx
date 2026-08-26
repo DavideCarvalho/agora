@@ -1,0 +1,51 @@
+---
+title: Client hooks
+description: Hooks React do @adonis-agora/collaboration-client — documento, presença, comentários, versões e editors.
+icon: Braces
+---
+
+# Client hooks
+
+```sh
+pnpm add @adonis-agora/collaboration-client
+```
+
+## Provider
+
+`baseUrl` é opcional — default same-origin (mesmo app); passe quando a lib vive em outro host.
+
+```tsx
+<CollaborationProvider>
+  <Editor docName="researches/42/writing" />
+</CollaborationProvider>
+```
+
+## Hooks
+
+```tsx
+const { doc, status, error } = useCollabDoc({ docName })
+const { peers } = useAwareness({ docName })
+const { comments, create, resolve } = useComments({ docName, space: 'text' })
+const { versions, create: createVersion } = useVersions({ docName })
+```
+
+## Editor-agnóstico (`useCollabEditor`)
+
+Adapters por superfície, qualquer engine:
+
+```tsx
+const { state, update, status, peers } = useCollabEditor({
+  docName: 'lousas/1',
+  editorId: 'excalidraw',
+  adapter: createExcalidrawAdapter(),
+})
+// tldraw: createTldrawAdapter() · texto: createTextAdapter()
+```
+
+## Automerge
+
+`useAutomergeDoc({ docName, WebSocketImpl? })` fala o protocolo binário do AutomergeDriver direto (fora da seam Y.Doc — docs Automerge não alimentam Tiptap/awareness).
+
+## Token flow
+
+`useCollabDoc` busca token efêmero em `GET {base}/collaboration/token?doc=`, abre o WS com `?token=`, e re-busca com backoff em reconexão.

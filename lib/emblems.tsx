@@ -174,6 +174,7 @@ const meta: Record<string, { name: keyof typeof art; plate: string }> = {
   media: { name: 'Mosaic', plate: '08' },
   agent: { name: 'Owl', plate: '09' },
   filter: { name: 'Funnel', plate: '10' },
+  collaboration: { name: 'Handshake', plate: '11' },
 };
 
 export interface Emblem {

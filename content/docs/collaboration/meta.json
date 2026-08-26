@@ -1,0 +1,6 @@
+{
+  "title": "Collaboration",
+  "description": "Collaborative editing (CRDT) for AdonisJS — Yjs/Automerge/edge engines, Redis presence, version control, anchored comments, codegen and React client hooks.",
+  "root": true,
+  "icon": "Users"
+}

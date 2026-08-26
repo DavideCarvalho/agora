@@ -1,0 +1,32 @@
+---
+title: Engines
+description: Yjs (Hocuspocus), Automerge e edge (PartyKit/PartyServer) — e como escolher por documento.
+icon: Layers
+---
+
+# Engines
+
+| Engine | Onde roda | Melhor para |
+|---|---|---|
+| `yjs` (default) | Hocuspocus embutido no server HTTP do Adonis | Texto rico (Tiptap/ProseMirror), Google Docs-like |
+| `automerge` | Broadcast próprio no server | Documentos estruturados (objetos/JSON aninhados, histórico nativo) |
+| `partykit` / `partyserver` | Cloudflare Workers + Durable Objects (edge) | Latência global, origin separado |
+
+## Por documento
+
+Use `engineFor` ou `documents` para rotear por tipo de documento:
+
+```ts
+engineFor: (docName) => (docName.startsWith('lousas/') ? 'automerge' : 'yjs')
+```
+
+O client resolve a engine pelo token (`GET /collaboration/token` retorna `engine`) e escolhe o transporte certo automaticamente.
+
+## Edge (PartyKit)
+
+```sh
+node ace collaboration:init --engine=partykit   # gera o worker em partykit-worker/
+npx partykit deploy                             # deploya o worker (origin separado)
+```
+
+O `PartyKitDriver` é o cliente HTTP do worker; version control e comentários ficam no Adonis.
