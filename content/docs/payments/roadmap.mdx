@@ -1,18 +1,19 @@
 ---
 title: Roadmap
-description: Where the payments library is headed — drivers hardening, more invoice providers, dashboard and usage-based billing.
+description: Where the payments library is headed — drivers hardening, splits & subaccounts, dashboard and more invoice coverage.
 ---
 
-- **Invoice providers** — Focus, **eNotas**, **PlugNotas** and **Asaas native NFS-e**
-  ship today; next: Tecnospeed (or [write your own](./custom-providers) with the exported
-  building blocks)
-- **BR drivers hardening** — AbacatePay transparent checkout (PIX/Boleto) is shipped;
-  next: Woovi Pix Automático journey 3 (pay-on-approval)
+- **Invoice providers** — Focus, eNotas, PlugNotas, Asaas native NFS-e and Tecnospeed ship
+  today (or [write your own](./custom-providers) with the exported building blocks)
+- **BR drivers hardening** — AbacatePay transparent checkout (PIX/Boleto) and Woovi Pix
+  Automático journey 3 (pay-on-approval, `DYNAMIC`) are shipped
 - **Webhook business logic** — the three options (folder, `billing.handlers`, events) are
   shipped; next: an out-of-the-box `@OnDiagnostic` durable trigger example once the
   durable event-trigger release lands
 - **Commands** — `payments:webhook --create` (Stripe) and `payments:sync --all`
-  (reconcile every customer) are shipped; more reconciliation polish next
+  (reconcile every customer) are shipped
+- **Usage-based billing** — metered subscriptions foundation shipped
+  (`billing_usage_events`, `recordUsage`, `usageReport`); next: period rollup + invoice by
+  metered quantity
 - **Dashboard** — billing overview UI (Agora dashboard pattern)
-- **Usage-based billing** — metered subscriptions
 - **Splits & subaccounts** — Asaas split, Woovi subaccounts

@@ -135,6 +135,34 @@ a payment notification, though it doesn't survive a process restart the way dura
 Set `billing.durable: false` to force the in-process dispatcher, or `true` to require
 durable (throwing when it's missing).
 
+## Usage-based billing — metered subscriptions
+
+Plans that bill by consumption (API calls, stored GB, minutes) are metered through the
+`billing_usage_events` table. Record consumption as it happens, then aggregate per meter
+for a period:
+
+```ts title="app/services/usage_service.ts"
+// When a metered event happens (an API call, a message sent):
+await store.recordUsage({
+  subscriptionId: subscription.id,
+  meter: 'api_calls',
+  quantity: 1,
+})
+
+// At the end of the billing period, roll up what to bill:
+const report = await store.usageReport({
+  subscriptionId: subscription.id,
+  from: periodStart,
+  to: periodEnd,
+})
+// [{ meter: 'api_calls', quantity: 412 }]
+```
+
+`usageReport` filters by `subscriptionId`, `customerId`, `meter`, and a `from`/`to` window,
+aggregating `quantity` per meter — the input to a usage-based invoice or overage charge.
+The table and model ship in the published migration; the in-memory store mirrors it for
+tests.
+
 ## Mixins
 
 `make:billable` composes `withBillable()` — the base. The library also ships narrower
