@@ -1,0 +1,31 @@
+---
+title: Engines
+description: How the CRDT engines work and how to choose per document.
+icon: Layers
+---
+
+# Engines
+
+An engine is the CRDT backend that owns conflict resolution for a document. The library wraps each engine behind a driver and exposes one uniform API — state, versions, comments, presence.
+
+## At a glance
+
+| Engine | Data model | History | Best for |
+|---|---|---|---|
+| `yjs` | Shared types + rich text | Snapshots | Text, Tiptap, Excalidraw/tldraw scenes |
+| `automerge` | JSON-like document | Native change graph | Structured documents, form-like data |
+| `partykit`/`partyserver` | Same as Yjs (edge) | Snapshots | Global latency, separate origin |
+
+## Choosing per document
+
+```ts
+engineFor: (docName) => (docName.startsWith('lousas/') ? 'automerge' : 'yjs')
+```
+
+The client resolves the engine from `GET /collaboration/token` and picks the matching transport automatically.
+
+## Deep dives
+
+- [Yjs (Hocuspocus)](/docs/collaboration/engines/yjs)
+- [Automerge](/docs/collaboration/engines/automerge)
+- [Edge](/docs/collaboration/engines/edge)

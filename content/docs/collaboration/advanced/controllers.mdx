@@ -37,7 +37,7 @@ export default class CollaborationController {
     const docName = request.qs().doc as string
     if (!docName) return response.badRequest({ error: 'doc required' })
 
-    const engine = await this.collaboration.engineFor(docName)
+    const engine = await this.collaboration.engineFor({ docName })
     const token = await issueToken(
       { engine, partykit: this.collaborationConfig?.partykit },
       { id: String(auth.user!.id) },
@@ -55,12 +55,12 @@ export default class CollaborationController {
 
   async createVersion({ request, auth }: HttpContext) {
     const { docName, label } = request.body()
-    return this.collaboration.createVersion(docName, String(auth.user!.id), label ?? null)
+    return this.collaboration.createVersion({ docName, createdBy: String(auth.user!.id), label: label ?? null })
   }
 
   async presence({ request }: HttpContext) {
     const { doc } = request.qs()
-    return this.collaboration.listPresence(String(doc))
+    return this.collaboration.listPresence({ docName: String(doc) })
   }
 }
 ```

@@ -14,6 +14,6 @@ Every document can be **versioned**: create a named checkpoint, list history, re
 One API hides both:
 
 ```ts
-const v = await manager.createVersion(docName, userId, 'before review')
-await manager.restoreVersion(docName, v.id, userId)
+const v = await manager.createVersion({ docName, createdBy: userId, label: 'before review' })
+await manager.restoreVersion({ docName, versionId: v.id, restoredBy: userId })
 ```

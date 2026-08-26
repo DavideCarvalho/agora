@@ -9,9 +9,9 @@ icon: Users
 Two layers answer "who is online":
 
 - **Client (awareness)** — Yjs awareness broadcasts cursor/name state peer-to-peer within a room. Zero server config; gives you live cursors.
-- **Server (cross-instance)** — when `redisUrl` is set, the provider spins up a Redis store; the Yjs driver records join/leave on connect/disconnect, and `manager.listPresence(docName)` aggregates across all Node instances.
+- **Server (cross-instance)** — when `redisUrl` is set, the provider spins up a Redis store; the Yjs driver records join/leave on connect/disconnect, and `manager.listPresence({ docName })` aggregates across all Node instances.
 
 ```ts
 const { peers } = useAwareness({ docName })              // client-side
-const online = await manager.listPresence(docName)        // server-side, cross-instance
+const online = await manager.listPresence({ docName })        // server-side, cross-instance
 ```

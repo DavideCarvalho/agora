@@ -2,6 +2,7 @@ import {
   Activity,
   Bot,
   Boxes,
+  CreditCard,
   Filter,
   Image,
   KeyRound,
@@ -141,6 +142,18 @@ export const libs: AgoraLib[] = [
     icon: Filter,
     iconName: 'Filter',
     packages: 2,
+    stage: 'alpha',
+  },
+  {
+    slug: 'payments',
+    pkg: 'payments',
+    name: 'Payments',
+    blurb:
+      'Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice (NFe/NFSe) emission, method routing and webhook-driven business logic.',
+    role: 'Commerce',
+    icon: CreditCard,
+    iconName: 'CreditCard',
+    packages: 1,
     stage: 'alpha',
   },
   {

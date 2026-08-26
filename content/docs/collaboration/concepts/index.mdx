@@ -1,0 +1,29 @@
+---
+title: Concepts
+description: The core ideas — CRDTs, documents, versions, comments and presence — and how they compose.
+icon: BookOpen
+---
+
+# Concepts
+
+The library is built on a few ideas that compose. Read them in order.
+
+## The document is the unit
+
+Everything revolves around a **document**, identified by a name such as `researches/42/writing`. The name drives engine routing, authorization and persistence.
+
+## The engine owns conflict resolution
+
+A **CRDT** guarantees replicas converge. Which engine (Yjs or Automerge) shapes the data model your UI edits.
+
+## Versions, comments and presence are layered
+
+On top of the live document, the library adds named **versions**, **anchored comments** per space, and **presence** (peer-to-peer awareness plus Redis-backed cross-instance counts).
+
+## Deep dives
+
+- [CRDTs](/docs/collaboration/concepts/crdt)
+- [Documents](/docs/collaboration/concepts/documents)
+- [Versions](/docs/collaboration/concepts/versions)
+- [Comments](/docs/collaboration/concepts/comments)
+- [Presence](/docs/collaboration/concepts/presence)
