@@ -163,6 +163,31 @@ aggregating `quantity` per meter — the input to a usage-based invoice or overa
 The table and model ship in the published migration; the in-memory store mirrors it for
 tests.
 
+### Pricing a period — `meteredBill`
+
+Turn a period's usage into a charge with per-meter rates (price per unit + included
+allowance). Feed it the `usageReport` result, or fetch + price in one call:
+
+```ts title="app/services/usage_service.ts"
+import { meteredBillForSubscription } from '@adonis-agora/payments'
+
+const bill = await meteredBillForSubscription(store, {
+  subscriptionId: subscription.id,
+  from: periodStart,
+  to: periodEnd,
+  rates: [
+    { meter: 'api_calls', rate: 0.5,  included: 1000 }, // 1000 free, then R$0.005 each
+    { meter: 'storage_gb', rate: 200 },
+  ],
+})
+
+// bill.total  → cents to charge for overage
+// bill.lines  → per-meter billable quantities and amounts
+```
+
+This is the "how much to bill for what was consumed" half of a metered plan — the invoice
+for overage is then emitted via the invoice provider or an Asaas/Stripe charge.
+
 ## Mixins
 
 `make:billable` composes `withBillable()` — the base. The library also ships narrower
