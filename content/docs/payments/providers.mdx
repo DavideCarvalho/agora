@@ -87,6 +87,8 @@ native NFS-e.
 - **Invoices**: **native NFS-e** — configure `invoice.asaas({ apiKey })` as the invoice
   provider so `invoice: true` emits through Asaas itself (or use automatic emission per
   subscription in the dashboard; the `invoice` option also works through any provider).
+- **Splits**: marketplace-style — pass `split` on the charge to share it across wallets
+  (`walletId` + `percentualValue` and/or `fixedValue`).
 - **Requires** a customer for every charge and subscription.
 
 ```ts title="app/services/checkout_service.ts"
