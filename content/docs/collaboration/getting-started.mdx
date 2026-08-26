@@ -85,7 +85,7 @@ A connection is dropped when `canRead` is false. The same callback is used when 
 
 ## Declarative documents
 
-If every document type has its own engine or authorization rules, repeat the regex at your own risk. Instead, declare patterns and let the library extract params:
+When each document type needs its own engine or authorization rules, hand-writing a regex per connection gets repetitive and error-prone. Instead, declare patterns and let the library match and extract the params for you:
 
 ```ts
 documents: {
