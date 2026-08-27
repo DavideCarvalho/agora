@@ -8,6 +8,7 @@ import type { MDXComponents } from 'mdx/types';
 import { Screenshot } from '@/components/screenshot';
 import { CodeFlow } from '@/components/code-flow';
 import { DlqSim, RetrySim } from '@/components/failure-sims';
+import { PaymentFlow } from '@/components/payment-flow';
 import { QueueSim, SingletonSim } from '@/components/queue-sim';
 import { AdaptiveSim, FanoutSim, RateLimitSim } from '@/components/scale-sims';
 import { ReplayDiagram } from '@/components/replay-diagram';
@@ -43,6 +44,8 @@ export function getMDXComponents(components?: MDXComponents) {
     ReplayDiagram,
     TenancyDiagram,
     TenantFlow,
+    // Payments-lib doc scene (bare tag in the payments overview, replacing the ASCII happy path).
+    PaymentFlow,
     ...components,
   } satisfies MDXComponents;
 }
