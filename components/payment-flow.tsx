@@ -218,6 +218,37 @@ export function PaymentFlow({
           .pf-step { grid-template-columns: 1.4rem minmax(0, 13.5rem) minmax(0, 1fr); align-items: baseline; }
           .pf-step-why { grid-column: 3; }
         }
+
+        /*
+         * Below this width the actor row STACKS instead of wrapping.
+         *
+         * Wrapping was the bug: at ~390px the first actor takes the whole line, and the wire
+         * and the second actor share the next one — so the arrowhead ends up pointing into
+         * empty space with the second actor sitting BESIDE the line rather than at the end of
+         * it. The one thing the diagram exists to show, who calls whom, is exactly what got
+         * lost. Stacked, the wire becomes a vertical connector and the arrow points at the
+         * actor that actually receives the call.
+         */
+        @media (max-width: 559px) {
+          .pf-row { flex-direction: column; align-items: stretch; gap: 4px; }
+          .pf-wire { flex: none; min-width: 0; flex-direction: row; align-items: center; justify-content: center; gap: 9px; padding: 1px 0; }
+          .pf-wire-label { text-align: right; }
+          .pf-wire-rail { flex-direction: column; height: 30px; }
+          .pf-line { width: 2px; height: auto; flex: 1 1 auto; }
+          /* The head SVG is drawn horizontally; a quarter turn clockwise sends 'right' down
+             and 'left' up, which is what the column order already implies. */
+          .pf-wire-rail svg { transform: rotate(90deg); }
+          .pf-line-flow { background-image: repeating-linear-gradient(180deg, currentColor 0 6px, transparent 6px 11px) !important; background-size: 2px 11px; animation-name: pf-flow-up; }
+          .pf-line-flow[data-dir='right'] { animation-name: pf-flow-down; }
+          /* Reclaim the vertical budget the stacking spends: the whole figure is over a
+             screen tall on a phone, and every band pays this padding. */
+          .pf-band { padding: 10px 12px 12px; }
+          .pf-drop { padding: 2px 0; gap: 4px; }
+          .pf-drop-line { height: 10px; }
+          .pf-steps { margin-top: 10px; gap: 7px; }
+        }
+        @keyframes pf-flow-down { to { background-position: 0 11px } }
+        @keyframes pf-flow-up { to { background-position: 0 -11px } }
         @media (prefers-reduced-motion: reduce) { .pf-line-flow { animation: none } }
       `}</style>
 
