@@ -152,6 +152,7 @@ type Step = {
   active?: number; // timeline scenes: index of the lit beat
   tone?: 'run' | 'wait' | 'done' | 'fail'; // timeline scenes: the active beat's colour
   attempts?: { done: ('fail' | 'ok')[]; max: number }; // retry scenes: per-attempt marks over the active beat
+  sql?: SqlState; // filter scenes: the statement being assembled, clause by clause
   child?: ChildState; // child-workflow scenes: parent/child lane state
   // Cross-file peek: while this step's own lines are highlighted in its tab, a floating peek card
   // (IDE "peek definition" style) opens under the anchor line showing a cropped excerpt of another
@@ -159,6 +160,15 @@ type Step = {
   // `window` bounds the excerpt (defaults to `lines` padded by one). `hint` names the token on the
   // anchor line that gets a dotted underline — hovering/tapping it re-opens the card while paused.
   split?: { file: number; lines: [number, number]; window?: [number, number]; hint?: string };
+};
+
+// The statement a filter scene is assembling: every clause of the final SQL, which one this step
+// lights (everything above it is already revealed), what the allow-list refused, and the bindings.
+type SqlState = {
+  lines: { text: string; indent?: boolean }[];
+  active: number;
+  dropped?: string;
+  bindings?: string[];
 };
 
 // One hoverable token per code line: which step's peek it opens and the token text to underline.
@@ -1466,6 +1476,182 @@ await engine.start(SyncInventoryWorkflow, { storeId: 'B' }, 'sync:b1') // other 
   render: (step) => <ChildDiagram step={step} parentBeats={['admitted', 'sync', 'done']} childBeats={['arrives', 'gated', 'sync', 'done']} spawnIdx={0} parentLabel="run 1 · key store:A" childLabel="run 2 · key store:A (same key)" parallel />,
 };
 
+// ── SQL pipeline (filter scenes) ─────────────────────────────────────────────
+// The right panel of a filter walkthrough: the request that arrived, the statement the library
+// is assembling clause by clause, what the allow-list refused, and the bindings every client
+// value travels in. A step lights one clause (`sql.active`) and reveals everything above it.
+function SqlPipeline({ step, request }: { step: Step; request: string[] }) {
+  const sql = step.sql;
+  const active = sql?.active ?? -1;
+  const lines = sql?.lines ?? [];
+  const rowH = 23;
+  const top = 92;
+  const height = top + lines.length * rowH + 76;
+  return (
+    <svg viewBox={`0 0 640 ${height}`} width="100%" role="img" aria-label={`${step.title}: ${step.actor}`} style={{ display: 'block' }}>
+      {/* the request that arrived */}
+      <g className="cf-anim">
+        <rect x={16} y={12} width={608} height={62} rx={12} fill={tintAccentSoft} stroke={border} />
+        {request.map((line, i) => (
+          <text key={`req-${line}`} x={32} y={36 + i * 20} style={{ fontSize: 11.5, fill: i === 0 ? ink : muted, fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>
+            {line}
+          </text>
+        ))}
+      </g>
+
+      {/* the statement, clause by clause */}
+      {lines.map((line, i) => {
+        const revealed = i <= active;
+        const on = i === active;
+        return (
+          <g key={`sql-${line.text}`} className="cf-anim" opacity={revealed ? 1 : 0.16}>
+            <rect x={16} y={top + i * rowH - 15} width={608} height={rowH - 2} rx={6} className="cf-anim" fill={on ? tintAccent : 'transparent'} />
+            {on && <rect x={16} y={top + i * rowH - 15} width={2.5} height={rowH - 2} rx={1.5} fill={accent} />}
+            <text x={line.indent ? 46 : 32} y={top + i * rowH} className="cf-anim" style={{ fontSize: 12, fill: on ? ink : muted, fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>
+              {line.text}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* what the allow-list refused — the clause that never made it into the statement */}
+      <g className="cf-anim" opacity={sql?.dropped ? 1 : 0}>
+        <rect x={16} y={height - 68} width={608} height={26} rx={8} fill={tintRed} stroke={RED} strokeWidth={1} opacity={0.9} />
+        <path d={`M 34 ${height - 58} l 7 7 M 41 ${height - 58} l -7 7`} fill="none" stroke={RED} strokeWidth={1.75} strokeLinecap="round" />
+        <text x={54} y={height - 50} style={{ fontSize: 11.5, fill: ink, fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>
+          {sql?.dropped ?? ''}
+        </text>
+      </g>
+
+      {/* every client value travels as a binding, never as SQL text */}
+      <g className="cf-anim">
+        <text x={32} y={height - 16} style={{ fontSize: 11, fill: muted, fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>
+          bindings
+        </text>
+        <text x={96} y={height - 16} className="cf-anim" style={{ fontSize: 11.5, fill: sql?.bindings ? codeStr : muted, fontFamily: 'var(--font-mono, ui-monospace, monospace)' }}>
+          {sql?.bindings ? `[ ${sql.bindings.join(', ')} ]` : '[ ]'}
+        </text>
+      </g>
+    </svg>
+  );
+}
+
+const SQL_LINES: { text: string; indent?: boolean }[] = [
+  { text: 'select * from "users"' },
+  { text: 'where "tenant_id" = ?' },
+  { text: 'and "status" = ?', indent: true },
+  { text: 'and ("name" ilike ? or "email" ilike ?)', indent: true },
+  { text: 'order by "created_at" desc' },
+  { text: 'limit ? offset ?' },
+];
+
+const filterPipeline: Scene = {
+  files: [
+    {
+      name: 'app/controllers/users_controller.ts',
+      code: `export default class UsersController {
+  async index(ctx: HttpContext) {
+    const query = User.query()
+
+    const { page, size } =
+      applyFilterFromRequest(query, userFilter, ctx)
+
+    return query.paginate(page, size)
+  }
+}`,
+    },
+    {
+      name: 'app/filters/user_filter.ts',
+      code: `export const userFilter = defineFilter({
+  filterable: ['name', 'status', 'age'],
+  searchable: ['name', 'email'],
+  sortable: ['createdAt'],
+  tenant: {
+    column: 'tenantId',
+    resolve: (ctx) => ctx.auth.user.tenantId,
+  },
+  defaultSize: 25,
+})`,
+    },
+  ],
+  steps: [
+    {
+      file: 0,
+      lines: [2, 2],
+      title: 'a request arrives',
+      actor: 'nothing has touched the database yet',
+      stage: 'request',
+      caption: 'The query string is just text on the request. No column name in it means anything until the spec says it does.',
+      sql: { lines: SQL_LINES, active: -1 },
+    },
+    {
+      file: 0,
+      lines: [3, 3],
+      title: 'User.query()',
+      actor: 'an ordinary Lucid builder — yours',
+      stage: 'builder',
+      caption: 'You build the query. The library never constructs it, never executes it, and never wraps it — it only adds clauses to the builder you hand it, so scopes, preloads and joins you added stay exactly where you put them.',
+      sql: { lines: SQL_LINES, active: 0 },
+    },
+    {
+      file: 0,
+      lines: [5, 6],
+      split: { file: 1, lines: [5, 8], window: [4, 9], hint: 'userFilter' },
+      title: 'server policy first',
+      actor: 'tenant scope — never client-supplied',
+      stage: 'tenant',
+      caption: 'The tenant scope and any defaultFilters land before a single request filter is read. They bypass the allow-list on purpose: they are your policy, not the caller’s.',
+      sql: { lines: SQL_LINES, active: 1, bindings: ['42'] },
+    },
+    {
+      file: 1,
+      lines: [2, 2],
+      title: 'the allow-list',
+      actor: 'filter[status] passes · filter[isAdmin] is refused',
+      stage: 'prune',
+      caption: 'Each request filter is alias-resolved, structurally validated, then pruned against filterable. A field that is not on the list never reaches SQL — dropped silently, or as a 400 under throwOnInvalid.',
+      sql: { lines: SQL_LINES, active: 2, dropped: 'filter[isAdmin]  dropped — not in filterable', bindings: ['42', "'active'"] },
+    },
+    {
+      file: 1,
+      lines: [3, 3],
+      title: 'search',
+      actor: 'one OR group across searchable',
+      stage: 'search',
+      caption: 'The free-text term becomes a single parenthesised OR group over the searchable columns — grouped, so it narrows the result instead of widening it past your other conditions.',
+      sql: { lines: SQL_LINES, active: 3, bindings: ['42', "'active'", "'%ana%'", "'%ana%'"] },
+    },
+    {
+      file: 1,
+      lines: [4, 4],
+      title: 'sort',
+      actor: 'sortable, checked the same way',
+      stage: 'sort',
+      caption: 'Ordering goes through its own allow-list. An unlisted sort field is dropped rather than interpolated — which is what keeps order by out of reach of the query string.',
+      sql: { lines: SQL_LINES, active: 4, bindings: ['42', "'active'", "'%ana%'", "'%ana%'"] },
+    },
+    {
+      file: 0,
+      lines: [5, 6],
+      title: 'page and size come back',
+      actor: 'resolved, clamped — not executed',
+      stage: 'paginate',
+      caption: 'applyFilterFromRequest returns the resolved pagination instead of running it: size clamped to maxSize, page floored at 1. Nothing has hit the database yet.',
+      sql: { lines: SQL_LINES, active: 5, bindings: ['42', "'active'", "'%ana%'", "'%ana%'", '25', '25'] },
+    },
+    {
+      file: 0,
+      lines: [8, 8],
+      title: 'you execute it',
+      actor: 'query.paginate(page, size)',
+      stage: 'execute',
+      caption: 'Your call runs the statement. Because the builder was only ever mutated, everything Lucid gives you — paginate, preload, first, a transaction — still works on it.',
+      sql: { lines: SQL_LINES, active: 5, bindings: ['42', "'active'", "'%ana%'", "'%ana%'", '25', '25'] },
+    },
+  ],
+  render: (step) => <SqlPipeline step={step} request={['GET /users?filter[status]=active&filter[isAdmin]=true', '&search=ana&sort=-createdAt&page=2']} />,
+};
+
 const SCENES: Record<string, Scene> = {
   'execution-model': executionModel,
   'dispatched-step': dispatchedStep,
@@ -1485,6 +1671,7 @@ const SCENES: Record<string, Scene> = {
   singleton,
   versioning,
   retries,
+  'filter-pipeline': filterPipeline,
 };
 
 // ── shell ────────────────────────────────────────────────────────────────────
