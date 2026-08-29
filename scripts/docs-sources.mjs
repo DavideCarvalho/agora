@@ -142,7 +142,6 @@ export const sources = [
   {
     slug: 'payments',
     name: 'Payments',
-    description: 'Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice (NFe/NFSe) emission, method routing and webhook-driven business logic.',
     icon: 'CreditCard',
     repo: 'DavideCarvalho/adonis-agora-payments',
     ref: 'master',

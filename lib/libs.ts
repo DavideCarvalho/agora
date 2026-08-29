@@ -149,11 +149,11 @@ export const libs: AgoraLib[] = [
     pkg: 'payments',
     name: 'Payments',
     blurb:
-      'Multi-gateway payments and Cashier-style billing for AdonisJS — Stripe, AbacatePay, Asaas and Woovi (Pix), with invoice (NFe/NFSe) emission, method routing and webhook-driven business logic.',
+      'Multi-gateway payments and Cashier-style billing for AdonisJS — 18 gateways behind one driver contract, from Pix to cards to merchant-of-record, with invoice (NFe/NFSe) emission, method routing and webhook-driven business logic.',
     role: 'Commerce',
     icon: CreditCard,
     iconName: 'CreditCard',
-    packages: 1,
+    packages: 3,
     stage: 'alpha',
   },
   {
