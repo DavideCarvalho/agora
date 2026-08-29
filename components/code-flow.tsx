@@ -1546,6 +1546,7 @@ const SQL_LINES: { text: string; indent?: boolean }[] = [
 ];
 
 const filterPipeline: Scene = {
+  stack: true,
   files: [
     {
       name: 'app/controllers/users_controller.ts',
@@ -1553,8 +1554,7 @@ const filterPipeline: Scene = {
   async index(ctx: HttpContext) {
     const query = User.query()
 
-    const { page, size } =
-      applyFilterFromRequest(query, userFilter, ctx)
+    const { page, size } = applyFilterFromRequest(query, userFilter, ctx)
 
     return query.paginate(page, size)
   }
@@ -1595,7 +1595,7 @@ const filterPipeline: Scene = {
     },
     {
       file: 0,
-      lines: [5, 6],
+      lines: [5, 5],
       split: { file: 1, lines: [5, 8], window: [4, 9], hint: 'userFilter' },
       title: 'server policy first',
       actor: 'tenant scope — never client-supplied',
@@ -1632,7 +1632,7 @@ const filterPipeline: Scene = {
     },
     {
       file: 0,
-      lines: [5, 6],
+      lines: [5, 5],
       title: 'page and size come back',
       actor: 'resolved, clamped — not executed',
       stage: 'paginate',
@@ -1641,7 +1641,7 @@ const filterPipeline: Scene = {
     },
     {
       file: 0,
-      lines: [8, 8],
+      lines: [7, 7],
       title: 'you execute it',
       actor: 'query.paginate(page, size)',
       stage: 'execute',
