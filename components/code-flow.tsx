@@ -1552,26 +1552,26 @@ const filterPipeline: Scene = {
       name: 'app/controllers/users_controller.ts',
       code: `export default class UsersController {
   async index(ctx: HttpContext) {
-    const query = User.query()
+    const { query } = await User.filter(ctx)
 
-    const { page, size } = applyFilterFromRequest(query, userFilter, ctx)
+    query.preload('team')
 
-    return query.paginate(page, size)
+    return query.filterPaginate()
   }
 }`,
     },
     {
       name: 'app/filters/user_filter.ts',
-      code: `export const userFilter = defineFilter({
-  filterable: ['name', 'status', 'age'],
-  searchable: ['name', 'email'],
-  sortable: ['createdAt'],
-  tenant: {
-    column: 'tenantId',
-    resolve: (ctx) => ctx.auth.user.tenantId,
-  },
-  defaultSize: 25,
-})`,
+      code: `export default class UserFilter extends BaseModelFilter {
+  static filterable = ['name', 'status', 'age']
+  static searchable = ['name', 'email']
+  static sortable = ['createdAt']
+  static defaultSize = 25
+
+  setup() {
+    this.$query.where('tenantId', this.$ctx.auth.user.tenantId)
+  }
+}`,
     },
   ],
   steps: [
@@ -1581,26 +1581,29 @@ const filterPipeline: Scene = {
       title: 'a request arrives',
       actor: 'nothing has touched the database yet',
       stage: 'request',
-      caption: 'The query string is just text on the request. No column name in it means anything until the spec says it does.',
+      caption:
+        'The query string is just text on the request. No column name in it means anything until the filter says it does.',
       sql: { lines: SQL_LINES, active: -1 },
     },
     {
       file: 0,
       lines: [3, 3],
-      title: 'User.query()',
+      title: 'User.filter(ctx)',
       actor: 'an ordinary Lucid builder — yours',
       stage: 'builder',
-      caption: 'You build the query. The library never constructs it, never executes it, and never wraps it — it only adds clauses to the builder you hand it, so scopes, preloads and joins you added stay exactly where you put them.',
+      caption:
+        'The filter class is resolved through the IoC container (so its constructor can ask for your services) and applied to a Lucid query. Nothing is wrapped and nothing is executed — you get the builder back.',
       sql: { lines: SQL_LINES, active: 0 },
     },
     {
       file: 0,
-      lines: [5, 5],
-      split: { file: 1, lines: [5, 8], window: [4, 9], hint: 'userFilter' },
-      title: 'server policy first',
+      lines: [3, 3],
+      split: { file: 1, lines: [7, 9], window: [6, 10], hint: 'setup()' },
+      title: 'setup() runs first',
       actor: 'tenant scope — never client-supplied',
       stage: 'tenant',
-      caption: 'The tenant scope and any defaultFilters land before a single request filter is read. They bypass the allow-list on purpose: they are your policy, not the caller’s.',
+      caption:
+        'setup() lands before a single request filter is read. It is your policy, not the caller’s: a where added here is AND-combined with everything that follows, so no query string can widen it.',
       sql: { lines: SQL_LINES, active: 1, bindings: ['42'] },
     },
     {
@@ -1609,8 +1612,14 @@ const filterPipeline: Scene = {
       title: 'the allow-list',
       actor: 'filter[status] passes · filter[isAdmin] is refused',
       stage: 'prune',
-      caption: 'Each request filter is alias-resolved, structurally validated, then pruned against filterable. A field that is not on the list never reaches SQL — dropped silently, or as a 400 under throwOnInvalid.',
-      sql: { lines: SQL_LINES, active: 2, dropped: 'filter[isAdmin]  dropped — not in filterable', bindings: ['42', "'active'"] },
+      caption:
+        'Each request filter is alias-resolved, structurally validated, then pruned against filterable. A key that is neither on the list nor owned by a method never reaches SQL — dropped silently, or as a 400 under throwOnInvalid.',
+      sql: {
+        lines: SQL_LINES,
+        active: 2,
+        dropped: 'filter[isAdmin]  dropped — not in filterable',
+        bindings: ['42', "'active'"],
+      },
     },
     {
       file: 1,
@@ -1618,7 +1627,8 @@ const filterPipeline: Scene = {
       title: 'search',
       actor: 'one OR group across searchable',
       stage: 'search',
-      caption: 'The free-text term becomes a single parenthesised OR group over the searchable columns — grouped, so it narrows the result instead of widening it past your other conditions.',
+      caption:
+        'The free-text term becomes a single parenthesised OR group over the searchable columns — grouped, so it narrows the result instead of widening it past your other conditions.',
       sql: { lines: SQL_LINES, active: 3, bindings: ['42', "'active'", "'%ana%'", "'%ana%'"] },
     },
     {
@@ -1627,29 +1637,44 @@ const filterPipeline: Scene = {
       title: 'sort',
       actor: 'sortable, checked the same way',
       stage: 'sort',
-      caption: 'Ordering goes through its own allow-list. An unlisted sort field is dropped rather than interpolated — which is what keeps order by out of reach of the query string.',
+      caption:
+        'Ordering goes through its own allow-list. An unlisted sort field is dropped rather than interpolated — which is what keeps order by out of reach of the query string.',
       sql: { lines: SQL_LINES, active: 4, bindings: ['42', "'active'", "'%ana%'", "'%ana%'"] },
     },
     {
       file: 0,
       lines: [5, 5],
-      title: 'page and size come back',
-      actor: 'resolved, clamped — not executed',
-      stage: 'paginate',
-      caption: 'applyFilterFromRequest returns the resolved pagination instead of running it: size clamped to maxSize, page floored at 1. Nothing has hit the database yet.',
-      sql: { lines: SQL_LINES, active: 5, bindings: ['42', "'active'", "'%ana%'", "'%ana%'", '25', '25'] },
+      title: 'the builder is still yours',
+      actor: 'preload, withCount, a where of your own',
+      stage: 'compose',
+      caption:
+        'What comes back is the query builder, not a wrapper around one — so the endpoint keeps composing on it. Everything you add is AND-combined with what the filter already put there.',
+      sql: { lines: SQL_LINES, active: 4, bindings: ['42', "'active'", "'%ana%'", "'%ana%'"] },
     },
     {
       file: 0,
       lines: [7, 7],
       title: 'you execute it',
-      actor: 'query.paginate(page, size)',
+      actor: 'query.filterPaginate()',
       stage: 'execute',
-      caption: 'Your call runs the statement. Because the builder was only ever mutated, everything Lucid gives you — paginate, preload, first, a transaction — still works on it.',
-      sql: { lines: SQL_LINES, active: 5, bindings: ['42', "'active'", "'%ana%'", "'%ana%'", '25', '25'] },
+      caption:
+        'The page the request asked for was resolved and clamped, never run — so the terminal call stays yours. filterPaginate() uses it; paginate(page, size), exec() or a DISTINCT projection work just as well.',
+      sql: {
+        lines: SQL_LINES,
+        active: 5,
+        bindings: ['42', "'active'", "'%ana%'", "'%ana%'", '25', '25'],
+      },
     },
   ],
-  render: (step) => <SqlPipeline step={step} request={['GET /users?filter[status]=active&filter[isAdmin]=true', '&search=ana&sort=-createdAt&page=2']} />,
+  render: (step) => (
+    <SqlPipeline
+      step={step}
+      request={[
+        'GET /users?filter[status]=active&filter[isAdmin]=true',
+        '&search=ana&sort=-createdAt&page=2',
+      ]}
+    />
+  ),
 };
 
 const SCENES: Record<string, Scene> = {
