@@ -8,6 +8,12 @@
 // tags in components/mdx.tsx, so the library's docs use them without importing anything.
 
 import { Tabs, type TabsProps } from 'fumadocs-ui/components/tabs';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from 'fumadocs-ui/components/ui/popover';
+import { ArrowRight, Check, ChevronsUpDown, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -21,6 +27,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { cn } from '@/lib/cn';
 import {
   matchProvider,
   type PaymentsProvider,
@@ -29,7 +36,11 @@ import {
   tabValue,
 } from '@/lib/payments-providers';
 
-/** A capability matrix as `<ProviderMatrix>` read it: the header row, then one row per gateway. */
+/**
+ * A capability matrix as `<ProviderMatrix>` read it: the header row, then one row per gateway. Cells
+ * keep their rendered markup (`<code>`, links, emphasis) — a bare `defensePeriodEndsAt` reads as a
+ * stray word; the same in code style reads as the field name it is.
+ */
 interface MatrixData {
   headers: string[];
   rows: Record<string, string[]>;
@@ -134,41 +145,82 @@ export function PaymentsProviderScope({
   return <ScopeContext value={scope}>{children}</ScopeContext>;
 }
 
-/** The selector itself — rendered by the docs page header on every /docs/payments page. */
+/**
+ * The selector itself — the docs sidebar's banner slot, shown only inside /docs/payments (the
+ * layout is shared by every library). Class-for-class the shape of fumadocs' library dropdown
+ * right above it (`SidebarTabsDropdown`): same trigger, icon size, type size, list and check.
+ */
 export function ProviderSelect() {
   const { providers, selected, select } = useScope();
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   if (providers.length === 0) return null;
+  if (!pathname.startsWith('/docs/payments')) return null;
+
+  const itemClass =
+    'flex items-center gap-2 rounded-lg p-1.5 text-start hover:bg-fd-accent hover:text-fd-accent-foreground';
+
+  const pick = (slug: string | null) => {
+    select(slug);
+    setOpen(false);
+  };
 
   return (
-    <div className="ms-auto flex items-center gap-2 text-sm">
-      <label
-        htmlFor="agora-payments-provider"
-        className="text-fd-muted-foreground"
-      >
-        Gateway
-      </label>
-      <select
-        id="agora-payments-provider"
-        value={selected?.slug ?? ''}
-        onChange={(event) => select(event.target.value || null)}
-        className="rounded-md border bg-fd-secondary px-2 py-1.5 text-sm text-fd-secondary-foreground outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
-      >
-        <option value="">All gateways</option>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger className="flex w-full items-center gap-2 rounded-lg border bg-fd-secondary/50 p-2 text-start text-fd-secondary-foreground transition-colors hover:bg-fd-accent data-[state=open]:bg-fd-accent data-[state=open]:text-fd-accent-foreground">
+        <div className="size-9 shrink-0 md:size-5">
+          <CreditCard className="size-full" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">
+            {selected ? selected.title : 'All gateways'}
+          </p>
+          <p className="text-sm text-fd-muted-foreground md:hidden">
+            {selected ? 'Gateway' : 'Pick your gateway'}
+          </p>
+        </div>
+        <ChevronsUpDown className="ms-auto size-4 shrink-0 text-fd-muted-foreground" />
+      </PopoverTrigger>
+      <PopoverContent className="fd-scroll-container flex max-h-80 w-(--radix-popover-trigger-width) flex-col gap-1 overflow-y-auto p-1">
+        <button type="button" className={itemClass} onClick={() => pick(null)}>
+          <p className="text-sm font-medium leading-none">All gateways</p>
+          <Check
+            className={cn(
+              'ms-auto size-3.5 shrink-0 text-fd-primary',
+              selected && 'invisible',
+            )}
+          />
+        </button>
         {providers.map((p) => (
-          <option key={p.slug} value={p.slug}>
-            {p.title}
-          </option>
+          <button
+            type="button"
+            key={p.slug}
+            className={itemClass}
+            onClick={() => pick(p.slug)}
+          >
+            <p className="text-sm font-medium leading-none">{p.title}</p>
+            <Check
+              className={cn(
+                'ms-auto size-3.5 shrink-0 text-fd-primary',
+                selected?.slug !== p.slug && 'invisible',
+              )}
+            />
+          </button>
         ))}
-      </select>
-      {selected && (
-        <Link
-          href={selected.url}
-          className="text-fd-primary hover:underline whitespace-nowrap"
-        >
-          Guide →
-        </Link>
-      )}
-    </div>
+        {selected && (
+          <Link
+            href={selected.url}
+            className={cn(itemClass, 'mt-1 border-t pt-2 rounded-t-none')}
+            onClick={() => setOpen(false)}
+          >
+            <p className="text-[0.8125rem] text-fd-muted-foreground">
+              {selected.title} guide
+            </p>
+            <ArrowRight className="ms-auto size-3.5 shrink-0 text-fd-muted-foreground" />
+          </Link>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -263,7 +315,7 @@ export function ProviderMatrix({
       row.setAttribute('data-provider', provider.slug);
       // A gateway may have two rows (Woovi's two signing schemes); the summary shows the first.
       rows[provider.slug] ??= Array.from(row.querySelectorAll('td'), (td) =>
-        (td.textContent ?? '').trim(),
+        td.innerHTML.trim(),
       );
     }
     if (id) registerMatrix(id, { headers, rows });
@@ -317,14 +369,31 @@ export function ProviderSummary({ matrix }: { matrix: string }) {
         With {selected.title}
       </p>
       {cells ? (
-        <dl className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[max-content_1fr]">
-          {data.headers.slice(1).map((header, i) => (
-            <Fragment key={header}>
-              <dt className="text-fd-muted-foreground">{header}</dt>
-              <dd className="text-fd-card-foreground">{cells[i + 1]}</dd>
-            </Fragment>
-          ))}
-        </dl>
+        <>
+          <dl className="mt-2 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[max-content_1fr] [&_code]:rounded [&_code]:border [&_code]:bg-fd-muted [&_code]:px-1 [&_code]:py-px [&_code]:text-[0.8125rem] [&_a]:underline">
+            {data.headers.slice(1).map((header, i) => (
+              <Fragment key={header}>
+                <dt className="text-fd-muted-foreground">{header}</dt>
+                <dd
+                  className="text-fd-card-foreground"
+                  // biome-ignore lint/security/noDangerouslySetInnerHtml: the cell's own rendered markup, copied from this page's table
+                  dangerouslySetInnerHTML={{ __html: cells[i + 1] ?? '' }}
+                />
+              </Fragment>
+            ))}
+          </dl>
+          <p className="mt-3 text-xs text-fd-muted-foreground">
+            {selected.title}'s own event and field names, as the table below
+            spells them — the full mapping is on the{' '}
+            <Link
+              href={selected.url}
+              className="text-fd-primary hover:underline"
+            >
+              {selected.title} page
+            </Link>
+            .
+          </p>
+        </>
       ) : (
         <p className="mt-1 text-sm text-fd-muted-foreground">
           This table has no row for {selected.title}.

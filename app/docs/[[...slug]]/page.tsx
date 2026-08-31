@@ -10,7 +10,6 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
-import { ProviderSelect } from '@/components/payments-provider';
 import { gitConfig } from '@/lib/shared';
 import { getPageImage, getPageMarkdownUrl, source } from '@/lib/source';
 
@@ -34,7 +33,6 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
           markdownUrl={markdownUrl}
           githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${page.path}`}
         />
-        {page.slugs[0] === 'payments' && <ProviderSelect />}
       </div>
       <DocsBody>
         <MDX
