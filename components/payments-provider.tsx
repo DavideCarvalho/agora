@@ -7,7 +7,6 @@
 // followed across tabs via the `storage` event. The MDX-facing components are registered as bare
 // tags in components/mdx.tsx, so the library's docs use them without importing anything.
 
-import { Tabs, type TabsProps } from 'fumadocs-ui/components/tabs';
 import {
   Popover,
   PopoverContent,
@@ -36,7 +35,6 @@ import {
   type PaymentsProvider,
   PROVIDER_QUERY_PARAM,
   PROVIDER_STORAGE_KEY,
-  tabValue,
 } from '@/lib/payments-providers';
 
 /**
@@ -224,65 +222,6 @@ export function ProviderSelect() {
         )}
       </PopoverContent>
     </Popover>
-  );
-}
-
-type ProviderTabsProps = Omit<
-  TabsProps,
-  'items' | 'defaultIndex' | 'defaultValue'
-> & { items: string[] };
-
-/**
- * `<Tabs>` whose tabs are gateways: it follows the selected provider and, when the reader clicks a
- * tab, that becomes the selection everywhere. When the selected gateway has no tab here (Stripe on
- * the Pix page) the reader's last local pick stays open and a line underneath says so.
- */
-export function ProviderTabs({ items, children, ...rest }: ProviderTabsProps) {
-  const { providers, selected, select } = useScope();
-  const slugs = useMemo(
-    () => items.map((label) => matchProvider(label, providers)?.slug ?? null),
-    [items, providers],
-  );
-  const [local, setLocal] = useState(items[0]);
-
-  const selectedIndex = selected ? slugs.indexOf(selected.slug) : -1;
-  const active = selectedIndex >= 0 ? items[selectedIndex] : local;
-  const notCovered = selected !== null && selectedIndex < 0;
-
-  // Remember what is on screen, so switching to a gateway with no tab here keeps the tab the
-  // reader was looking at rather than snapping back to the first one.
-  useEffect(() => {
-    if (selectedIndex >= 0) setLocal(items[selectedIndex]);
-  }, [selectedIndex, items]);
-
-  // fumadocs' simple-mode `Tabs` spreads the remaining props onto the primitive *after* its own
-  // `value`/`onValueChange`, so passing ours makes it controlled (fumadocs-ui 16.15,
-  // dist/components/tabs.js). Its types omit the two; a JSX spread does not excess-check them.
-  const controlled = {
-    value: tabValue(active),
-    onValueChange: (value: string) => {
-      const index = items.findIndex((label) => tabValue(label) === value);
-      if (index < 0) return;
-      setLocal(items[index]);
-      const slug = slugs[index];
-      if (slug) select(slug);
-    },
-  };
-
-  return (
-    <div className="my-4">
-      <Tabs items={items} className="my-0" {...rest} {...controlled}>
-        {children}
-      </Tabs>
-      {notCovered && selected && (
-        <p className="mt-1.5 text-xs text-fd-muted-foreground">
-          {selected.title} is not covered in this section — showing {active}.{' '}
-          <Link href={selected.url} className="text-fd-primary hover:underline">
-            {selected.title} guide →
-          </Link>
-        </p>
-      )}
-    </div>
   );
 }
 
