@@ -31,9 +31,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # No `version:` here — pnpm/action-setup reads the root `packageManager` field, so
+      # bumping pnpm in package.json cannot drift from (or conflict with) the workflow.
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10
 
       - uses: actions/setup-node@v6
         with:
