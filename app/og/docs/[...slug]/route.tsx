@@ -1,7 +1,7 @@
-import { getPageImage, source } from '@/lib/source';
-import { getEmblem } from '@/lib/emblems';
 import { notFound } from 'next/navigation';
 import { ImageResponse } from 'next/og';
+import { getEmblem } from '@/lib/emblems';
+import { getPageImage, source } from '@/lib/source';
 
 export const revalidate = false;
 
@@ -13,7 +13,10 @@ function clamp(text: string, max = 150) {
   return `${cut.slice(0, lastSpace > 60 ? lastSpace : max).trimEnd()}…`;
 }
 
-export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...slug]'>) {
+export async function GET(
+  _req: Request,
+  { params }: RouteContext<'/og/docs/[...slug]'>,
+) {
   const { slug } = await params;
   const page = source.getPage(slug.slice(0, -1));
   if (!page) notFound();
@@ -22,7 +25,9 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
   const emblem = getEmblem(libSlug);
   const title = page.data.title;
   const description = clamp(page.data.description ?? '', emblem ? 130 : 150);
-  const kicker = emblem ? `@adonis-agora/${libSlug}` : '@adonis-agora · for AdonisJS';
+  const kicker = emblem
+    ? `@adonis-agora/${libSlug}`
+    : '@adonis-agora · for AdonisJS';
 
   return new ImageResponse(
     <div
@@ -50,17 +55,56 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
           color: '#5a45ff',
         }}
       >
-        <div style={{ display: 'flex', width: 13, height: 13, borderRadius: 999, background: '#5a45ff' }} />
+        <div
+          style={{
+            display: 'flex',
+            width: 13,
+            height: 13,
+            borderRadius: 999,
+            background: '#5a45ff',
+          }}
+        />
         {kicker}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 48 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: emblem ? 640 : 1000 }}>
-          <div style={{ display: 'flex', fontSize: 80, fontWeight: 700, lineHeight: 1.05, color: '#ECE7E1' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 48,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 22,
+            maxWidth: emblem ? 640 : 1000,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              fontSize: 80,
+              fontWeight: 700,
+              lineHeight: 1.05,
+              color: '#ECE7E1',
+            }}
+          >
             {title}
           </div>
           {description ? (
-            <div style={{ display: 'flex', fontSize: 31, lineHeight: 1.35, color: '#B9B2AA' }}>{description}</div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: 31,
+                lineHeight: 1.35,
+                color: '#B9B2AA',
+              }}
+            >
+              {description}
+            </div>
           ) : null}
         </div>
 
@@ -89,9 +133,17 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
               }}
             >
               <div style={{ display: 'flex' }}>PLATE</div>
-              <div style={{ display: 'flex', color: '#B9B2AA' }}>No. {emblem.plate}</div>
+              <div style={{ display: 'flex', color: '#B9B2AA' }}>
+                No. {emblem.plate}
+              </div>
             </div>
-            <svg width="208" height="150" viewBox="-104 -62 208 150" style={{ marginTop: 6 }}>
+            <svg
+              width="208"
+              height="150"
+              viewBox="-104 -62 208 150"
+              style={{ marginTop: 6 }}
+              aria-hidden="true"
+            >
               {emblem.art}
             </svg>
             <div
@@ -120,8 +172,19 @@ export async function GET(_req: Request, { params }: RouteContext<'/og/docs/[...
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ display: 'flex', fontSize: 33, fontWeight: 700, color: '#ECE7E1' }}>Agora</div>
-          <div style={{ display: 'flex' }}>— libraries for the AdonisJS ecosystem</div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: 33,
+              fontWeight: 700,
+              color: '#ECE7E1',
+            }}
+          >
+            Agora
+          </div>
+          <div style={{ display: 'flex' }}>
+            — libraries for the AdonisJS ecosystem
+          </div>
         </div>
       </div>
     </div>,

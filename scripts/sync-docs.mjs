@@ -15,8 +15,8 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -63,7 +63,17 @@ function fetchRepo(src, tmp) {
   const url = `https://github.com/${src.repo}.git`;
   execFileSync(
     'git',
-    ['clone', '--depth', '1', '--filter=blob:none', '--sparse', '--branch', src.ref, url, tmp],
+    [
+      'clone',
+      '--depth',
+      '1',
+      '--filter=blob:none',
+      '--sparse',
+      '--branch',
+      src.ref,
+      url,
+      tmp,
+    ],
     { stdio: ['ignore', 'ignore', 'inherit'] },
   );
   const checkout = [src.path, src.publicDir].filter(Boolean);
@@ -71,7 +81,9 @@ function fetchRepo(src, tmp) {
     stdio: ['ignore', 'ignore', 'inherit'],
   });
   if (!existsSync(join(tmp, src.path))) {
-    throw new Error(`docs path "${src.path}" missing in ${src.repo}@${src.ref}`);
+    throw new Error(
+      `docs path "${src.path}" missing in ${src.repo}@${src.ref}`,
+    );
   }
   return tmp;
 }
@@ -106,7 +118,8 @@ function rewriteAssets(content, slug) {
   return content.replaceAll('src="/', `src="/lib-assets/${slug}/`);
 }
 
-const GENERIC_TITLE = /^(documentation|docs|introduction|intro|overview|home|readme|getting started)$/i;
+const GENERIC_TITLE =
+  /^(documentation|docs|introduction|intro|overview|home|readme|getting started)$/i;
 function normalizeIndexTitle(dir, src) {
   const file = join(dir, 'index.mdx');
   if (!existsSync(file)) return;
@@ -114,7 +127,8 @@ function normalizeIndexTitle(dir, src) {
   const fm = text.match(/^---\n[\s\S]*?\n---/);
   if (!fm) return;
   const title = fm[0].match(/^title:\s*(.+?)\s*$/m);
-  if (!title || !GENERIC_TITLE.test(title[1].replace(/['"]/g, '').trim())) return;
+  if (!title || !GENERIC_TITLE.test(title[1].replace(/['"]/g, '').trim()))
+    return;
   const patched = fm[0].replace(/^title:\s*.+$/m, `title: ${src.name}`);
   writeFileSync(file, text.replace(fm[0], patched));
 }

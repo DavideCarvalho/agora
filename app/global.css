@@ -1,6 +1,6 @@
-@import 'tailwindcss';
-@import 'fumadocs-ui/css/neutral.css';
-@import 'fumadocs-ui/css/preset.css';
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 /* ------------------------------------------------------------------ *
  * Agora theme — AdonisJS violet on a dusk-ink canvas.
@@ -87,7 +87,9 @@ html {
 }
 
 html > body[data-scroll-locked] {
+  /* biome-ignore lint/complexity/noImportantStyles: overrides the inline style react-remove-scroll sets on <body> */
   margin-right: 0px !important;
+  /* biome-ignore lint/complexity/noImportantStyles: same inline-style override */
   --removed-body-scroll-bar-size: 0px !important;
 }
 
@@ -112,7 +114,7 @@ html > body[data-scroll-locked] {
 }
 .agora-sky::before {
   /* violet glow rising from behind the hero */
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   top: -10%;
@@ -121,19 +123,27 @@ html > body[data-scroll-locked] {
   transform: translateX(-50%);
   background:
     radial-gradient(60% 60% at 50% 0%, hsl(250 74% 51% / 0.22), transparent 70%),
-    radial-gradient(40% 50% at 18% 12%, hsl(268 60% 50% / 0.12), transparent 70%);
+    radial-gradient(
+      40% 50% at 18% 12%,
+      hsl(268 60% 50% / 0.12),
+      transparent 70%
+    );
   filter: blur(8px);
 }
 .agora-sky::after {
   /* fine "field-guide" grid */
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background-image:
     linear-gradient(var(--color-fd-border) 1px, transparent 1px),
     linear-gradient(90deg, var(--color-fd-border) 1px, transparent 1px);
   background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(
+    120% 80% at 50% 0%,
+    #000 30%,
+    transparent 78%
+  );
   mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 78%);
   opacity: 0.6;
 }
@@ -155,7 +165,13 @@ html > body[data-scroll-locked] {
 .agora-rule {
   height: 1px;
   width: 100%;
-  background: linear-gradient(90deg, transparent, var(--color-fd-border) 12%, var(--color-fd-border) 88%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-fd-border) 12%,
+    var(--color-fd-border) 88%,
+    transparent
+  );
 }
 
 /* library card */
@@ -169,16 +185,23 @@ html > body[data-scroll-locked] {
   border: 1px solid var(--color-fd-border);
   border-radius: 14px;
   overflow: hidden;
-  transition: border-color 0.25s ease, transform 0.25s ease, background 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease,
+    background 0.25s ease;
   isolation: isolate;
 }
 .library::before {
   /* violet wash that wakes up on hover */
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(120% 120% at 0% 0%, var(--agora-primary-soft), transparent 55%);
+  background: radial-gradient(
+    120% 120% at 0% 0%,
+    var(--agora-primary-soft),
+    transparent 55%
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -262,7 +285,10 @@ html > body[data-scroll-locked] {
   color: hsl(40 40% 97%);
   font-weight: 600;
   font-size: 0.92rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
   box-shadow: 0 10px 30px -12px hsl(250 74% 51% / 0.6);
 }
 .agora-cta:hover {
@@ -280,7 +306,9 @@ html > body[data-scroll-locked] {
   color: var(--color-fd-foreground);
   font-weight: 500;
   font-size: 0.92rem;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 .agora-ghost:hover {
   border-color: hsl(250 74% 51% / 0.45);

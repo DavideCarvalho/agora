@@ -29,7 +29,8 @@ export const sources = [
   {
     slug: 'context',
     name: 'Context',
-    description: 'Ambient request/tenant/correlation context that crosses HTTP, queue, durable and ace boundaries.',
+    description:
+      'Ambient request/tenant/correlation context that crosses HTTP, queue, durable and ace boundaries.',
     icon: 'Boxes',
     repo: 'DavideCarvalho/adonis-context',
     ref: 'master',
@@ -40,7 +41,8 @@ export const sources = [
   {
     slug: 'diagnostics',
     name: 'Diagnostics',
-    description: 'A zero-dependency diagnostics bus over node:diagnostics_channel, with an OpenTelemetry auto-bridge.',
+    description:
+      'A zero-dependency diagnostics bus over node:diagnostics_channel, with an OpenTelemetry auto-bridge.',
     icon: 'Activity',
     repo: 'DavideCarvalho/adonis-diagnostics',
     ref: 'master',
@@ -51,7 +53,8 @@ export const sources = [
   {
     slug: 'resilience',
     name: 'Resilience',
-    description: 'Composable timeout, retry, circuit-breaker and failover policies with a pluggable breaker store.',
+    description:
+      'Composable timeout, retry, circuit-breaker and failover policies with a pluggable breaker store.',
     icon: 'Zap',
     repo: 'DavideCarvalho/adonis-resilience',
     ref: 'master',
@@ -62,7 +65,8 @@ export const sources = [
   {
     slug: 'durable',
     name: 'Durable',
-    description: 'Durable, resumable, cross-process workflows for AdonisJS — built on @adonisjs/queue.',
+    description:
+      'Durable, resumable, cross-process workflows for AdonisJS — built on @adonisjs/queue.',
     icon: 'Workflow',
     repo: 'DavideCarvalho/adonis-agora-durable',
     ref: 'master',
@@ -73,7 +77,8 @@ export const sources = [
   {
     slug: 'telescope',
     name: 'Telescope',
-    description: 'A Telescope-style observability console — watchers, entries, and an extensible dashboard.',
+    description:
+      'A Telescope-style observability console — watchers, entries, and an extensible dashboard.',
     icon: 'Telescope',
     repo: 'DavideCarvalho/adonis-telescope',
     ref: 'master',
@@ -84,7 +89,8 @@ export const sources = [
   {
     slug: 'authz',
     name: 'Authz',
-    description: 'DB-backed roles & permissions that feed AdonisJS Bouncer — wildcard grants, tenancy, a Lucid store and ace commands.',
+    description:
+      'DB-backed roles & permissions that feed AdonisJS Bouncer — wildcard grants, tenancy, a Lucid store and ace commands.',
     icon: 'ShieldCheck',
     repo: 'DavideCarvalho/adonis-authz',
     ref: 'master',
@@ -131,7 +137,8 @@ export const sources = [
   {
     slug: 'collaboration',
     name: 'Collaboration',
-    description: 'Collaborative editing (CRDT) for AdonisJS — Yjs/Automerge/edge engines, Redis presence, version control, anchored comments, codegen and React client hooks.',
+    description:
+      'Collaborative editing (CRDT) for AdonisJS — Yjs/Automerge/edge engines, Redis presence, version control, anchored comments, codegen and React client hooks.',
     icon: 'Users',
     repo: 'DavideCarvalho/adonis-agora-collaboration',
     ref: 'main',

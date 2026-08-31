@@ -27,7 +27,8 @@ export type SimTheme = {
 
 export function sampleTheme(el: HTMLElement): SimTheme {
   const cs = getComputedStyle(el);
-  const read = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback;
+  const read = (name: string, fallback: string) =>
+    cs.getPropertyValue(name).trim() || fallback;
   return {
     ink: read('--color-fd-foreground', '#111'),
     muted: read('--color-fd-muted-foreground', '#777'),
@@ -42,7 +43,14 @@ export function easeInOut(t: number): number {
 }
 
 /** Position along a gentle quadratic arc from (x0,y0) to (x1,y1); `bend` bows it up (-) or down (+). */
-export function arcPos(x0: number, y0: number, x1: number, y1: number, t: number, bend: number): { x: number; y: number } {
+export function arcPos(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  t: number,
+  bend: number,
+): { x: number; y: number } {
   const k = easeInOut(t);
   const cx = (x0 + x1) / 2;
   const cy = (y0 + y1) / 2 + bend;
@@ -77,7 +85,13 @@ export function drawDot(
       ctx2d.globalAlpha = a;
       ctx2d.fillStyle = color;
       ctx2d.beginPath();
-      ctx2d.arc(p.x, p.y, r * (0.35 + (0.5 * (i + 1)) / trail.length), 0, Math.PI * 2);
+      ctx2d.arc(
+        p.x,
+        p.y,
+        r * (0.35 + (0.5 * (i + 1)) / trail.length),
+        0,
+        Math.PI * 2,
+      );
       ctx2d.fill();
     }
     ctx2d.globalAlpha = 1;
@@ -95,7 +109,11 @@ export function drawDot(
 
 export type Pulse = { x: number; y: number; t: number; color: string };
 
-export function drawPulses(ctx2d: CanvasRenderingContext2D, pulses: Pulse[], dt: number) {
+export function drawPulses(
+  ctx2d: CanvasRenderingContext2D,
+  pulses: Pulse[],
+  dt: number,
+) {
   for (let i = pulses.length - 1; i >= 0; i--) {
     const p = pulses[i];
     if (!p) continue;
@@ -171,18 +189,44 @@ export function SimFigure({
     <figure
       ref={wrapRef}
       className="my-6 rounded-2xl border border-fd-border p-3 sm:p-4"
-      style={{ background: 'color-mix(in srgb, var(--color-fd-primary) 7%, var(--color-fd-card))' }}
+      style={{
+        background:
+          'color-mix(in srgb, var(--color-fd-primary) 7%, var(--color-fd-card))',
+      }}
     >
       <canvas
         ref={canvasRef}
-        style={{ width: '100%', maxWidth: SIM_W, display: 'block', margin: '0 auto', aspectRatio: `${SIM_W} / ${height}` }}
+        style={{
+          width: '100%',
+          maxWidth: SIM_W,
+          display: 'block',
+          margin: '0 auto',
+          aspectRatio: `${SIM_W} / ${height}`,
+        }}
         role="img"
         aria-label={ariaLabel}
       />
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 10, fontSize: 12.5, color: 'var(--color-fd-muted-foreground)' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 10,
+          marginTop: 10,
+          fontSize: 12.5,
+          color: 'var(--color-fd-muted-foreground)',
+        }}
+      >
         {controls}
       </div>
-      <figcaption style={{ marginTop: 8, fontSize: 12.5, color: 'var(--color-fd-muted-foreground)', lineHeight: 1.5 }}>
+      <figcaption
+        style={{
+          marginTop: 8,
+          fontSize: 12.5,
+          color: 'var(--color-fd-muted-foreground)',
+          lineHeight: 1.5,
+        }}
+      >
         {caption}
       </figcaption>
     </figure>
@@ -208,7 +252,10 @@ export function setupSim(
   const themeObserver = new MutationObserver(() => {
     themeRef.current = sampleTheme(wrap);
   });
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class'],
+  });
   const visibleRef = { current: true };
   const io = new IntersectionObserver((entries) => {
     visibleRef.current = entries[0]?.isIntersecting ?? true;
@@ -329,7 +376,10 @@ export function QueueSim() {
 
       spawnCarry += rateRef.current * dt;
       if (burstRef.current > 0) {
-        const release = Math.min(burstRef.current, Math.max(1, Math.round(30 * dt)));
+        const release = Math.min(
+          burstRef.current,
+          Math.max(1, Math.round(30 * dt)),
+        );
         burstRef.current -= release;
         for (let i = 0; i < release; i++) spawn();
       }
@@ -339,7 +389,9 @@ export function QueueSim() {
       }
 
       const conc = concurrencyRef.current;
-      const working = dots.filter((d) => d.phase === 'working' || d.phase === 'toWorker');
+      const working = dots.filter(
+        (d) => d.phase === 'working' || d.phase === 'toWorker',
+      );
       const queuedDots = dots.filter((d) => d.phase === 'queued');
       const busySlots = new Set(working.map((d) => d.slot));
       for (const dot of queuedDots) {
@@ -369,7 +421,9 @@ export function QueueSim() {
       for (const dot of dots) {
         switch (dot.phase) {
           case 'toQueue': {
-            const pos = queueSlotPos(Math.min(21, dots.filter((d) => d.phase === 'queued').length));
+            const pos = queueSlotPos(
+              Math.min(21, dots.filter((d) => d.phase === 'queued').length),
+            );
             dot.targetX = pos.x;
             dot.targetY = pos.y;
             dot.t += dot.speed * dt;
@@ -379,7 +433,14 @@ export function QueueSim() {
               dot.y = dot.targetY;
               dot.trail.length = 0;
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, dot.targetX, dot.targetY, dot.t, -30);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                dot.targetX,
+                dot.targetY,
+                dot.t,
+                -30,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -405,7 +466,14 @@ export function QueueSim() {
               dot.t = 0;
               dot.trail.length = 0;
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, dot.targetX, dot.targetY, dot.t, 34);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                dot.targetX,
+                dot.targetY,
+                dot.t,
+                34,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -430,9 +498,21 @@ export function QueueSim() {
             if (dot.t >= 1) {
               dot.phase = 'done';
               doneCount += 1;
-              pulses.push({ x: DONE.x - 32, y: DONE.y, t: 0, color: SIM_GREEN });
+              pulses.push({
+                x: DONE.x - 32,
+                y: DONE.y,
+                t: 0,
+                color: SIM_GREEN,
+              });
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, dot.targetX, dot.targetY, dot.t, -30);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                dot.targetX,
+                dot.targetY,
+                dot.t,
+                -30,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -443,7 +523,8 @@ export function QueueSim() {
             break;
         }
       }
-      for (let i = dots.length - 1; i >= 0; i--) if (dots[i]?.phase === 'done') dots.splice(i, 1);
+      for (let i = dots.length - 1; i >= 0; i--)
+        if (dots[i]?.phase === 'done') dots.splice(i, 1);
       draw(dt);
       raf = requestAnimationFrame(tick);
     }
@@ -455,8 +536,12 @@ export function QueueSim() {
       ctx2d.clearRect(0, 0, SIM_W, Q_H);
       ctx2d.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
       const conc = concurrencyRef.current;
-      const queuedN = dots.filter((d) => d.phase === 'queued' || d.phase === 'toQueue').length;
-      const inFlight = dots.filter((d) => d.phase === 'working' || d.phase === 'toWorker').length;
+      const queuedN = dots.filter(
+        (d) => d.phase === 'queued' || d.phase === 'toQueue',
+      ).length;
+      const inFlight = dots.filter(
+        (d) => d.phase === 'working' || d.phase === 'toWorker',
+      ).length;
 
       // flow guides
       ctx2d.strokeStyle = theme.border;
@@ -472,7 +557,15 @@ export function QueueSim() {
       ctx2d.setLineDash([]);
 
       // producer
-      drawBox(ctx2d, theme, PRODUCER.x - 64, PRODUCER.y - 34, 100, 68, theme.border);
+      drawBox(
+        ctx2d,
+        theme,
+        PRODUCER.x - 64,
+        PRODUCER.y - 34,
+        100,
+        68,
+        theme.border,
+      );
       ctx2d.fillStyle = theme.ink;
       ctx2d.fillText('runs', PRODUCER.x - 50, PRODUCER.y - 12);
       ctx2d.fillStyle = theme.muted;
@@ -481,7 +574,16 @@ export function QueueSim() {
 
       // queue — the border warms up as the backlog grows, faint tint fill inside
       const pressure = Math.min(1, queuedN / 16);
-      drawBox(ctx2d, theme, QUEUE.x, QUEUE.y, QUEUE.w, QUEUE.h, pressure > 0.5 ? SIM_AMBER : theme.border, 1 + pressure);
+      drawBox(
+        ctx2d,
+        theme,
+        QUEUE.x,
+        QUEUE.y,
+        QUEUE.w,
+        QUEUE.h,
+        pressure > 0.5 ? SIM_AMBER : theme.border,
+        1 + pressure,
+      );
       ctx2d.globalAlpha = 0.05 + pressure * 0.06;
       ctx2d.fillStyle = pressure > 0.5 ? SIM_AMBER : theme.accent;
       ctx2d.beginPath();
@@ -491,7 +593,11 @@ export function QueueSim() {
       ctx2d.fillStyle = theme.muted;
       ctx2d.fillText(`queue 'emails'`, QUEUE.x + 2, QUEUE.y - 8);
       ctx2d.fillStyle = queuedN > 8 ? SIM_AMBER : theme.muted;
-      ctx2d.fillText(`${queuedN} waiting · zero compute`, QUEUE.x + 108, QUEUE.y - 8);
+      ctx2d.fillText(
+        `${queuedN} waiting · zero compute`,
+        QUEUE.x + 108,
+        QUEUE.y - 8,
+      );
 
       // worker slots
       for (let sIdx = 0; sIdx < conc; sIdx++) {
@@ -513,13 +619,23 @@ export function QueueSim() {
           ctx2d.strokeStyle = theme.accent;
           ctx2d.lineWidth = 2.5;
           ctx2d.beginPath();
-          ctx2d.arc(pos.x, pos.y, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, dot.t));
+          ctx2d.arc(
+            pos.x,
+            pos.y,
+            16,
+            -Math.PI / 2,
+            -Math.PI / 2 + Math.PI * 2 * Math.min(1, dot.t),
+          );
           ctx2d.stroke();
           ctx2d.lineWidth = 1;
         }
       }
       ctx2d.fillStyle = theme.muted;
-      ctx2d.fillText(`workers ${inFlight}/${conc}`, WORKERS_X - 34, slotPos(conc - 1, conc).y + 42);
+      ctx2d.fillText(
+        `workers ${inFlight}/${conc}`,
+        WORKERS_X - 34,
+        slotPos(conc - 1, conc).y + 42,
+      );
 
       // done pile
       drawBox(ctx2d, theme, DONE.x - 30, DONE.y - 34, 96, 68, theme.border);
@@ -535,10 +651,27 @@ export function QueueSim() {
       for (const dot of dots) {
         if (dot.phase === 'done') continue;
         const waitedMs = simMs - dot.bornAt;
-        const moving = dot.phase === 'toQueue' || dot.phase === 'toWorker' || dot.phase === 'toDone';
+        const moving =
+          dot.phase === 'toQueue' ||
+          dot.phase === 'toWorker' ||
+          dot.phase === 'toDone';
         const color =
-          dot.phase === 'queued' ? (waitedMs > 3200 ? SIM_AMBER : theme.accent) : dot.phase === 'toDone' ? SIM_GREEN : theme.accent;
-        drawDot(ctx2d, dot.x, dot.y, dot.phase === 'working' ? 7 : 5.5, color, moving ? dot.trail : undefined, moving);
+          dot.phase === 'queued'
+            ? waitedMs > 3200
+              ? SIM_AMBER
+              : theme.accent
+            : dot.phase === 'toDone'
+              ? SIM_GREEN
+              : theme.accent;
+        drawDot(
+          ctx2d,
+          dot.x,
+          dot.y,
+          dot.phase === 'working' ? 7 : 5.5,
+          color,
+          moving ? dot.trail : undefined,
+          moving,
+        );
       }
     }
 
@@ -569,15 +702,30 @@ export function QueueSim() {
       ariaLabel="Simulation: runs dispatch steps into a durable queue; the admission gate feeds a fixed pool of worker slots; a burst of arrivals queues up (zero compute) and drains at the configured concurrency."
       controls={
         <>
-          <button type="button" style={simBtn} onClick={() => { burstRef.current += 14; }}>
+          <button
+            type="button"
+            style={simBtn}
+            onClick={() => {
+              burstRef.current += 14;
+            }}
+          >
             ⚡ burst +14
           </button>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             rate
-            <input type="range" min={1} max={8} value={rate} onChange={(e) => setRate(Number(e.target.value))} style={{ width: 90 }} />
-            <span className="tnum" style={{ minWidth: 34 }}>{rate}/s</span>
+            <input
+              type="range"
+              min={1}
+              max={8}
+              value={rate}
+              onChange={(e) => setRate(Number(e.target.value))}
+              style={{ width: 90 }}
+            />
+            <span className="tnum" style={{ minWidth: 34 }}>
+              {rate}/s
+            </span>
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             concurrency
             {[1, 2, 4].map((n) => (
               <button
@@ -586,25 +734,37 @@ export function QueueSim() {
                 style={{
                   ...simBtn,
                   padding: '4px 10px',
-                  borderColor: n === concurrency ? 'var(--color-fd-primary)' : 'var(--color-fd-border)',
-                  color: n === concurrency ? 'var(--color-fd-foreground)' : 'var(--color-fd-muted-foreground)',
+                  borderColor:
+                    n === concurrency
+                      ? 'var(--color-fd-primary)'
+                      : 'var(--color-fd-border)',
+                  color:
+                    n === concurrency
+                      ? 'var(--color-fd-foreground)'
+                      : 'var(--color-fd-muted-foreground)',
                 }}
+                aria-pressed={n === concurrency}
                 onClick={() => setConcurrency(n)}
               >
                 {n}
               </button>
             ))}
-          </label>
-          <button type="button" style={{ ...simBtn, marginLeft: 'auto' }} onClick={() => setPaused((p) => !p)}>
+          </span>
+          <button
+            type="button"
+            style={{ ...simBtn, marginLeft: 'auto' }}
+            onClick={() => setPaused((p) => !p)}
+          >
             {paused ? '▶ resume' : '⏸ pause'}
           </button>
         </>
       }
       caption={
         <>
-          Live model of durable admission: hit <b>burst</b> and watch the queue absorb the spike — every
-          blocked run waits suspended (zero compute, amber when it has waited a while) and drains FIFO at
-          whatever <b>concurrency</b> allows. Nothing is dropped, nothing melts.
+          Live model of durable admission: hit <b>burst</b> and watch the queue
+          absorb the spike — every blocked run waits suspended (zero compute,
+          amber when it has waited a while) and drains FIFO at whatever{' '}
+          <b>concurrency</b> allows. Nothing is dropped, nothing melts.
         </>
       }
     />
@@ -674,7 +834,10 @@ export function SingletonSim() {
       });
     }
 
-    function laneQueuePos(key: number, index: number): { x: number; y: number } {
+    function laneQueuePos(
+      key: number,
+      index: number,
+    ): { x: number; y: number } {
       return { x: SLOT_X - 46 - index * 19, y: LANE_Y[key] ?? 150 };
     }
 
@@ -689,7 +852,10 @@ export function SingletonSim() {
 
       spawnCarry += rateRef.current * dt;
       if (burstRef.current > 0) {
-        const release = Math.min(burstRef.current, Math.max(1, Math.round(24 * dt)));
+        const release = Math.min(
+          burstRef.current,
+          Math.max(1, Math.round(24 * dt)),
+        );
         burstRef.current -= release;
         for (let i = 0; i < release; i++) spawn(0);
       }
@@ -699,7 +865,9 @@ export function SingletonSim() {
       }
 
       for (let key = 0; key < KEYS.length; key++) {
-        const working = dots.some((d) => d.key === key && d.phase === 'working');
+        const working = dots.some(
+          (d) => d.key === key && d.phase === 'working',
+        );
         if (working) continue;
         const next = dots.find((d) => d.key === key && d.phase === 'queued');
         if (next) {
@@ -715,7 +883,9 @@ export function SingletonSim() {
       for (const dot of dots) {
         switch (dot.phase) {
           case 'toLane': {
-            const idx = dots.filter((d) => d.key === dot.key && d.phase === 'queued').length;
+            const idx = dots.filter(
+              (d) => d.key === dot.key && d.phase === 'queued',
+            ).length;
             const pos = laneQueuePos(dot.key, Math.min(12, idx));
             dot.t += 2.2 * dt;
             if (dot.t >= 1) {
@@ -724,7 +894,14 @@ export function SingletonSim() {
               dot.y = pos.y;
               dot.trail.length = 0;
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, pos.x, pos.y, dot.t, dot.key === 1 ? -26 : 0);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                pos.x,
+                pos.y,
+                dot.t,
+                dot.key === 1 ? -26 : 0,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -732,7 +909,10 @@ export function SingletonSim() {
             break;
           }
           case 'queued': {
-            const pos = laneQueuePos(dot.key, Math.min(12, perKeyIndex[dot.key] ?? 0));
+            const pos = laneQueuePos(
+              dot.key,
+              Math.min(12, perKeyIndex[dot.key] ?? 0),
+            );
             perKeyIndex[dot.key] = (perKeyIndex[dot.key] ?? 0) + 1;
             dot.x += (pos.x - dot.x) * Math.min(1, 10 * dt);
             dot.y += (pos.y - dot.y) * Math.min(1, 10 * dt);
@@ -753,9 +933,21 @@ export function SingletonSim() {
             if (dot.t >= 1) {
               dot.phase = 'done';
               doneCount += 1;
-              pulses.push({ x: S_DONE.x - 32, y: S_DONE.y, t: 0, color: SIM_GREEN });
+              pulses.push({
+                x: S_DONE.x - 32,
+                y: S_DONE.y,
+                t: 0,
+                color: SIM_GREEN,
+              });
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, S_DONE.x - 32, S_DONE.y, dot.t, dot.key === 1 ? -26 : 0);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                S_DONE.x - 32,
+                S_DONE.y,
+                dot.t,
+                dot.key === 1 ? -26 : 0,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -766,7 +958,8 @@ export function SingletonSim() {
             break;
         }
       }
-      for (let i = dots.length - 1; i >= 0; i--) if (dots[i]?.phase === 'done') dots.splice(i, 1);
+      for (let i = dots.length - 1; i >= 0; i--)
+        if (dots[i]?.phase === 'done') dots.splice(i, 1);
       draw(dt);
       raf = requestAnimationFrame(tick);
     }
@@ -778,7 +971,15 @@ export function SingletonSim() {
       ctx2d.clearRect(0, 0, SIM_W, S_H);
       ctx2d.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
 
-      drawBox(ctx2d, theme, S_PRODUCER.x - 64, S_PRODUCER.y - 34, 100, 68, theme.border);
+      drawBox(
+        ctx2d,
+        theme,
+        S_PRODUCER.x - 64,
+        S_PRODUCER.y - 34,
+        100,
+        68,
+        theme.border,
+      );
       ctx2d.fillStyle = theme.ink;
       ctx2d.fillText('starts', S_PRODUCER.x - 50, S_PRODUCER.y - 10);
       ctx2d.fillStyle = theme.muted;
@@ -799,7 +1000,9 @@ export function SingletonSim() {
         ctx2d.stroke();
         ctx2d.setLineDash([]);
 
-        const queuedN = dots.filter((d) => d.key === key && d.phase === 'queued').length;
+        const queuedN = dots.filter(
+          (d) => d.key === key && d.phase === 'queued',
+        ).length;
         ctx2d.fillStyle = keyDef.color;
         ctx2d.fillText(keyDef.label, 236, y - 14);
         if (queuedN > 0) {
@@ -824,7 +1027,13 @@ export function SingletonSim() {
           ctx2d.strokeStyle = keyDef.color;
           ctx2d.lineWidth = 2.5;
           ctx2d.beginPath();
-          ctx2d.arc(SLOT_X, y, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, dot.t));
+          ctx2d.arc(
+            SLOT_X,
+            y,
+            16,
+            -Math.PI / 2,
+            -Math.PI / 2 + Math.PI * 2 * Math.min(1, dot.t),
+          );
           ctx2d.stroke();
           ctx2d.lineWidth = 1;
         }
@@ -845,9 +1054,20 @@ export function SingletonSim() {
       for (const dot of dots) {
         if (dot.phase === 'done') continue;
         const moving = dot.phase === 'toLane' || dot.phase === 'toDone';
-        const color = dot.phase === 'toDone' ? SIM_GREEN : (KEYS[dot.key]?.color ?? theme.accent);
+        const color =
+          dot.phase === 'toDone'
+            ? SIM_GREEN
+            : (KEYS[dot.key]?.color ?? theme.accent);
         ctx2d.globalAlpha = dot.phase === 'queued' ? 0.85 : 1;
-        drawDot(ctx2d, dot.x, dot.y, dot.phase === 'working' ? 7 : 5.5, color, moving ? dot.trail : undefined, moving);
+        drawDot(
+          ctx2d,
+          dot.x,
+          dot.y,
+          dot.phase === 'working' ? 7 : 5.5,
+          color,
+          moving ? dot.trail : undefined,
+          moving,
+        );
         ctx2d.globalAlpha = 1;
       }
     }
@@ -858,7 +1078,10 @@ export function SingletonSim() {
       spawn(1);
       dots.forEach((d, i) => {
         d.phase = i === 0 ? 'working' : 'queued';
-        const pos = i === 0 ? { x: SLOT_X, y: LANE_Y[0] ?? 72 } : laneQueuePos(d.key, i - 1);
+        const pos =
+          i === 0
+            ? { x: SLOT_X, y: LANE_Y[0] ?? 72 }
+            : laneQueuePos(d.key, i - 1);
         d.x = pos.x;
         d.y = pos.y;
       });
@@ -881,24 +1104,44 @@ export function SingletonSim() {
       ariaLabel="Simulation: starts for three singleton keys flow into per-key mutex lanes; same-key starts queue FIFO behind the in-flight run while other keys run in parallel."
       controls={
         <>
-          <button type="button" style={{ ...simBtn, borderColor: KEYS[0]?.color }} onClick={() => { burstRef.current += 8; }}>
+          <button
+            type="button"
+            style={{ ...simBtn, borderColor: KEYS[0]?.color }}
+            onClick={() => {
+              burstRef.current += 8;
+            }}
+          >
             ⚡ burst store:A +8
           </button>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             rate
-            <input type="range" min={1} max={6} value={rate} onChange={(e) => setRate(Number(e.target.value))} style={{ width: 90 }} />
-            <span className="tnum" style={{ minWidth: 34 }}>{rate}/s</span>
+            <input
+              type="range"
+              min={1}
+              max={6}
+              value={rate}
+              onChange={(e) => setRate(Number(e.target.value))}
+              style={{ width: 90 }}
+            />
+            <span className="tnum" style={{ minWidth: 34 }}>
+              {rate}/s
+            </span>
           </label>
-          <button type="button" style={{ ...simBtn, marginLeft: 'auto' }} onClick={() => setPaused((p) => !p)}>
+          <button
+            type="button"
+            style={{ ...simBtn, marginLeft: 'auto' }}
+            onClick={() => setPaused((p) => !p)}
+          >
             {paused ? '▶ resume' : '⏸ pause'}
           </button>
         </>
       }
       caption={
         <>
-          Live model of <b>singleton</b> admission: each key owns one slot (a mutex). Burst <b>store:A</b> and
-          only <b>its</b> lane backs up — gated starts wait suspended, FIFO, while store:B and store:C keep
-          flowing. Different keys never contend.
+          Live model of <b>singleton</b> admission: each key owns one slot (a
+          mutex). Burst <b>store:A</b> and only <b>its</b> lane backs up — gated
+          starts wait suspended, FIFO, while store:B and store:C keep flowing.
+          Different keys never contend.
         </>
       }
     />

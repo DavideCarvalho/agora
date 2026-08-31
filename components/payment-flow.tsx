@@ -22,10 +22,12 @@ const AMBER = '#f5a524';
 const GREEN = '#30a46c';
 
 // Layered surface tints — opaque over the card so they read on any theme.
-const tintAccentSoft = 'color-mix(in srgb, var(--color-fd-primary) 7%, var(--color-fd-card))';
+const tintAccentSoft =
+  'color-mix(in srgb, var(--color-fd-primary) 7%, var(--color-fd-card))';
 const tintAmber = `color-mix(in srgb, ${AMBER} 13%, var(--color-fd-card))`;
 const tintGreen = `color-mix(in srgb, ${GREEN} 12%, var(--color-fd-card))`;
-const neutral = 'color-mix(in srgb, var(--color-fd-foreground) 4%, var(--color-fd-card))';
+const neutral =
+  'color-mix(in srgb, var(--color-fd-foreground) 4%, var(--color-fd-card))';
 
 /** An actor chip — one of the two parties on a wire. */
 function Actor({ label, sub }: { label: string; sub?: string }) {
@@ -52,7 +54,13 @@ function Actor({ label, sub }: { label: string; sub?: string }) {
 /** A fixed-size arrowhead glyph, so it stays crisp however wide the wire stretches. */
 function Head({ dir, color }: { dir: 'right' | 'left'; color: string }) {
   return (
-    <svg width={9} height={10} viewBox="0 0 9 10" aria-hidden="true" focusable="false">
+    <svg
+      width={9}
+      height={10}
+      viewBox="0 0 9 10"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path
         d={dir === 'right' ? 'M0,0 L9,5 L0,10 z' : 'M9,0 L0,5 L9,10 z'}
         style={{ fill: color }}
@@ -133,7 +141,10 @@ function Band({
       }}
     >
       <header className="pf-band-head">
-        <span className="pf-band-index" style={{ background: tone, color: cardBg }}>
+        <span
+          className="pf-band-index"
+          style={{ background: tone, color: cardBg }}
+        >
           {index}
         </span>
         <h4 className="pf-band-title" style={{ color: ink }}>
@@ -272,23 +283,36 @@ export function PaymentFlow({
               payment.status = &apos;pending&apos;
             </span>{' '}
             <span style={{ color: muted }}>
-              — the record exists, but nothing has been paid. Never grant anything here.
+              — the record exists, but nothing has been paid. Never grant
+              anything here.
             </span>
           </p>
         </Band>
 
         <Drop note="out-of-band — seconds, or days" />
 
-        <Band index="2" title="the customer acts" tone={muted} fill={neutral} dashed>
+        <Band
+          index="2"
+          title="the customer acts"
+          tone={muted}
+          fill={neutral}
+          dashed
+        >
           <p className="pf-note" style={{ color: ink, marginTop: 0 }}>
-            The customer scans the Pix QR, or approves the card — outside your process, on their own
-            clock. Your app is not in this step and cannot observe it.
+            The customer scans the Pix QR, or approves the card — outside your
+            process, on their own clock. Your app is not in this step and cannot
+            observe it.
           </p>
         </Band>
 
         <Drop note="the gateway calls you back" />
 
-        <Band index="3" title="the webhook confirms it" tone={GREEN} fill={tintGreen}>
+        <Band
+          index="3"
+          title="the webhook confirms it"
+          tone={GREEN}
+          fill={tintGreen}
+        >
           <div className="pf-row">
             <Actor label="your app" sub="/payments/webhook" />
             <Wire label="webhook" dir="left" color={GREEN} flowing />
@@ -300,7 +324,10 @@ export function PaymentFlow({
           <ol className="pf-steps" style={{ borderLeftColor: border }}>
             {steps.map((step, i) => (
               <li className="pf-step" key={step.what}>
-                <span className="pf-step-n" style={{ color: GREEN, fontFamily: mono }}>
+                <span
+                  className="pf-step-n"
+                  style={{ color: GREEN, fontFamily: mono }}
+                >
                   {i + 1}
                 </span>
                 <span className="pf-step-what" style={{ color: ink }}>

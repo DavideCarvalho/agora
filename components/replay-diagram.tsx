@@ -19,9 +19,12 @@ const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 const RED = '#e5484d';
 
 // Layered surface tints — opaque over the card so they read on any theme.
-const tintAccent = 'color-mix(in srgb, var(--color-fd-primary) 14%, var(--color-fd-card))';
-const tintAccentSoft = 'color-mix(in srgb, var(--color-fd-primary) 7%, var(--color-fd-card))';
-const neutral = 'color-mix(in srgb, var(--color-fd-foreground) 4%, var(--color-fd-card))';
+const tintAccent =
+  'color-mix(in srgb, var(--color-fd-primary) 14%, var(--color-fd-card))';
+const tintAccentSoft =
+  'color-mix(in srgb, var(--color-fd-primary) 7%, var(--color-fd-card))';
+const neutral =
+  'color-mix(in srgb, var(--color-fd-foreground) 4%, var(--color-fd-card))';
 const tintRed = 'color-mix(in srgb, #e5484d 12%, var(--color-fd-card))';
 // Semantic success green — a WRITTEN checkpoint / a saved-output return must read as "safe" on any
 // theme, independent of --color-fd-primary (accent-as-done could otherwise read as a failure).
@@ -58,17 +61,23 @@ type Ev =
 
 function buildEvents(checkpointedCount: number): Ev[] {
   const ev: Ev[] = [];
-  for (let i = 0; i < checkpointedCount; i++) ev.push({ kind: 'exec-first', step: i });
+  for (let i = 0; i < checkpointedCount; i++)
+    ev.push({ kind: 'exec-first', step: i });
   ev.push({ kind: 'crash' });
   ev.push({ kind: 'restart' });
   for (let i = 0; i < N; i++) {
-    ev.push(i < checkpointedCount ? { kind: 'return', step: i } : { kind: 'exec-replay', step: i });
+    ev.push(
+      i < checkpointedCount
+        ? { kind: 'return', step: i }
+        : { kind: 'exec-replay', step: i },
+    );
   }
   return ev;
 }
 
 function caption(e: Ev | undefined): string {
-  if (!e) return 'Ready — press play, drag the crash marker, or scrub the timeline.';
+  if (!e)
+    return 'Ready — press play, drag the crash marker, or scrub the timeline.';
   switch (e.kind) {
     case 'exec-first':
       return `First run: execute ${STEPS[e.step].name} → write checkpoint seq:${e.step}.`;
@@ -113,12 +122,16 @@ function Card({
   titleFill: string;
   sub: string;
   tip: { title: string; body: string };
-  onTip: (t: { ax: number; ay: number; title: string; body: string } | null) => void;
+  onTip: (
+    t: { ax: number; ay: number; title: string; body: string } | null,
+  ) => void;
 }) {
   const x = cx - CELL_W / 2;
-  const enter = () => onTip({ ax: cx, ay: y, title: tip.title, body: tip.body });
+  const enter = () =>
+    onTip({ ax: cx, ay: y, title: tip.title, body: tip.body });
   const leave = () => onTip(null);
   return (
+    // biome-ignore lint/a11y/noInteractiveElementToNoninteractiveRole: a focusable SVG group that exposes its tooltip to keyboard users; img is the closest role for the drawing
     <g
       className="rd-anim"
       style={{ opacity, cursor: 'help' }}
@@ -179,7 +192,9 @@ function Pill({
   cx: number;
   filled: boolean;
   seq: number;
-  onTip: (t: { ax: number; ay: number; title: string; body: string } | null) => void;
+  onTip: (
+    t: { ax: number; ay: number; title: string; body: string } | null,
+  ) => void;
 }) {
   const w = 158;
   const x = cx - w / 2;
@@ -192,9 +207,11 @@ function Pill({
         title: `seq:${seq} · no checkpoint`,
         body: 'Nothing saved here, so replay must execute this step for real.',
       };
-  const enter = () => onTip({ ax: cx, ay: ST_Y, title: tip.title, body: tip.body });
+  const enter = () =>
+    onTip({ ax: cx, ay: ST_Y, title: tip.title, body: tip.body });
   const leave = () => onTip(null);
   return (
+    // biome-ignore lint/a11y/noInteractiveElementToNoninteractiveRole: a focusable SVG group that exposes its tooltip to keyboard users; img is the closest role for the drawing
     <g
       className="rd-anim"
       style={{ cursor: 'help' }}
@@ -233,7 +250,12 @@ function Pill({
         y={ST_Y + ST_H / 2 - 2}
         textAnchor="middle"
         className="rd-anim"
-        style={{ fill: filled ? ink : muted, fontSize: 11, fontWeight: 600, fontFamily: mono }}
+        style={{
+          fill: filled ? ink : muted,
+          fontSize: 11,
+          fontWeight: 600,
+          fontFamily: mono,
+        }}
       >
         seq:{seq}
       </text>
@@ -295,15 +317,20 @@ export function ReplayDiagram() {
   const [t, setT] = useState(999); // clamped below → SSR/first paint shows the resolved frame
   const [playing, setPlaying] = useState(false);
   const [reduced, setReduced] = useState(false);
-  const [tip, setTip] = useState<{ left: number; top: number; title: string; body: string } | null>(
-    null,
-  );
+  const [tip, setTip] = useState<{
+    left: number;
+    top: number;
+    title: string;
+    body: string;
+  } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // Map an SVG-space anchor to a pixel position within the wrapper so the HTML tooltip stays crisp
   // (it doesn't scale with the SVG) and sits centred just above the hovered element.
-  function onTip(t: { ax: number; ay: number; title: string; body: string } | null) {
+  function onTip(
+    t: { ax: number; ay: number; title: string; body: string } | null,
+  ) {
     if (!t) {
       setTip(null);
       return;
@@ -338,7 +365,10 @@ export function ReplayDiagram() {
       setPlaying(false);
       return;
     }
-    const id = setTimeout(() => setT((v) => Math.min(events.length, v + 1)), reduced ? 320 : 900);
+    const id = setTimeout(
+      () => setT((v) => Math.min(events.length, v + 1)),
+      reduced ? 320 : 900,
+    );
     return () => clearTimeout(id);
   }, [playing, tc, events.length, reduced]);
 
@@ -390,13 +420,20 @@ export function ReplayDiagram() {
 
   const applied = events.slice(0, tc);
   const has = (pred: (e: Ev) => boolean) => applied.some(pred);
-  const firstDone = (i: number) => has((e) => e.kind === 'exec-first' && e.step === i);
-  const returned = (i: number) => has((e) => e.kind === 'return' && e.step === i);
-  const replayed = (i: number) => has((e) => e.kind === 'exec-replay' && e.step === i);
+  const firstDone = (i: number) =>
+    has((e) => e.kind === 'exec-first' && e.step === i);
+  const returned = (i: number) =>
+    has((e) => e.kind === 'return' && e.step === i);
+  const replayed = (i: number) =>
+    has((e) => e.kind === 'exec-replay' && e.step === i);
   const storeFilled = (i: number) => firstDone(i) || replayed(i);
   const crashed = has((e) => e.kind === 'crash');
   const restarted = has((e) => e.kind === 'restart');
-  const phase: 'first' | 'crash' | 'replay' = !crashed ? 'first' : !restarted ? 'crash' : 'replay';
+  const phase: 'first' | 'crash' | 'replay' = !crashed
+    ? 'first'
+    : !restarted
+      ? 'crash'
+      : 'replay';
   const current = tc > 0 ? events[tc - 1] : undefined;
   const crashX = BOUNDARY_X[checkpointed];
 
@@ -446,9 +483,10 @@ export function ReplayDiagram() {
           aria-label="Interactive checkpoint and deterministic replay across a crash"
         >
           <title>
-            The first run executes each step and writes a checkpoint; after a crash, replay returns
-            the saved output for completed checkpoints and executes only the step that has none.
-            Drag the crash marker to change how many checkpoints exist before the crash.
+            The first run executes each step and writes a checkpoint; after a
+            crash, replay returns the saved output for completed checkpoints and
+            executes only the step that has none. Drag the crash marker to
+            change how many checkpoints exist before the crash.
           </title>
           <defs>
             <marker
@@ -474,7 +512,12 @@ export function ReplayDiagram() {
               <path d="M0,0 L10,5 L0,10 z" style={{ fill: accent }} />
             </marker>
             <filter id="rd-soft" x="-10%" y="-10%" width="120%" height="140%">
-              <feDropShadow dx="0" dy="3" stdDeviation="5" floodOpacity="0.10" />
+              <feDropShadow
+                dx="0"
+                dy="3"
+                stdDeviation="5"
+                floodOpacity="0.10"
+              />
             </filter>
           </defs>
 
@@ -504,28 +547,48 @@ export function ReplayDiagram() {
           <text
             x={14}
             y={FR_Y + FR_H / 2 - 5}
-            style={{ fill: muted, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}
+            style={{
+              fill: muted,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+            }}
           >
             FIRST
           </text>
           <text
             x={14}
             y={FR_Y + FR_H / 2 + 9}
-            style={{ fill: muted, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}
+            style={{
+              fill: muted,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+            }}
           >
             RUN
           </text>
           <text
             x={14}
             y={ST_Y + ST_H / 2 + 3}
-            style={{ fill: muted, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}
+            style={{
+              fill: muted,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+            }}
           >
             STORE
           </text>
           <text
             x={14}
             y={RP_Y + RP_H / 2 - 5}
-            style={{ fill: muted, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}
+            style={{
+              fill: muted,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+            }}
           >
             REPLAY
           </text>
@@ -538,7 +601,10 @@ export function ReplayDiagram() {
           </text>
 
           {/* First-run band. */}
-          <g className="rd-anim" style={{ opacity: phase === 'replay' ? 0.55 : 1 }}>
+          <g
+            className="rd-anim"
+            style={{ opacity: phase === 'replay' ? 0.55 : 1 }}
+          >
             {STEPS.map((step, i) => {
               if (i >= checkpointed) {
                 return (
@@ -602,7 +668,10 @@ export function ReplayDiagram() {
           ))}
 
           {/* Replay band. */}
-          <g className="rd-anim" style={{ opacity: phase === 'first' ? 0.4 : 1 }}>
+          <g
+            className="rd-anim"
+            style={{ opacity: phase === 'first' ? 0.4 : 1 }}
+          >
             {STEPS.map((step, i) => {
               if (i < checkpointed) {
                 const on = returned(i);
@@ -689,7 +758,8 @@ export function ReplayDiagram() {
           )}
 
           {/* Ping ring on the step the current beat executed. */}
-          {current && (current.kind === 'exec-first' || current.kind === 'exec-replay') ? (
+          {current &&
+          (current.kind === 'exec-first' || current.kind === 'exec-replay') ? (
             <rect
               key={`ping-${tc}`}
               className="rd-ping"
@@ -764,7 +834,12 @@ export function ReplayDiagram() {
               x={crashX + 6}
               y={FR_Y - 16}
               textAnchor="middle"
-              style={{ fill: RED, fontSize: 10.5, fontWeight: 700, letterSpacing: 0.6 }}
+              style={{
+                fill: RED,
+                fontSize: 10.5,
+                fontWeight: 700,
+                letterSpacing: 0.6,
+              }}
             >
               crash
             </text>
@@ -805,7 +880,11 @@ export function ReplayDiagram() {
               {tip.title}
             </div>
             <div
-              style={{ fontSize: 11.5, lineHeight: 1.4, color: 'var(--color-fd-muted-foreground)' }}
+              style={{
+                fontSize: 11.5,
+                lineHeight: 1.4,
+                color: 'var(--color-fd-muted-foreground)',
+              }}
             >
               {tip.body}
             </div>
@@ -815,7 +894,13 @@ export function ReplayDiagram() {
 
       {/* Controls. */}
       <div
-        style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 14 }}
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 10,
+          marginTop: 14,
+        }}
       >
         <div style={group}>
           <button
@@ -835,7 +920,9 @@ export function ReplayDiagram() {
             aria-label="Step forward"
             onClick={() => {
               setPlaying(false);
-              setT((v) => Math.min(events.length, Math.min(v, events.length) + 1));
+              setT((v) =>
+                Math.min(events.length, Math.min(v, events.length) + 1),
+              );
             }}
           >
             ⏭
@@ -863,11 +950,20 @@ export function ReplayDiagram() {
             setPlaying(false);
             setT(Number(e.target.value));
           }}
-          style={{ flex: '1 1 120px', minWidth: 110, accentColor: 'var(--color-fd-primary)' }}
+          style={{
+            flex: '1 1 120px',
+            minWidth: 110,
+            accentColor: 'var(--color-fd-primary)',
+          }}
         />
 
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11.5, color: 'var(--color-fd-muted-foreground)' }}>
+          <span
+            style={{
+              fontSize: 11.5,
+              color: 'var(--color-fd-muted-foreground)',
+            }}
+          >
             Crash after
           </span>
           <div style={group}>

@@ -8,8 +8,7 @@ export function Screenshot({ src, alt }: { src: string; alt?: string }) {
   const url = src.startsWith('/') ? `${basePath}${src}` : src;
   return (
     <figure className="my-6 overflow-hidden rounded-xl border border-fd-border bg-fd-card">
-      {/* biome-ignore lint/a11y/useAltText: alt is forwarded from the prop */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {/* biome-ignore lint/performance/noImgElement: static export (GitHub Pages) has no image optimizer, and next/image needs dimensions the docs don't know */}
       <img src={url} alt={alt ?? ''} className="block w-full" loading="lazy" />
       {alt ? (
         <figcaption className="border-t border-fd-border px-4 py-2 text-xs text-fd-muted-foreground">

@@ -12,7 +12,7 @@
 // every `](/docs...)` / `href="/docs..."` link found in that content against it.
 // This is the guard against the link rewriting silently double-prefixing slugs.
 
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,7 +20,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS_DIR = join(ROOT, 'content', 'docs');
 
 if (!existsSync(DOCS_DIR)) {
-  console.error(`✖ ${relative(ROOT, DOCS_DIR)} not found — run the docs sync first`);
+  console.error(
+    `✖ ${relative(ROOT, DOCS_DIR)} not found — run the docs sync first`,
+  );
   process.exit(1);
 }
 
@@ -32,7 +34,9 @@ function walk(dir) {
   });
 }
 
-const pages = walk(DOCS_DIR).filter((f) => f.endsWith('.mdx') || f.endsWith('.md'));
+const pages = walk(DOCS_DIR).filter(
+  (f) => f.endsWith('.mdx') || f.endsWith('.md'),
+);
 
 // Frontmatter that does not parse fails the Next build with a js-yaml stack and no
 // filename, so catch the one mistake that actually happens: an unquoted value holding
@@ -50,9 +54,13 @@ for (const file of pages) {
 }
 
 if (badFrontmatter.length > 0) {
-  console.error(`\n✖ ${badFrontmatter.length} frontmatter value${badFrontmatter.length === 1 ? '' : 's'} YAML cannot parse:\n`);
+  console.error(
+    `\n✖ ${badFrontmatter.length} frontmatter value${badFrontmatter.length === 1 ? '' : 's'} YAML cannot parse:\n`,
+  );
   for (const { file, key } of badFrontmatter) {
-    console.error(`  ${file}  →  \`${key}:\` holds an unquoted ": " — wrap the value in quotes, or use a dash`);
+    console.error(
+      `  ${file}  →  \`${key}:\` holds an unquoted ": " — wrap the value in quotes, or use a dash`,
+    );
   }
   console.error('');
   process.exit(1);
@@ -133,13 +141,18 @@ if (staleAnchors.length > 0) {
   console.warn(
     `\n⚠ ${staleAnchors.length} link${staleAnchors.length === 1 ? '' : 's'} point at a heading that no longer exists:\n`,
   );
-  for (const { file, target } of staleAnchors) console.warn(`  ${file}  →  ${target}`);
-  console.warn('\n  The page resolves, so the reader lands at its top instead of the section.\n');
+  for (const { file, target } of staleAnchors)
+    console.warn(`  ${file}  →  ${target}`);
+  console.warn(
+    '\n  The page resolves, so the reader lands at its top instead of the section.\n',
+  );
 }
 
 if (broken.length > 0) {
   const mark = STRICT ? '✖' : '⚠';
-  console.error(`\n${mark} ${broken.length} broken internal link${broken.length === 1 ? '' : 's'}:\n`);
+  console.error(
+    `\n${mark} ${broken.length} broken internal link${broken.length === 1 ? '' : 's'}:\n`,
+  );
   for (const { file, target, reason } of broken) {
     console.error(`  ${file}  →  ${target}${reason ? `  (${reason})` : ''}`);
   }
@@ -147,7 +160,9 @@ if (broken.length > 0) {
     `\n  ${checked} /docs links checked against ${known.size} pages.` +
       '\n  Links inside a library repo may be written either repo-local (/docs/guide) or' +
       '\n  aggregator-absolute (/docs/<lib>/guide); both are accepted, missing pages are not.' +
-      (STRICT ? '\n' : '\n  Reporting only — pass --strict to make this fail the build.\n'),
+      (STRICT
+        ? '\n'
+        : '\n  Reporting only — pass --strict to make this fail the build.\n'),
   );
   if (STRICT) process.exit(1);
 }
@@ -155,6 +170,8 @@ if (broken.length > 0) {
 if (broken.length === 0) {
   console.log(
     `✓ ${checked} internal /docs links resolve across ${known.size} pages` +
-      (staleAnchors.length ? ` (${staleAnchors.length} with a stale anchor, listed above)` : ''),
+      (staleAnchors.length
+        ? ` (${staleAnchors.length} with a stale anchor, listed above)`
+        : ''),
   );
 }
