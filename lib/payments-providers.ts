@@ -1,5 +1,5 @@
 // Provider-aware docs for the payments library. The reader picks the gateway they use once (the
-// selector on every /docs/payments page) and the pages follow: `<ProviderTabs>` switch to it,
+// selector on every /docs/payments page) and the pages follow: `<ProviderSwitch>` shows its block,
 // `<ProviderMatrix>` highlights its row, `<ProviderSummary>` restates that row at the top of the
 // page. Nothing is hidden until a gateway is picked — the default is today's "show everything".
 //
@@ -50,12 +50,4 @@ export function matchProvider(
   return providers.find(
     (p) => key.startsWith(p.slug) || providerKey(p.title).startsWith(key),
   );
-}
-
-/**
- * How fumadocs' simple-mode `<Tabs items>` derives a tab's value from its label (only the first
- * whitespace is replaced — that is their implementation, mirrored so a controlled value matches).
- */
-export function tabValue(label: string): string {
-  return label.toLowerCase().replace(/\s/, '-');
 }

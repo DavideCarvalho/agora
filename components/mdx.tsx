@@ -13,7 +13,6 @@ import {
   ProviderMatrix,
   ProviderSummary,
   ProviderSwitch,
-  ProviderTabs,
 } from '@/components/payments-provider';
 import { QueueSim, SingletonSim } from '@/components/queue-sim';
 import { ReplayDiagram } from '@/components/replay-diagram';
@@ -54,7 +53,6 @@ export function getMDXComponents(components?: MDXComponents) {
     // Payments-lib doc scene (bare tag in the payments overview, replacing the ASCII happy path).
     PaymentFlow,
     // Payments-lib provider-aware pieces: follow the gateway picked in the page header.
-    ProviderTabs,
     ProviderSwitch,
     ProviderCase,
     ProviderMatrix,
