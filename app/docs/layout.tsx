@@ -1,6 +1,9 @@
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import { Landmark } from 'lucide-react';
-import { PaymentsProviderScope } from '@/components/payments-provider';
+import {
+  PaymentsProviderScope,
+  ProviderSelect,
+} from '@/components/payments-provider';
 import { baseOptions } from '@/lib/layout.shared';
 import { libs } from '@/lib/libs';
 import { getPaymentsProviders, source } from '@/lib/source';
@@ -20,11 +23,17 @@ const tabs = [
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
-    <DocsLayout tree={source.getPageTree()} tabs={tabs} {...baseOptions()}>
-      {/* The payments docs' gateway selection lives here so it survives navigating between pages. */}
-      <PaymentsProviderScope providers={getPaymentsProviders()}>
+    <PaymentsProviderScope providers={getPaymentsProviders()}>
+      {/* The payments docs' gateway selection: state up here so it survives navigating between
+          pages; the selector sits in the sidebar banner and renders only under /docs/payments. */}
+      <DocsLayout
+        tree={source.getPageTree()}
+        tabs={tabs}
+        sidebar={{ banner: <ProviderSelect /> }}
+        {...baseOptions()}
+      >
         {children}
-      </PaymentsProviderScope>
-    </DocsLayout>
+      </DocsLayout>
+    </PaymentsProviderScope>
   );
 }
