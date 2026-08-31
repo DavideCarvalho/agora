@@ -1,8 +1,8 @@
-import { source } from '@/lib/source';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import { Landmark } from 'lucide-react';
 import { baseOptions } from '@/lib/layout.shared';
 import { libs } from '@/lib/libs';
+import { source } from '@/lib/source';
 
 // Explicit dropdown tabs. The libraries are root folders (each its own tab), but
 // we list them here ourselves and prepend a "Docs" entry pointing at the

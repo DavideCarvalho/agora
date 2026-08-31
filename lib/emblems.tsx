@@ -32,8 +32,20 @@ const art: Record<string, ReactElement> = {
       />
       <rect x="-10" y="-40" width="20" height="16" fill={C} />
       <rect x="-16" y="-44" width="32" height="6" fill={C} />
-      <path d="M-14 -38 C-34 -36 -34 -10 -22 -4" stroke={C} strokeWidth="5" fill="none" strokeLinecap="round" />
-      <path d="M14 -38 C34 -36 34 -10 22 -4" stroke={C} strokeWidth="5" fill="none" strokeLinecap="round" />
+      <path
+        d="M-14 -38 C-34 -36 -34 -10 -22 -4"
+        stroke={C}
+        strokeWidth="5"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M14 -38 C34 -36 34 -10 22 -4"
+        stroke={C}
+        strokeWidth="5"
+        fill="none"
+        strokeLinecap="round"
+      />
       <circle cx="-6" cy="12" r="3" fill={BONE} />
       <circle cx="7" cy="6" r="3" fill={BONE} />
       <circle cx="2" cy="22" r="3" fill={BONE} />
@@ -90,12 +102,32 @@ const art: Record<string, ReactElement> = {
       <rect x="-3" y="-44" width="6" height="86" fill={C} />
       <circle cx="0" cy="-44" r="6" fill={C} />
       <rect x="-48" y="-40" width="96" height="6" fill={C} />
-      <path d="M-44 -34 L-44 -10" stroke={C} strokeWidth="3" strokeLinecap="round" />
-      <path d="M44 -34 L44 -10" stroke={C} strokeWidth="3" strokeLinecap="round" />
+      <path
+        d="M-44 -34 L-44 -10"
+        stroke={C}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M44 -34 L44 -10"
+        stroke={C}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
       <path d="M-64 -10 C-58 16 -30 16 -24 -10 Z" fill={C} />
       <path d="M24 -10 C30 16 58 16 64 -10 Z" fill={C} />
-      <path d="M-58 -8 C-53 11 -35 11 -30 -8" stroke={BONE} strokeWidth="2.5" fill="none" />
-      <path d="M30 -8 C35 11 53 11 58 -8" stroke={BONE} strokeWidth="2.5" fill="none" />
+      <path
+        d="M-58 -8 C-53 11 -35 11 -30 -8"
+        stroke={BONE}
+        strokeWidth="2.5"
+        fill="none"
+      />
+      <path
+        d="M30 -8 C35 11 53 11 58 -8"
+        stroke={BONE}
+        strokeWidth="2.5"
+        fill="none"
+      />
     </g>
   ),
   // Mosaic (ψηφίδες) — the tessera of a Greek floor mosaic: many tiles, one picture.
@@ -137,8 +169,18 @@ const art: Record<string, ReactElement> = {
       <circle cx="-15" cy="-14" r="6" fill={INK} />
       <circle cx="15" cy="-14" r="6" fill={INK} />
       <path d="M0 -8 L-6 2 L6 2 Z" fill={INK} />
-      <path d="M-18 16 C-10 22 10 22 18 16" stroke={BONE} strokeWidth="2.5" fill="none" />
-      <path d="M-20 28 C-10 36 10 36 20 28" stroke={BONE} strokeWidth="2.5" fill="none" />
+      <path
+        d="M-18 16 C-10 22 10 22 18 16"
+        stroke={BONE}
+        strokeWidth="2.5"
+        fill="none"
+      />
+      <path
+        d="M-20 28 C-10 36 10 36 20 28"
+        stroke={BONE}
+        strokeWidth="2.5"
+        fill="none"
+      />
       <path
         d="M-10 50 L-10 58 M-14 58 L-6 58 M10 50 L10 58 M6 58 L14 58"
         stroke={C}

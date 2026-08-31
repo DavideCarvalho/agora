@@ -10,7 +10,8 @@ const muted = 'var(--color-fd-muted-foreground)';
 const card = 'var(--color-fd-card)';
 const border = 'var(--color-fd-border)';
 const accent = 'var(--color-fd-primary)';
-const accentSoft = 'color-mix(in srgb, var(--color-fd-primary) 14%, transparent)';
+const accentSoft =
+  'color-mix(in srgb, var(--color-fd-primary) 14%, transparent)';
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
 /** A rounded node box with a title, muted subtitle rows, and an optional accent bar. */
@@ -46,8 +47,21 @@ function Node({
         }}
         filter="url(#soft)"
       />
-      {accented ? <rect x={x} y={y} width={4} height={h} rx={2} style={{ fill: accent }} /> : null}
-      <text x={x + 16} y={y + 25} style={{ fill: ink, fontSize: 13, fontWeight: 600 }}>
+      {accented ? (
+        <rect
+          x={x}
+          y={y}
+          width={4}
+          height={h}
+          rx={2}
+          style={{ fill: accent }}
+        />
+      ) : null}
+      <text
+        x={x + 16}
+        y={y + 25}
+        style={{ fill: ink, fontSize: 13, fontWeight: 600 }}
+      >
         {title}
       </text>
       {rows.map((row, i) => (
@@ -161,8 +175,15 @@ function Bus({ x, y, w, h }: { x: number; y: number; w: number; h: number }) {
 
 function Single() {
   return (
-    <svg viewBox="0 0 660 190" width="100%" role="img" aria-label="Single deployment topology">
-      <title>Single deployment: one process holds the store, engine, and workers</title>
+    <svg
+      viewBox="0 0 660 190"
+      width="100%"
+      role="img"
+      aria-label="Single deployment topology"
+    >
+      <title>
+        Single deployment: one process holds the store, engine, and workers
+      </title>
       <Defs />
       <Node
         x={40}
@@ -171,7 +192,11 @@ function Single() {
         h={130}
         accented
         title="Application"
-        rows={['engine · store · workers', 'namespace: default', 'StoreRunGateway (direct reads)']}
+        rows={[
+          'engine · store · workers',
+          'namespace: default',
+          'StoreRunGateway (direct reads)',
+        ]}
       />
       <Bus x={470} y={45} w={120} h={100} />
       <Link x1={340} y1={95} x2={470} y2={95} label="tasks" />
@@ -181,8 +206,15 @@ function Single() {
 
 function Tenants() {
   return (
-    <svg viewBox="0 0 760 320" width="100%" role="img" aria-label="Operator with tenant workers">
-      <title>Control plane (operator) plus tenant workers, wired over the transport</title>
+    <svg
+      viewBox="0 0 760 320"
+      width="100%"
+      role="img"
+      aria-label="Operator with tenant workers"
+    >
+      <title>
+        Control plane (operator) plus tenant workers, wired over the transport
+      </title>
       <Defs />
       <Node
         x={24}
@@ -204,7 +236,11 @@ function Tenants() {
         w={224}
         h={102}
         title="Tenant · blue"
-        rows={['DURABLE_TENANT=blue · no store', 'workers → handler@blue', 'ProxyRunGateway']}
+        rows={[
+          'DURABLE_TENANT=blue · no store',
+          'workers → handler@blue',
+          'ProxyRunGateway',
+        ]}
       />
       <Node
         x={512}
@@ -212,7 +248,11 @@ function Tenants() {
         w={224}
         h={102}
         title="Tenant · green"
-        rows={['DURABLE_TENANT=green · no store', 'workers → handler@green', 'ProxyRunGateway']}
+        rows={[
+          'DURABLE_TENANT=green · no store',
+          'workers → handler@green',
+          'ProxyRunGateway',
+        ]}
       />
       <Link x1={248} y1={160} x2={330} y2={160} label="control + reads" />
       <Link x1={422} y1={120} x2={512} y2={91} label="run@blue" />
@@ -229,7 +269,9 @@ function Polyglot() {
       role="img"
       aria-label="Cross-runtime operator and worker"
     >
-      <title>A Node operator orchestrating a Python tenant worker over one transport</title>
+      <title>
+        A Node operator orchestrating a Python tenant worker over one transport
+      </title>
       <Defs />
       <Node
         x={24}
@@ -247,7 +289,11 @@ function Polyglot() {
         w={224}
         h={120}
         title="Tenant · Python"
-        rows={['durable-worker (no store)', 'runs handler@… steps', 'same queue names']}
+        rows={[
+          'durable-worker (no store)',
+          'runs handler@… steps',
+          'same queue names',
+        ]}
       />
       <Link x1={254} y1={105} x2={340} y2={105} label="start-run" />
       <Link x1={432} y1={105} x2={512} y2={105} label="dispatch · reply" />

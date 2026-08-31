@@ -13,12 +13,12 @@ import {
   drawPulses,
   type Pulse,
   pushTrail,
-  setupSim,
   SIM_AMBER,
   SIM_GREEN,
   SIM_RED,
   SIM_W,
   SimFigure,
+  setupSim,
   simBtn,
   type Trail,
   useSimCanvas,
@@ -114,14 +114,24 @@ export function RetrySim() {
             if (attempt < maxAttempts) {
               outcomes.push('fail');
               workerFlash = 1;
-              pulses.push({ x: R_WORKER.x, y: R_WORKER.y, t: 0, color: SIM_RED });
+              pulses.push({
+                x: R_WORKER.x,
+                y: R_WORKER.y,
+                t: 0,
+                color: SIM_RED,
+              });
               phase = 'reject';
               fromX = x;
               fromY = y;
               t = 0;
             } else {
               outcomes.push('ok');
-              pulses.push({ x: R_WORKER.x, y: R_WORKER.y, t: 0, color: SIM_GREEN });
+              pulses.push({
+                x: R_WORKER.x,
+                y: R_WORKER.y,
+                t: 0,
+                color: SIM_GREEN,
+              });
               phase = 'toDone';
               fromX = x;
               fromY = y;
@@ -163,7 +173,12 @@ export function RetrySim() {
           t += 2.2 * dt;
           if (t >= 1) {
             doneCount += 1;
-            pulses.push({ x: R_DONE.x - 32, y: R_DONE.y, t: 0, color: SIM_GREEN });
+            pulses.push({
+              x: R_DONE.x - 32,
+              y: R_DONE.y,
+              t: 0,
+              color: SIM_GREEN,
+            });
             phase = 'rest';
             t = 0;
           } else {
@@ -204,18 +219,37 @@ export function RetrySim() {
 
       // the run box — shows the suspension while backing off
       const suspended = phase === 'backoff';
-      drawBox(ctx2d, theme, R_RUN.x - 70, R_RUN.y - 40, 116, 80, suspended ? SIM_AMBER : theme.border, suspended ? 1.5 : 1);
+      drawBox(
+        ctx2d,
+        theme,
+        R_RUN.x - 70,
+        R_RUN.y - 40,
+        116,
+        80,
+        suspended ? SIM_AMBER : theme.border,
+        suspended ? 1.5 : 1,
+      );
       ctx2d.fillStyle = theme.ink;
       ctx2d.fillText('run · checkout', R_RUN.x - 56, R_RUN.y - 18);
       ctx2d.fillStyle = suspended ? SIM_AMBER : theme.muted;
       if (suspended) {
         ctx2d.fillText('suspended', R_RUN.x - 56, R_RUN.y + 2);
-        ctx2d.fillText(`wakes in ${(backoffMs / 1000).toFixed(1)}s`, R_RUN.x - 56, R_RUN.y + 20);
+        ctx2d.fillText(
+          `wakes in ${(backoffMs / 1000).toFixed(1)}s`,
+          R_RUN.x - 56,
+          R_RUN.y + 20,
+        );
         // backoff countdown ring
         ctx2d.strokeStyle = SIM_AMBER;
         ctx2d.lineWidth = 2.5;
         ctx2d.beginPath();
-        ctx2d.arc(R_RUN.x + 40, R_RUN.y, 11, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (backoffMs / Math.max(1, backoffTotal)));
+        ctx2d.arc(
+          R_RUN.x + 40,
+          R_RUN.y,
+          11,
+          -Math.PI / 2,
+          -Math.PI / 2 + Math.PI * 2 * (backoffMs / Math.max(1, backoffTotal)),
+        );
         ctx2d.stroke();
         ctx2d.lineWidth = 1;
       } else {
@@ -226,7 +260,11 @@ export function RetrySim() {
       // worker + attempt marks
       const failGlow = workerFlash > 0;
       ctx2d.fillStyle = theme.card;
-      ctx2d.strokeStyle = failGlow ? SIM_RED : phase === 'working' ? theme.accent : theme.border;
+      ctx2d.strokeStyle = failGlow
+        ? SIM_RED
+        : phase === 'working'
+          ? theme.accent
+          : theme.border;
       ctx2d.lineWidth = failGlow ? 1 + workerFlash * 1.5 : 1;
       ctx2d.beginPath();
       ctx2d.arc(R_WORKER.x, R_WORKER.y, 18, 0, Math.PI * 2);
@@ -237,12 +275,22 @@ export function RetrySim() {
         ctx2d.strokeStyle = theme.accent;
         ctx2d.lineWidth = 2.5;
         ctx2d.beginPath();
-        ctx2d.arc(R_WORKER.x, R_WORKER.y, 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, t));
+        ctx2d.arc(
+          R_WORKER.x,
+          R_WORKER.y,
+          18,
+          -Math.PI / 2,
+          -Math.PI / 2 + Math.PI * 2 * Math.min(1, t),
+        );
         ctx2d.stroke();
         ctx2d.lineWidth = 1;
       }
       ctx2d.fillStyle = theme.muted;
-      ctx2d.fillText('@Step chargeCard · retries: 3', R_WORKER.x - 80, R_WORKER.y + 44);
+      ctx2d.fillText(
+        '@Step chargeCard · retries: 3',
+        R_WORKER.x - 80,
+        R_WORKER.y + 44,
+      );
       // attempt marks row
       const rowX0 = R_WORKER.x - ((maxAttempts - 1) * 24) / 2;
       for (let a = 0; a < maxAttempts; a++) {
@@ -250,7 +298,12 @@ export function RetrySim() {
         const ay = R_WORKER.y - 44;
         const outcome = outcomes[a];
         ctx2d.fillStyle = theme.card;
-        ctx2d.strokeStyle = outcome === 'fail' ? SIM_RED : outcome === 'ok' ? SIM_GREEN : theme.border;
+        ctx2d.strokeStyle =
+          outcome === 'fail'
+            ? SIM_RED
+            : outcome === 'ok'
+              ? SIM_GREEN
+              : theme.border;
         ctx2d.beginPath();
         ctx2d.arc(ax, ay, 8, 0, Math.PI * 2);
         ctx2d.fill();
@@ -278,7 +331,11 @@ export function RetrySim() {
         }
       }
       ctx2d.fillStyle = theme.muted;
-      ctx2d.fillText(`attempt ${Math.min(attempt, maxAttempts)}/${maxAttempts}`, R_WORKER.x - 32, R_WORKER.y - 62);
+      ctx2d.fillText(
+        `attempt ${Math.min(attempt, maxAttempts)}/${maxAttempts}`,
+        R_WORKER.x - 32,
+        R_WORKER.y - 62,
+      );
 
       // done pile
       drawBox(ctx2d, theme, R_DONE.x - 30, R_DONE.y - 34, 96, 68, theme.border);
@@ -293,9 +350,23 @@ export function RetrySim() {
 
       // the dot
       if (phase !== 'rest' && phase !== 'backoff') {
-        const moving = phase === 'toWorker' || phase === 'reject' || phase === 'toDone';
-        const color = phase === 'reject' ? SIM_RED : phase === 'toDone' ? SIM_GREEN : themeRef.current.accent;
-        drawDot(ctx2d, x, y, phase === 'working' ? 7 : 6, color, moving ? trail : undefined, moving);
+        const moving =
+          phase === 'toWorker' || phase === 'reject' || phase === 'toDone';
+        const color =
+          phase === 'reject'
+            ? SIM_RED
+            : phase === 'toDone'
+              ? SIM_GREEN
+              : themeRef.current.accent;
+        drawDot(
+          ctx2d,
+          x,
+          y,
+          phase === 'working' ? 7 : 6,
+          color,
+          moving ? trail : undefined,
+          moving,
+        );
       }
     }
 
@@ -323,7 +394,7 @@ export function RetrySim() {
       ariaLabel="Simulation: a dispatched step fails transiently, the run suspends with an exponential-backoff countdown that doubles each attempt, then the retry succeeds and the run completes."
       controls={
         <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             speed
             {[1, 2].map((n) => (
               <button
@@ -332,26 +403,38 @@ export function RetrySim() {
                 style={{
                   ...simBtn,
                   padding: '4px 10px',
-                  borderColor: n === speed ? 'var(--color-fd-primary)' : 'var(--color-fd-border)',
-                  color: n === speed ? 'var(--color-fd-foreground)' : 'var(--color-fd-muted-foreground)',
+                  borderColor:
+                    n === speed
+                      ? 'var(--color-fd-primary)'
+                      : 'var(--color-fd-border)',
+                  color:
+                    n === speed
+                      ? 'var(--color-fd-foreground)'
+                      : 'var(--color-fd-muted-foreground)',
                 }}
+                aria-pressed={n === speed}
                 onClick={() => setSpeed(n)}
               >
                 {n}×
               </button>
             ))}
-          </label>
-          <button type="button" style={{ ...simBtn, marginLeft: 'auto' }} onClick={() => setPaused((p) => !p)}>
+          </span>
+          <button
+            type="button"
+            style={{ ...simBtn, marginLeft: 'auto' }}
+            onClick={() => setPaused((p) => !p)}
+          >
             {paused ? '▶ resume' : '⏸ pause'}
           </button>
         </>
       }
       caption={
         <>
-          Live model of a durable retry: the attempt fails (✗), the run <b>suspends</b> with the retry
-          deadline stamped as <code>wakeAt</code> — watch the countdown <b>double</b> on the next failure
-          (exponential backoff) — and the re-dispatch finally lands (✓). No worker is held while it waits,
-          and the pending retry survives a crash or deploy.
+          Live model of a durable retry: the attempt fails (✗), the run{' '}
+          <b>suspends</b> with the retry deadline stamped as <code>wakeAt</code>{' '}
+          — watch the countdown <b>double</b> on the next failure (exponential
+          backoff) — and the re-dispatch finally lands (✓). No worker is held
+          while it waits, and the pending retry survives a crash or deploy.
         </>
       }
     />
@@ -372,7 +455,16 @@ const D_DLQ_DONE = { x: 812, y: 236 };
 
 type DDot = {
   poison: boolean;
-  phase: 'toWorker' | 'working' | 'crash' | 'recovering' | 'toDead' | 'dlqWork' | 'toDlqDone' | 'toDone' | 'gone';
+  phase:
+    | 'toWorker'
+    | 'working'
+    | 'crash'
+    | 'recovering'
+    | 'toDead'
+    | 'dlqWork'
+    | 'toDlqDone'
+    | 'toDone'
+    | 'gone';
   x: number;
   y: number;
   fromX: number;
@@ -441,7 +533,10 @@ export function DlqSim() {
         sinceAutoPoison = 0;
         poisonRef.current += 1;
       }
-      if (poisonRef.current > 0 && !dots.some((d) => d.poison && d.phase !== 'gone')) {
+      if (
+        poisonRef.current > 0 &&
+        !dots.some((d) => d.poison && d.phase !== 'gone')
+      ) {
         poisonRef.current -= 1;
         spawn(true);
       }
@@ -457,7 +552,14 @@ export function DlqSim() {
               dot.t = 0;
               dot.trail.length = 0;
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, D_WORKER.x, D_WORKER.y, dot.t, -30);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                D_WORKER.x,
+                D_WORKER.y,
+                dot.t,
+                -30,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -470,7 +572,12 @@ export function DlqSim() {
               if (dot.poison) {
                 dot.attempts += 1;
                 workerFlash = 1;
-                pulses.push({ x: D_WORKER.x, y: D_WORKER.y, t: 0, color: SIM_RED });
+                pulses.push({
+                  x: D_WORKER.x,
+                  y: D_WORKER.y,
+                  t: 0,
+                  color: SIM_RED,
+                });
                 if (dot.attempts > maxRecovery) {
                   dot.phase = 'toDead';
                 } else {
@@ -495,7 +602,14 @@ export function DlqSim() {
               dot.t = 0;
               dot.trail.length = 0;
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, D_WORKER.x - 90, D_WORKER.y - 52, dot.t, -14);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                D_WORKER.x - 90,
+                D_WORKER.y - 52,
+                dot.t,
+                -14,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -516,14 +630,26 @@ export function DlqSim() {
             dot.t += 2.2 * dt;
             if (dot.t >= 1) {
               deadCount += 1;
-              pulses.push({ x: D_DEAD.x - 60, y: D_DEAD.y, t: 0, color: SIM_RED });
+              pulses.push({
+                x: D_DEAD.x - 60,
+                y: D_DEAD.y,
+                t: 0,
+                color: SIM_RED,
+              });
               dot.phase = 'dlqWork';
               dot.x = D_DEAD.x + 60;
               dot.y = D_DEAD.y;
               dot.t = 0;
               dot.trail.length = 0;
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, D_DEAD.x - 60, D_DEAD.y, dot.t, 30);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                D_DEAD.x - 60,
+                D_DEAD.y,
+                dot.t,
+                30,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -544,10 +670,22 @@ export function DlqSim() {
             dot.t += 2.2 * dt;
             if (dot.t >= 1) {
               dlqHandled += 1;
-              pulses.push({ x: D_DLQ_DONE.x - 32, y: D_DLQ_DONE.y, t: 0, color: SIM_GREEN });
+              pulses.push({
+                x: D_DLQ_DONE.x - 32,
+                y: D_DLQ_DONE.y,
+                t: 0,
+                color: SIM_GREEN,
+              });
               dot.phase = 'gone';
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, D_DLQ_DONE.x - 32, D_DLQ_DONE.y, dot.t, 0);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                D_DLQ_DONE.x - 32,
+                D_DLQ_DONE.y,
+                dot.t,
+                0,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -558,10 +696,22 @@ export function DlqSim() {
             dot.t += 2.4 * dt;
             if (dot.t >= 1) {
               doneCount += 1;
-              pulses.push({ x: D_DONE.x - 32, y: D_DONE.y, t: 0, color: SIM_GREEN });
+              pulses.push({
+                x: D_DONE.x - 32,
+                y: D_DONE.y,
+                t: 0,
+                color: SIM_GREEN,
+              });
               dot.phase = 'gone';
             } else {
-              const p = arcPos(dot.fromX, dot.fromY, D_DONE.x - 32, D_DONE.y, dot.t, -30);
+              const p = arcPos(
+                dot.fromX,
+                dot.fromY,
+                D_DONE.x - 32,
+                D_DONE.y,
+                dot.t,
+                -30,
+              );
               pushTrail(dot.trail, dot.x, dot.y);
               dot.x = p.x;
               dot.y = p.y;
@@ -572,7 +722,8 @@ export function DlqSim() {
             break;
         }
       }
-      for (let i = dots.length - 1; i >= 0; i--) if (dots[i]?.phase === 'gone') dots.splice(i, 1);
+      for (let i = dots.length - 1; i >= 0; i--)
+        if (dots[i]?.phase === 'gone') dots.splice(i, 1);
       draw(dt);
       raf = requestAnimationFrame(tick);
     }
@@ -598,17 +749,31 @@ export function DlqSim() {
       ctx2d.setLineDash([]);
 
       // producer
-      drawBox(ctx2d, theme, D_PRODUCER.x - 64, D_PRODUCER.y - 34, 100, 68, theme.border);
+      drawBox(
+        ctx2d,
+        theme,
+        D_PRODUCER.x - 64,
+        D_PRODUCER.y - 34,
+        100,
+        68,
+        theme.border,
+      );
       ctx2d.fillStyle = theme.ink;
       ctx2d.fillText('runs', D_PRODUCER.x - 50, D_PRODUCER.y - 10);
       ctx2d.fillStyle = theme.muted;
       ctx2d.fillText('pipeline', D_PRODUCER.x - 50, D_PRODUCER.y + 8);
 
       // recovery note
-      const recovering = dots.find((d) => d.phase === 'recovering' || d.phase === 'crash');
+      const recovering = dots.find(
+        (d) => d.phase === 'recovering' || d.phase === 'crash',
+      );
       if (recovering) {
         ctx2d.fillStyle = SIM_RED;
-        ctx2d.fillText(`recovery ×${recovering.attempts}/${maxRecovery}`, D_WORKER.x - 130, D_WORKER.y - 56);
+        ctx2d.fillText(
+          `recovery ×${recovering.attempts}/${maxRecovery}`,
+          D_WORKER.x - 130,
+          D_WORKER.y - 56,
+        );
         ctx2d.fillStyle = theme.muted;
         ctx2d.fillText('crash-loop', D_WORKER.x - 130, D_WORKER.y - 42);
       }
@@ -616,7 +781,8 @@ export function DlqSim() {
       // worker
       const busy = dots.find((d) => d.phase === 'working');
       ctx2d.fillStyle = theme.card;
-      ctx2d.strokeStyle = workerFlash > 0 ? SIM_RED : busy ? theme.accent : theme.border;
+      ctx2d.strokeStyle =
+        workerFlash > 0 ? SIM_RED : busy ? theme.accent : theme.border;
       ctx2d.lineWidth = workerFlash > 0 ? 1 + workerFlash * 1.5 : 1;
       ctx2d.beginPath();
       ctx2d.arc(D_WORKER.x, D_WORKER.y, 18, 0, Math.PI * 2);
@@ -627,7 +793,13 @@ export function DlqSim() {
         ctx2d.strokeStyle = busy.poison ? SIM_RED : theme.accent;
         ctx2d.lineWidth = 2.5;
         ctx2d.beginPath();
-        ctx2d.arc(D_WORKER.x, D_WORKER.y, 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, busy.t));
+        ctx2d.arc(
+          D_WORKER.x,
+          D_WORKER.y,
+          18,
+          -Math.PI / 2,
+          -Math.PI / 2 + Math.PI * 2 * Math.min(1, busy.t),
+        );
         ctx2d.stroke();
         ctx2d.lineWidth = 1;
       }
@@ -644,7 +816,15 @@ export function DlqSim() {
       ctx2d.fillText('completed', D_DONE.x - 14, D_DONE.y + 22);
 
       // dead tray
-      drawBox(ctx2d, theme, D_DEAD.x - 110, D_DEAD.y - 26, 108, 52, deadCount > 0 ? SIM_RED : theme.border);
+      drawBox(
+        ctx2d,
+        theme,
+        D_DEAD.x - 110,
+        D_DEAD.y - 26,
+        108,
+        52,
+        deadCount > 0 ? SIM_RED : theme.border,
+      );
       ctx2d.fillStyle = deadCount > 0 ? SIM_RED : theme.muted;
       ctx2d.fillText(`dead: ${deadCount}`, D_DEAD.x - 96, D_DEAD.y - 2);
       ctx2d.fillStyle = theme.muted;
@@ -662,15 +842,33 @@ export function DlqSim() {
         ctx2d.strokeStyle = SIM_AMBER;
         ctx2d.lineWidth = 2.5;
         ctx2d.beginPath();
-        ctx2d.arc(D_DEAD.x + 60, D_DEAD.y, 15, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, dlq.t));
+        ctx2d.arc(
+          D_DEAD.x + 60,
+          D_DEAD.y,
+          15,
+          -Math.PI / 2,
+          -Math.PI / 2 + Math.PI * 2 * Math.min(1, dlq.t),
+        );
         ctx2d.stroke();
         ctx2d.lineWidth = 1;
       }
       ctx2d.fillStyle = theme.muted;
-      ctx2d.fillText('pipeline.dlq · page + ticket', D_DEAD.x + 22, D_DEAD.y + 36);
+      ctx2d.fillText(
+        'pipeline.dlq · page + ticket',
+        D_DEAD.x + 22,
+        D_DEAD.y + 36,
+      );
 
       // DLQ done
-      drawBox(ctx2d, theme, D_DLQ_DONE.x - 30, D_DLQ_DONE.y - 26, 96, 52, theme.border);
+      drawBox(
+        ctx2d,
+        theme,
+        D_DLQ_DONE.x - 30,
+        D_DLQ_DONE.y - 26,
+        96,
+        52,
+        theme.border,
+      );
       ctx2d.fillStyle = SIM_GREEN;
       ctx2d.font = '600 16px ui-monospace, SFMono-Regular, Menlo, monospace';
       ctx2d.fillText(String(dlqHandled), D_DLQ_DONE.x - 14, D_DLQ_DONE.y + 1);
@@ -695,7 +893,15 @@ export function DlqSim() {
             ? SIM_GREEN
             : theme.accent;
         const finalColor = dot.phase === 'toDlqDone' ? SIM_GREEN : color;
-        drawDot(ctx2d, dot.x, dot.y, dot.phase === 'working' || dot.phase === 'dlqWork' ? 7 : 5.5, finalColor, moving ? dot.trail : undefined, moving);
+        drawDot(
+          ctx2d,
+          dot.x,
+          dot.y,
+          dot.phase === 'working' || dot.phase === 'dlqWork' ? 7 : 5.5,
+          finalColor,
+          moving ? dot.trail : undefined,
+          moving,
+        );
       }
     }
 
@@ -726,21 +932,33 @@ export function DlqSim() {
       ariaLabel="Simulation: normal runs flow to completion while a poison-pill run crash-loops through recovery, is dead-lettered past the recovery cap, and a DLQ handler run pages and files a ticket — traffic never stops."
       controls={
         <>
-          <button type="button" style={{ ...simBtn, borderColor: SIM_RED }} onClick={() => { poisonRef.current += 1; }}>
+          <button
+            type="button"
+            style={{ ...simBtn, borderColor: SIM_RED }}
+            onClick={() => {
+              poisonRef.current += 1;
+            }}
+          >
             ☠ inject poison pill
           </button>
-          <button type="button" style={{ ...simBtn, marginLeft: 'auto' }} onClick={() => setPaused((p) => !p)}>
+          <button
+            type="button"
+            style={{ ...simBtn, marginLeft: 'auto' }}
+            onClick={() => setPaused((p) => !p)}
+          >
             {paused ? '▶ resume' : '⏸ pause'}
           </button>
         </>
       }
       caption={
         <>
-          Live model of dead-lettering: the <b style={{ color: SIM_RED }}>poison pill</b> crashes the worker
-          on every recovery pickup (watch the <code>recovery ×N</code> counter), and past{' '}
-          <code>maxRecoveryAttempts</code> it drops to the <b>dead</b> tray — parked, inspectable — which
-          starts the <code>pipeline.dlq</code> handler run to page and file a ticket. Meanwhile the healthy
-          traffic above never stops flowing.
+          Live model of dead-lettering: the{' '}
+          <b style={{ color: SIM_RED }}>poison pill</b> crashes the worker on
+          every recovery pickup (watch the <code>recovery ×N</code> counter),
+          and past <code>maxRecoveryAttempts</code> it drops to the <b>dead</b>{' '}
+          tray — parked, inspectable — which starts the{' '}
+          <code>pipeline.dlq</code> handler run to page and file a ticket.
+          Meanwhile the healthy traffic above never stops flowing.
         </>
       }
     />

@@ -19,15 +19,25 @@ const RED = '#e5484d';
 // Semantic success green (named OK — `GREEN` below is the green tenant's waypoint).
 const OK = '#30a46c';
 
-const tintAccent = 'color-mix(in srgb, var(--color-fd-primary) 14%, var(--color-fd-card))';
-const tintAccentSoft = 'color-mix(in srgb, var(--color-fd-primary) 7%, var(--color-fd-card))';
-const neutral = 'color-mix(in srgb, var(--color-fd-foreground) 4%, var(--color-fd-card))';
+const tintAccent =
+  'color-mix(in srgb, var(--color-fd-primary) 14%, var(--color-fd-card))';
+const tintAccentSoft =
+  'color-mix(in srgb, var(--color-fd-primary) 7%, var(--color-fd-card))';
+const neutral =
+  'color-mix(in srgb, var(--color-fd-foreground) 4%, var(--color-fd-card))';
 const tintRed = 'color-mix(in srgb, #e5484d 13%, var(--color-fd-card))';
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
 type Tone = 'go' | 'deny' | 'ok';
 type Highlight = 'none' | 'op' | 'blue' | 'green' | 'op-deny' | 'blue-deny';
-type Stage = { x: number; y: number; label: string; tone: Tone; hi: Highlight; caption: string };
+type Stage = {
+  x: number;
+  y: number;
+  label: string;
+  tone: Tone;
+  hi: Highlight;
+  caption: string;
+};
 
 const BLUE = { x: 524, y: 88 };
 const GREEN = { x: 524, y: 216 };
@@ -46,7 +56,13 @@ function happyPath(name: 'blue' | 'green'): Stage[] {
       hi: 'none',
       caption: `${name} asks the operator to create a run (start-run).`,
     },
-    { ...bus, label: 'start-run', tone: 'go', hi: 'none', caption: '…proxied over the transport.' },
+    {
+      ...bus,
+      label: 'start-run',
+      tone: 'go',
+      hi: 'none',
+      caption: '…proxied over the transport.',
+    },
     {
       ...OP,
       label: 'creating…',
@@ -144,15 +160,20 @@ function Node({
   primary?: boolean;
   highlight: 'none' | 'go' | 'deny';
   tip: { title: string; body: string };
-  onTip: (t: { ax: number; ay: number; title: string; body: string } | null) => void;
+  onTip: (
+    t: { ax: number; ay: number; title: string; body: string } | null,
+  ) => void;
 }) {
   const lit = highlight !== 'none';
   const ring = highlight === 'deny' ? RED : accent;
-  const fill = highlight === 'deny' ? tintRed : highlight === 'go' ? tintAccent : neutral;
+  const fill =
+    highlight === 'deny' ? tintRed : highlight === 'go' ? tintAccent : neutral;
   const stroke = lit ? ring : border;
-  const enter = () => onTip({ ax: x + w / 2, ay: y, title: tip.title, body: tip.body });
+  const enter = () =>
+    onTip({ ax: x + w / 2, ay: y, title: tip.title, body: tip.body });
   const leave = () => onTip(null);
   return (
+    // biome-ignore lint/a11y/noInteractiveElementToNoninteractiveRole: a focusable SVG group that exposes its tooltip to keyboard users; img is the closest role for the drawing
     <g
       className="tf-anim"
       style={{ cursor: 'help' }}
@@ -185,8 +206,21 @@ function Node({
         style={{ fill, stroke, strokeWidth: lit || primary ? 1.5 : 1 }}
         filter="url(#tf-soft)"
       />
-      {primary ? <rect x={x} y={y} width={4} height={h} rx={2} style={{ fill: accent }} /> : null}
-      <text x={x + 17} y={y + 26} style={{ fill: ink, fontSize: 13.5, fontWeight: 600 }}>
+      {primary ? (
+        <rect
+          x={x}
+          y={y}
+          width={4}
+          height={h}
+          rx={2}
+          style={{ fill: accent }}
+        />
+      ) : null}
+      <text
+        x={x + 17}
+        y={y + 26}
+        style={{ fill: ink, fontSize: 13.5, fontWeight: 600 }}
+      >
         {title}
       </text>
       {rows.map((row, i) => (
@@ -223,12 +257,16 @@ function Wire({
   lx: number;
   ly: number;
   tip: { title: string; body: string };
-  onTip: (t: { ax: number; ay: number; title: string; body: string } | null) => void;
+  onTip: (
+    t: { ax: number; ay: number; title: string; body: string } | null,
+  ) => void;
 }) {
   const w = label.length * 6.2 + 14;
-  const enter = () => onTip({ ax: lx, ay: ly - 11, title: tip.title, body: tip.body });
+  const enter = () =>
+    onTip({ ax: lx, ay: ly - 11, title: tip.title, body: tip.body });
   const leave = () => onTip(null);
   return (
+    // biome-ignore lint/a11y/noInteractiveElementToNoninteractiveRole: a focusable SVG group that exposes its tooltip to keyboard users; img is the closest role for the drawing
     <g
       style={{ cursor: 'help' }}
       tabIndex={0}
@@ -271,14 +309,19 @@ export function TenantFlow() {
   const [scenario, setScenario] = useState<Stage[]>([]);
   const [stage, setStage] = useState(-1);
   const [reduced, setReduced] = useState(false);
-  const [tip, setTip] = useState<{ left: number; top: number; title: string; body: string } | null>(
-    null,
-  );
+  const [tip, setTip] = useState<{
+    left: number;
+    top: number;
+    title: string;
+    body: string;
+  } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // Map an SVG-space anchor to a pixel position within the wrapper so the HTML tooltip stays crisp.
-  function onTip(t: { ax: number; ay: number; title: string; body: string } | null) {
+  function onTip(
+    t: { ax: number; ay: number; title: string; body: string } | null,
+  ) {
     if (!t) {
       setTip(null);
       return;
@@ -320,7 +363,8 @@ export function TenantFlow() {
   const opHi = hi === 'op' ? 'go' : hi === 'op-deny' ? 'deny' : 'none';
   const blueHi = hi === 'blue' ? 'go' : hi === 'blue-deny' ? 'deny' : 'none';
   const greenHi = hi === 'green' ? 'go' : 'none';
-  const tone = active?.tone === 'deny' ? RED : active?.tone === 'ok' ? OK : accent;
+  const tone =
+    active?.tone === 'deny' ? RED : active?.tone === 'ok' ? OK : accent;
 
   const pill = {
     font: 'inherit',
@@ -355,20 +399,33 @@ export function TenantFlow() {
           aria-label="Interactive operator and tenants: a run travels the transport, and cross-tenant reads are rejected"
         >
           <title>
-            A control-plane operator and two tenant workers wired over the transport. Enqueue a run
-            to watch start-run, dispatch and reply travel between a tenant and the operator; or read
-            another tenant's run to see the operator reject it with a cross-tenant error.
+            A control-plane operator and two tenant workers wired over the
+            transport. Enqueue a run to watch start-run, dispatch and reply
+            travel between a tenant and the operator; or read another tenant's
+            run to see the operator reject it with a cross-tenant error.
           </title>
           <defs>
             <filter id="tf-soft" x="-10%" y="-10%" width="120%" height="140%">
-              <feDropShadow dx="0" dy="3" stdDeviation="5" floodOpacity="0.10" />
+              <feDropShadow
+                dx="0"
+                dy="3"
+                stdDeviation="5"
+                floodOpacity="0.10"
+              />
             </filter>
             <filter id="tf-glow" x="-80%" y="-80%" width="260%" height="260%">
-              <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor={tone} floodOpacity="0.55" />
+              <feDropShadow
+                dx="0"
+                dy="0"
+                stdDeviation="5"
+                floodColor={tone}
+                floodOpacity="0.55"
+              />
             </filter>
           </defs>
 
           {/* Transport bus. */}
+          {/* biome-ignore lint/a11y/noInteractiveElementToNoninteractiveRole: a focusable SVG group that exposes its tooltip to keyboard users; img is the closest role for the drawing */}
           <g
             style={{ cursor: 'help' }}
             tabIndex={0}
@@ -491,7 +548,10 @@ export function TenantFlow() {
             h={96}
             highlight={blueHi}
             title="Tenant · blue"
-            rows={['DURABLE_TENANT=blue · no store', 'handler@blue · ProxyRunGateway']}
+            rows={[
+              'DURABLE_TENANT=blue · no store',
+              'handler@blue · ProxyRunGateway',
+            ]}
             onTip={onTip}
             tip={{
               title: 'Tenant · blue',
@@ -505,7 +565,10 @@ export function TenantFlow() {
             h={96}
             highlight={greenHi}
             title="Tenant · green"
-            rows={['DURABLE_TENANT=green · no store', 'handler@green · ProxyRunGateway']}
+            rows={[
+              'DURABLE_TENANT=green · no store',
+              'handler@green · ProxyRunGateway',
+            ]}
             onTip={onTip}
             tip={{
               title: 'Tenant · green',
@@ -521,11 +584,14 @@ export function TenantFlow() {
                 const dir = active.x < 330 ? 1 : active.x > 470 ? -1 : 0;
                 const chipX = dir === 0 ? -lw / 2 : dir > 0 ? 18 : -18 - lw;
                 const chipY = dir === 0 ? -36 : -10;
-                const textX = dir === 0 ? 0 : dir > 0 ? 18 + lw / 2 : -18 - lw / 2;
+                const textX =
+                  dir === 0 ? 0 : dir > 0 ? 18 + lw / 2 : -18 - lw / 2;
                 return (
                   <g
                     className="tf-token"
-                    style={{ transform: `translate(${active.x}px, ${active.y}px)` }}
+                    style={{
+                      transform: `translate(${active.x}px, ${active.y}px)`,
+                    }}
                   >
                     {active.label ? (
                       <g>
@@ -541,7 +607,11 @@ export function TenantFlow() {
                           x={textX}
                           y={chipY + 14}
                           textAnchor="middle"
-                          style={{ fill: tone, fontSize: 10.5, fontFamily: mono }}
+                          style={{
+                            fill: tone,
+                            fontSize: 10.5,
+                            fontFamily: mono,
+                          }}
                         >
                           {active.label}
                         </text>
@@ -585,7 +655,11 @@ export function TenantFlow() {
               {tip.title}
             </div>
             <div
-              style={{ fontSize: 11.5, lineHeight: 1.4, color: 'var(--color-fd-muted-foreground)' }}
+              style={{
+                fontSize: 11.5,
+                lineHeight: 1.4,
+                color: 'var(--color-fd-muted-foreground)',
+              }}
             >
               {tip.body}
             </div>
@@ -595,12 +669,26 @@ export function TenantFlow() {
 
       {/* Controls. */}
       <div
-        style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 14 }}
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 8,
+          marginTop: 14,
+        }}
       >
-        <button type="button" style={pill} onClick={() => run(happyPath('blue'))}>
+        <button
+          type="button"
+          style={pill}
+          onClick={() => run(happyPath('blue'))}
+        >
           ▶ Enqueue run@blue
         </button>
-        <button type="button" style={pill} onClick={() => run(happyPath('green'))}>
+        <button
+          type="button"
+          style={pill}
+          onClick={() => run(happyPath('green'))}
+        >
           ▶ Enqueue run@green
         </button>
         <button

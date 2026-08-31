@@ -1,3 +1,17 @@
 {
-  "pages": ["index", "---Libraries---", "context", "diagnostics", "resilience", "durable", "telescope", "authz", "media", "filter", "agent", "authkit", "collaboration"]
+  "pages": [
+    "index",
+    "---Libraries---",
+    "context",
+    "diagnostics",
+    "resilience",
+    "durable",
+    "telescope",
+    "authz",
+    "media",
+    "filter",
+    "agent",
+    "authkit",
+    "collaboration"
+  ]
 }
