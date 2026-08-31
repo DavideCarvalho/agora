@@ -1,8 +1,9 @@
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import { Landmark } from 'lucide-react';
+import { PaymentsProviderScope } from '@/components/payments-provider';
 import { baseOptions } from '@/lib/layout.shared';
 import { libs } from '@/lib/libs';
-import { source } from '@/lib/source';
+import { getPaymentsProviders, source } from '@/lib/source';
 
 // Explicit dropdown tabs. The libraries are root folders (each its own tab), but
 // we list them here ourselves and prepend a "Docs" entry pointing at the
@@ -20,7 +21,10 @@ const tabs = [
 export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
     <DocsLayout tree={source.getPageTree()} tabs={tabs} {...baseOptions()}>
-      {children}
+      {/* The payments docs' gateway selection lives here so it survives navigating between pages. */}
+      <PaymentsProviderScope providers={getPaymentsProviders()}>
+        {children}
+      </PaymentsProviderScope>
     </DocsLayout>
   );
 }

@@ -314,3 +314,21 @@ html > body[data-scroll-locked] {
   border-color: hsl(250 74% 51% / 0.45);
   background: var(--agora-primary-soft);
 }
+
+/* ------------------------------------------------------------------ *
+ * Payments docs — provider-aware capability matrices.
+ * <ProviderMatrix> tags each row with the gateway it names; the
+ * selected gateway's row is lit and the rest recede (never removed).
+ * ------------------------------------------------------------------ */
+.agora-provider-matrix[data-has-selection]
+  tbody
+  tr[data-provider]:not([data-selected]) {
+  opacity: 0.6;
+}
+.agora-provider-matrix tbody tr[data-selected] > td {
+  background: color-mix(in srgb, var(--color-fd-primary) 12%, transparent);
+}
+.agora-provider-matrix tbody tr[data-selected] > td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-fd-primary);
+  font-weight: 600;
+}

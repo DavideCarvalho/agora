@@ -2,6 +2,7 @@ import { docs } from 'collections/server';
 import { loader } from 'fumadocs-core/source';
 import * as lucide from 'lucide-react';
 import { type ComponentType, createElement } from 'react';
+import type { PaymentsProvider } from './payments-providers';
 import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
 
 const lucideExports = lucide as unknown as Record<
@@ -50,4 +51,25 @@ export async function getLLMText(page: (typeof source)['$inferPage']) {
   return `# ${page.data.title} (${page.url})
 
 ${processed}`;
+}
+
+/**
+ * The payments gateways, read off the provider pages under /docs/payments/providers — the options
+ * of the gateway selector. Derived rather than listed so a new driver's docs page is enough.
+ */
+export function getPaymentsProviders(): PaymentsProvider[] {
+  return source
+    .getPages()
+    .filter(
+      (page) =>
+        page.slugs[0] === 'payments' &&
+        page.slugs[1] === 'providers' &&
+        page.slugs.length === 3,
+    )
+    .map((page) => ({
+      slug: page.slugs[2],
+      title: page.data.title,
+      url: page.url,
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
 }
