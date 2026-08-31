@@ -17,8 +17,11 @@ import { ArrowRight, Check, ChevronsUpDown, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  Children,
   createContext,
   Fragment,
+  isValidElement,
+  type ReactElement,
   type ReactNode,
   useCallback,
   useContext,
@@ -280,6 +283,94 @@ export function ProviderTabs({ items, children, ...rest }: ProviderTabsProps) {
         </p>
       )}
     </div>
+  );
+}
+
+interface ProviderCaseProps {
+  /** Gateways this block is for — slugs or names as the docs spell them, space-separated. */
+  for?: string;
+  /** Shown when no gateway is picked, and when the picked one has no case (with a note). */
+  default?: boolean;
+  children?: ReactNode;
+}
+
+/** One branch of a `<ProviderSwitch>`; on its own it just renders its children. */
+export function ProviderCase({ children }: ProviderCaseProps) {
+  return <>{children}</>;
+}
+
+/**
+ * The `<ProviderCase>` elements among `children`. Looks through host elements and fragments too:
+ * MDX wraps JSX in a `<p>` when something sits on the line right above it (a comment, say), and
+ * the switch should still find its cases rather than silently render nothing.
+ */
+function collectCases(children: ReactNode): ReactElement<ProviderCaseProps>[] {
+  return Children.toArray(children).flatMap((child) => {
+    if (!isValidElement(child)) return [];
+    // Recognised by shape, not by `child.type === ProviderCase`: the MDX is rendered on the server
+    // and these elements cross the server/client boundary, where the type is a client reference
+    // that need not be identical to this module's function.
+    const props = child.props as ProviderCaseProps;
+    if ('for' in props || 'default' in props) {
+      return [child as ReactElement<ProviderCaseProps>];
+    }
+    return typeof child.type === 'string' || child.type === Fragment
+      ? collectCases(props.children)
+      : [];
+  });
+}
+
+/**
+ * Tabs without the tab bar: renders the `<ProviderCase>` for the selected gateway and nothing
+ * else — for places where the reader should just see their gateway's version of a step. With no
+ * selection the `default` case shows, with a nudge towards the sidebar selector; a selected gateway
+ * that has no case falls back to the default with a note. Without a default, no match renders
+ * nothing, which makes a switch a conditional note.
+ */
+export function ProviderSwitch({ children }: { children?: ReactNode }) {
+  const { providers, selected } = useScope();
+  const cases = collectCases(children);
+  const covers = (c: ReactElement<ProviderCaseProps>) =>
+    (c.props.for ?? '')
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .map((label) => matchProvider(label, providers)?.slug);
+
+  const match = selected
+    ? cases.find((c) => covers(c).includes(selected.slug))
+    : undefined;
+  const fallback = cases.find((c) => c.props.default);
+  const shown = match ?? fallback;
+  if (!shown) return null;
+
+  const shownTitle = providers.find((p) => p.slug === covers(shown)[0])?.title;
+  const note =
+    fallback && cases.length > 1 && !match ? (
+      <p className="my-2 text-xs text-fd-muted-foreground">
+        {selected ? (
+          <>
+            {selected.title} is not covered here — showing {shownTitle}.{' '}
+            <Link
+              href={selected.url}
+              className="text-fd-primary hover:underline"
+            >
+              {selected.title} guide →
+            </Link>
+          </>
+        ) : (
+          <>
+            Showing {shownTitle} — pick your gateway in the sidebar to see
+            yours.
+          </>
+        )}
+      </p>
+    ) : null;
+
+  return (
+    <>
+      {note}
+      {shown}
+    </>
   );
 }
 

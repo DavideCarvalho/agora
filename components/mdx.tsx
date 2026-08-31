@@ -9,8 +9,10 @@ import { CodeFlow } from '@/components/code-flow';
 import { DlqSim, RetrySim } from '@/components/failure-sims';
 import { PaymentFlow } from '@/components/payment-flow';
 import {
+  ProviderCase,
   ProviderMatrix,
   ProviderSummary,
+  ProviderSwitch,
   ProviderTabs,
 } from '@/components/payments-provider';
 import { QueueSim, SingletonSim } from '@/components/queue-sim';
@@ -53,6 +55,8 @@ export function getMDXComponents(components?: MDXComponents) {
     PaymentFlow,
     // Payments-lib provider-aware pieces: follow the gateway picked in the page header.
     ProviderTabs,
+    ProviderSwitch,
+    ProviderCase,
     ProviderMatrix,
     ProviderSummary,
     ...components,
