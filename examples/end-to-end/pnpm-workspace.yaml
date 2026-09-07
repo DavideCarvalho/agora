@@ -1,0 +1,14 @@
+# This app is a standalone example, intentionally NOT part of the agora
+# Next.js site's pnpm workspace — it has its own dependency tree and lockfile
+# so installing/upgrading it can never affect the docs site's build.
+
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  '@swc/core': true
+minimumReleaseAgeExclude:
+  - '@adonis-agora/authkit-server@0.65.2'
+  - '@adonis-agora/authz@0.13.3'
+  - '@adonis-agora/media@0.15.1'
+  - '@adonis-agora/telescope@0.19.0'
+  - '@adonis-agora/telescope-ui@1.4.0'

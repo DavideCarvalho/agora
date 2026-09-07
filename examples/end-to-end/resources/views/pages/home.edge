@@ -1,0 +1,35 @@
+@layout()
+  <div class="hero">
+    <h1>Agora end-to-end example</h1>
+    <p>
+      A minimal AdonisJS app wiring authkit-server (login), authz (permission
+      checks), context (tenant/user propagation), media (a protected file),
+      and telescope (observability) together — see this repo's README for a
+      tour of which file demonstrates which integration point.
+    </p>
+  </div>
+
+  <div class="cards">
+    @if(user)
+      <a href="/documents">
+        <h3>Documents &nbsp;›</h3>
+        <p>Signed in as {{ user.email }}. View/upload documents (authz-gated).</p>
+      </a>
+
+      <form action="/auth/logout" method="POST">
+        {{ csrfField() }}
+        <button type="submit">Log out</button>
+      </form>
+    @else
+      <a href="/auth/login">
+        <h3>Log in &nbsp;›</h3>
+        <p>Starts the OIDC authorization-code + PKCE flow against this app's own IdP.</p>
+      </a>
+    @end
+
+    <a href="/telescope">
+      <h3>Telescope &nbsp;›</h3>
+      <p>Admin-only observability dashboard (authz-gated, ADMIN role).</p>
+    </a>
+  </div>
+@end

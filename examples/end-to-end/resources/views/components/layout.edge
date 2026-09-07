@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      Agora end-to-end example
+    </title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('dumper')
+  </head>
+  <body>
+    @include('partials/header')
+    <main>
+      @include('partials/flash_alerts')
+      {{{ await $slots.main() }}}
+    </main>
+  </body>
+</html>
