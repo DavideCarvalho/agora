@@ -4,6 +4,8 @@
 
 allowBuilds:
   better-sqlite3: true
+  esbuild: true
+  '@swc/core': true
 minimumReleaseAgeExclude:
   - '@adonis-agora/authkit-server@0.65.2'
   - '@adonis-agora/authz@0.13.3'
