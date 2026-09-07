@@ -1,7 +1,11 @@
-# Dependencies and AdonisJS build
+# Dependencies and AdonisJS build. Everything under tmp/ is ignored EXCEPT
+# a placeholder that keeps the directory itself present after a fresh clone
+# — config/database.ts's SQLite file lives at tmp/db.sqlite3, and
+# better-sqlite3 refuses to create it if the directory doesn't exist yet.
 node_modules
 build
-tmp
+tmp/*
+!tmp/.gitkeep
 
 # Local media storage (config/drive.ts's "fs" disk — uploaded files land here)
 storage
