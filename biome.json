@@ -14,7 +14,8 @@
       "!dist",
       "!build",
       "!.source",
-      "!.opencode"
+      "!.opencode",
+      "!examples"
     ]
   },
   "formatter": {
