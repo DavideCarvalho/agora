@@ -1,0 +1,28 @@
+# Dependencies and AdonisJS build
+node_modules
+build
+tmp
+
+# Local media storage (config/drive.ts's "fs" disk — uploaded files land here)
+storage
+
+# Secrets
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Frontend assets compiled code
+public/assets
+
+# Build tools specific
+npm-debug.log
+yarn-error.log
+
+# Editors specific
+.fleet
+.idea
+.vscode
+
+# Platform specific
+.DS_Store

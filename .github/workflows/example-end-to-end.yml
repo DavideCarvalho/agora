@@ -1,0 +1,117 @@
+name: Example — end-to-end
+
+# examples/end-to-end is a STANDALONE AdonisJS app with its own
+# pnpm-workspace.yaml, lockfile and dependency tree (see its README) —
+# entirely separate from the Next.js docs site deploy.yml builds. This job
+# only runs when that directory (or this workflow file) changes, and never
+# touches the repo-root pnpm install/build the docs site relies on.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'examples/end-to-end/**'
+      - '.github/workflows/example-end-to-end.yml'
+  pull_request:
+    paths:
+      - 'examples/end-to-end/**'
+      - '.github/workflows/example-end-to-end.yml'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: examples/end-to-end
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # Reads the pnpm version from examples/end-to-end/package.json's own
+      # `packageManager` field (its own project, own version pin).
+      - uses: pnpm/action-setup@v6
+        with:
+          package-json-file: examples/end-to-end/package.json
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: examples/end-to-end/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # better-sqlite3's build script is allow-listed (pnpm-workspace.yaml)
+      # but pnpm only runs an allow-listed script on an explicit rebuild, not
+      # on a plain install — see the README's "Why pnpm rebuild" note.
+      - name: Build native dependencies (better-sqlite3)
+        run: pnpm rebuild
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Prepare a runnable environment
+        run: |
+          cp .env.example .env
+          node ace generate:key
+
+      - name: Run migrations against a fresh SQLite database
+        run: node ace migration:run --force
+
+      - name: Boot-test — list every route with no errors
+        run: node ace list:routes
+
+      # Runs BEFORE the authz/OIDC-client seeding below: the suite's
+      # `testUtils.db().truncate()` wipes every table before each test,
+      # which would silently erase the roles catalog and the registered
+      # OIDC client the smoke test needs if this ran any later.
+      - name: Run the unit test suite (authorization decisions)
+        run: node ace test unit
+
+      - name: Seed the authz catalog (member / ADMIN roles)
+        run: node ace authz:sync
+
+      - name: Register the OIDC client and export its secret
+        # `--json` output is interleaved with pretty-printed SQL debug logging
+        # (config/database.ts's `prettyPrintDebugQueries`), so this isn't
+        # strict JSON on one line — grep the one field we need instead of
+        # parsing the whole block.
+        run: |
+          OUTPUT=$(node ace authkit:clients:create --client-id=demo-app \
+            --redirect-uri=http://localhost:3333/auth/callback --json)
+          SECRET=$(echo "$OUTPUT" | grep -o '"clientSecret": "[^"]*"' | sed 's/.*"clientSecret": "//;s/"$//')
+          if [ -z "$SECRET" ]; then
+            echo "Failed to extract clientSecret from:" >&2
+            echo "$OUTPUT" >&2
+            exit 1
+          fi
+          # `.env.example` already declares an EMPTY `AUTHKIT_CLIENT_SECRET=`
+          # line (dotenv keeps the FIRST occurrence of a duplicate key) —
+          # replace it in place rather than appending a second one, which
+          # would silently be ignored and leave the client unauthenticated.
+          sed -i "s|^AUTHKIT_CLIENT_SECRET=.*|AUTHKIT_CLIENT_SECRET=$SECRET|" .env
+
+      - name: Boot the dev server
+        run: |
+          nohup node ace serve --no-hmr > /tmp/dev-server.log 2>&1 &
+          echo $! > /tmp/dev-server.pid
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3333/ || true)
+            if [ "$code" = "200" ]; then echo "server is up"; exit 0; fi
+            sleep 1
+          done
+          echo "server never became ready" >&2
+          cat /tmp/dev-server.log
+          exit 1
+
+      - name: Full end-to-end smoke test (real OIDC login + authz + media)
+        run: BASE_URL=http://localhost:3333 bash smoke-test.sh
+
+      - name: Dump server log on failure
+        if: failure()
+        run: cat /tmp/dev-server.log || true
+
+      - name: Stop the dev server
+        if: always()
+        run: kill "$(cat /tmp/dev-server.pid)" 2>/dev/null || true
