@@ -12,6 +12,7 @@
     "filter",
     "agent",
     "authkit",
-    "collaboration"
+    "collaboration",
+    "payments"
   ]
 }
