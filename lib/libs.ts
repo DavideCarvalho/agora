@@ -8,6 +8,7 @@ import {
   KeyRound,
   type LucideIcon,
   ShieldCheck,
+  Ship,
   Telescope,
   Users,
   Workflow,
@@ -179,6 +180,18 @@ export const libs: AgoraLib[] = [
     iconName: 'KeyRound',
     packages: 9,
     stage: 'beta',
+  },
+  {
+    slug: 'sail',
+    pkg: 'sail',
+    name: 'Sail',
+    blurb:
+      'Docker-powered local dev services for AdonisJS — per-worktree isolated containers, deterministic shifted ports, service shells, tunnels, and agent-friendly JSON output.',
+    role: 'Tooling',
+    icon: Ship,
+    iconName: 'Ship',
+    packages: 1,
+    stage: 'alpha',
   },
 ];
 

@@ -123,6 +123,18 @@ export const sources = [
     migrated: true,
   },
   {
+    slug: 'sail',
+    name: 'Sail',
+    description:
+      'Docker-powered local dev services for AdonisJS — worktree-native isolated stacks, deterministic ports, and agent-friendly JSON output.',
+    icon: 'Ship',
+    repo: 'DavideCarvalho/adonis-agora-sail',
+    ref: 'master',
+    path: 'docs',
+    repoDir: 'adonis-sail',
+    migrated: true,
+  },
+  {
     slug: 'agent',
     name: 'Agent',
     description:
