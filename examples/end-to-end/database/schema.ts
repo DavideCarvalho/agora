@@ -151,7 +151,7 @@ export class AuthUserSchema extends BaseModel {
   @column()
   declare fullName: string | null
   @column()
-  declare globalRoles: string
+  declare globalRoles: any
   @column({ isPrimary: true })
   declare id: string
   @column({ serializeAs: null })

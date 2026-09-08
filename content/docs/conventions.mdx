@@ -1,0 +1,167 @@
+---
+title: Conventions
+description: Cross-cutting conventions every @adonis-agora/* library follows — pagination shapes, the meta envelope, and what `limit` is reserved for.
+---
+
+# Conventions
+
+Each Agora library ships on its own, but a caller should only have to learn a
+cross-cutting idea once. This page collects the conventions that hold across the
+whole ecosystem, so they live in one place instead of only inside each library's
+own reference.
+
+## Pagination
+
+There are exactly two pagination mechanisms, and which one a listing uses is
+decided by what its backend can actually do — not by taste. Both are defined by
+[`@adonis-agora/filter`](/docs/filter), which is the only library that ships
+both.
+
+### Offset — `page` / `size`
+
+For SQL/Lucid-backed listings, where the store can seek to an arbitrary row.
+
+**Request** — `page` is a **1-based** page number defaulting to `1`, and `size`
+is the page size. On the wire that is `?page=2&size=25`. This mirrors filter's
+`FilterInput.page` / `FilterInput.size`, which it resolves into:
+
+```ts
+// @adonis-agora/filter
+interface ResolvedPagination {
+  page: number
+  size: number
+}
+```
+
+— exactly the pair Lucid's `query.paginate(page, size)` takes.
+
+**Response** — the `meta` / `data` envelope Lucid's own `.paginate()`
+serializes to, with the window co-located under `meta`:
+
+```json
+{
+  "meta": { "page": 2, "size": 25, "total": 137 },
+  "data": []
+}
+```
+
+`meta.page` and `meta.size` are always the resolved (clamped, defaulted) values
+actually applied, not the raw request. Beyond those two, each library adds what
+its store can answer cheaply: `total` in authkit, `count` in durable and
+payments, `count` + `hasMore` in telescope. Read the window off `meta`; never
+assume a field the library does not document.
+
+The 0-based SQL offset is an implementation detail — `(page - 1) * size`,
+derived inside the store — and never appears in a public type.
+
+### Cursor — `after` / `first`
+
+For backends whose "next page" handle is an opaque, protocol-native token rather
+than a row offset: S3's `ListObjectsV2` continuation token, Qdrant's scroll
+`next_page_offset`, or a keyset over `createdAt`/`id`. There is no way to
+compute an offset or seek to page 7, so cursor is the honest match.
+
+**Request** — `after` is the opaque cursor from a previous page's `nextCursor`
+(omit it for the first page) and `first` is the page size. This mirrors filter's
+`CursorParams`.
+
+**Response** — filter's `CursorPage<T>`, field for field:
+
+```ts
+// @adonis-agora/filter
+interface CursorPage<T> {
+  items: T[]
+  nextCursor: string | null
+  prevCursor: string | null
+  hasNext: boolean
+  hasPrev: boolean
+}
+```
+
+Cursor values are **opaque**. Hand a `nextCursor` back as `after`; never parse
+one, never build one.
+
+**Forward-only backends.** Filter's `CursorParams` also carries `before` /
+`last` for backward paging, because it builds keyset predicates over SQL it
+controls and can run the comparison in reverse. Neither media's nor agent's
+backends can, so both **omit** `before` / `last` from their own `CursorParams`
+— a parameter that type-checks and then silently does nothing is worse than one
+that does not exist — and pin `prevCursor: null` / `hasPrev: false` in every
+response. Those two fields stay present so the page *is* the ecosystem's
+`CursorPage` and not a near-miss of it: code written against one renders the
+other with no conditional, and a surface that later gains backward paging fills
+them in without a breaking change. They are constants, not a bug.
+
+**Pages carrying more than one kind of item** use the envelope without `items`.
+Media's object listing returns common prefixes *and* objects in the same page,
+so it types that response as `CursorPageInfo & { folders, files }`, where
+`CursorPageInfo` is `Omit<CursorPage<never>, 'items'>`.
+
+### `limit` is a cap, not a page
+
+`limit` is reserved for bounding a result set that has no page companion, and it
+deliberately keeps that name — respelling it `size` would claim a paging
+mechanism that is not there. Live examples:
+
+- Telescope's `?limit=` on `/api/stats` (top-N families and tags),
+  `/api/metrics/screens` and `/api/profiles`; the `topN` panel's `limit`;
+  `storage.memory({ limit })`, which is a ring-buffer capacity; and the MCP
+  `list_entries` tool's `limit` argument.
+- Filter's own group-by-count aggregation, which takes `groupByCount[limit]` /
+  `groupByCount[offset]` — `limit` bounds the rows (highest count first) and
+  `offset` pages that bound. Durable's `GET /durable/api/runs/values` *is* that
+  aggregation, so it kept `limit`/`offset` when its run listing moved to
+  `page`/`size`.
+- Durable's `durable:runs --limit` ace flag — a row cap with no page companion,
+  mapped to `size` internally.
+- Agent's `recentToolCalls(limit)` / `recentThreads(limit)`.
+
+The rule of thumb: if the parameter has a page companion it is `size`; if it is
+a bare ceiling on how many rows come back, it is `limit`.
+
+### Structural match, not a dependency
+
+No library imports these types from `@adonis-agora/filter`. Each declares its
+own `page`/`size` fields, or its own `CursorParams` / `CursorPage`, and states
+in the docblock that it mirrors filter's — the same optional-integration
+convention the rest of the ecosystem follows, where a library lights up its
+neighbours when present rather than depending on them. Two concrete reasons:
+filter's barrel re-exports Lucid-typed members, and most of these contracts are
+implemented by stores that have no Lucid (and no filter) dependency at all.
+
+The one exception is [`@adonis-agora/durable`](/docs/durable), which already
+depends on `@adonis-agora/filter` for its dashboard's filtering. That gives it
+somewhere to pin the two shapes together at **compile time**:
+`packages/adonis/test/dashboard/pagination-shape.spec.ts` assigns a
+`ResolvedPagination` straight into a `RunQuery`'s paging half and asserts
+key-and-type equality invariantly in both directions, so a rename or a retype on
+either side stops compiling instead of silently drifting.
+
+### Which library uses which
+
+| Library | Mechanism | Paginated surface |
+| --- | --- | --- |
+| [agent](/docs/agent) | Cursor | Governance run read-model (`listRuns`), Qdrant `scrollChunks` |
+| [authkit](/docs/authkit) | Offset | Accounts, audit log, admin console and Admin API listings |
+| [authz](/docs/authz) | — | No paginated surface |
+| [collaboration](/docs/collaboration) | Offset | `listVersions` / `listComments` (`ListPageOptions`); the routes read `?page=&size=` |
+| [context](/docs/context) | — | No paginated surface |
+| [diagnostics](/docs/diagnostics) | — | No paginated surface |
+| [durable](/docs/durable) | Offset | Run listings — `RunQuery.page`/`.size`, `GET /durable/api/runs` |
+| [filter](/docs/filter) | Both | Defines both; the source of truth |
+| [media](/docs/media) | Cursor | Console object listing (S3) and collections listing |
+| [payments](/docs/payments) | Offset | Billing listings (`BillingListQuery`) |
+| [resilience](/docs/resilience) | — | No paginated surface |
+| [sail](/docs/sail) | — | No paginated surface |
+| [telescope](/docs/telescope) | Offset | Entry and trace listings (`EntryQuery`, `TraceIdQuery`) |
+
+Two things the table flattens:
+
+- **Collaboration** takes `page`/`size` on the request but its `GET
+  /collaboration/versions` and `GET /collaboration/comments` routes answer with
+  a bare array rather than the `meta` / `data` envelope.
+- A library's **driver/SPI layer** may keep the vocabulary of the protocol
+  underneath it. Media's `MediaStore.list` and `ExtendedDisk.list` still speak
+  `cursor`/`limit`; the dashboard maps `after` → `cursor` and `first` → `limit`
+  at its HTTP boundary. The convention governs the interfaces a *caller* uses,
+  not the SPI a custom store implements.

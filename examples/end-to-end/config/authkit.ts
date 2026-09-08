@@ -23,19 +23,10 @@ const authServerConfig = defineConfig({
   // declared statically here, so no redeploy is needed to add one.
 
   /**
-   * WORKAROUND, not a design choice — `branding` is typed `optional` here and
-   * every doc (getting-started, quickstart, reference) treats it as pure
-   * theming you can skip. Omitting it entirely crashes the FIRST hit of the
-   * built-in login/consent/signup screen for every visitor:
-   * `brandFor(cfg.branding, ...)` in the host's interaction controller reads
-   * `cfg.branding.clients` unconditionally, and `defineConfig` never applies
-   * a default `{}` — `config.branding` stays `undefined` and the read
-   * throws `TypeError: Cannot read properties of undefined (reading
-   * 'clients')`. Reproduced on @adonis-agora/authkit-server@0.65.2 by simply
-   * following getting-started.mdx verbatim (no branding key) and opening
-   * /auth/login. This is the smallest valid BrandingConfig, purely to keep
-   * the built-in Edge login screen from crashing — see this repo's README
-   * for the full writeup; flagged upstream, not fixed here.
+   * Pure theming, and entirely optional: `defineConfig` resolves a neutral
+   * default `BrandingConfig` when the key is absent (authkit-server@0.66.0+),
+   * so the built-in login/consent/signup screens work without it. Set here
+   * only so those screens say "End-to-end example" instead of "AuthKit".
    */
   branding: {
     company: 'Agora',

@@ -58,7 +58,8 @@ Open <http://localhost:3333>, click **Log in**, sign up with any email —
 you land back on the home page authenticated. From there:
 
 - **/documents** — 403 until you grant yourself a role (below), then 200.
-- **/telescope** — 401/403 until you're `ADMIN`.
+- **/telescope** — 401 while logged out, 403 once logged in without
+  `ADMIN`, 200 after.
 
 Grant yourself a role (find your id first — the home page shows your email,
 or query `app_users`):
@@ -157,53 +158,47 @@ the two never drift.
   propagation mechanism — a real multi-tenant app would derive it from the
   user's organization/workspace instead.
 
-## Upstream issues found while building this
+## What this example fixed upstream
 
-Building this example surfaced a few genuine gaps in the ecosystem — not
-this app's own bugs, but things worth knowing if you hit the same wall.
-Each is documented at its exact point of impact in the code; this is just an
-index:
+Building this app surfaced five genuine gaps in the ecosystem. **All five are
+fixed and released**, in the versions pinned in `package.json` above — nothing
+below is a wall you will hit today. Kept as an index of what changed, and of
+why a few files look the way they do:
 
-1. **`@adonis-agora/authkit-client@0.18.2`'s `node ace configure` always
-   crashes.** Its published `config/authkit_client.stub` contains a literal
-   backtick inside a comment; the codemod's template engine wraps stub
-   content in a JS template literal to compile it, and the unescaped
-   backtick closes that literal early —
-   `SyntaxError: Unexpected identifier 'resolveRoles'`. Worked around by
-   hand-writing `config/authkit_client.ts` (see the comment at its top for
-   the exact repro command).
-2. **`authkit-server`'s built-in login/consent/signup screens crash on the
-   documented minimal config.** `branding` is typed optional and every doc
-   (getting-started, quickstart, reference) treats it as pure theming you
-   can skip — but the interaction controller reads `cfg.branding.clients`
-   unconditionally, and no default is ever applied when the key is absent.
-   Worked around with the smallest valid `BrandingConfig` in
-   `config/authkit.ts`.
-3. **The documented minimal `AuthUser` model produces broken accounts.**
-   Two gaps compound: the built-in signup screen always collects a "Name"
-   field the Lucid store passes straight into `AuthUser.create()` (needs a
-   `fullName` column the docs never show), and nothing generates the
-   primary key (no doc shows a `@beforeCreate` UUID hook), so every created
-   account's `id` comes back as SQLite's internal `lastInsertRowid` instead
-   of a real id — the account silently becomes unreachable by its real id
-   one request later. See `app/models/auth_user.ts`.
-4. **Mounting `registerAuthHost` behind global CSRF breaks the token
-   exchange.** `@adonisjs/shield`'s CSRF protection (on by default in the
-   `web` starter kit) intercepts the OIDC provider's own machine-to-machine
-   `POST /oidc/token`, so `exchangeCode()` gets shield's HTML denial instead
-   of a JSON token response. Fixed with a route-prefix exemption in
-   `config/shield.ts`.
-5. **Composing `authorizeByRoles` as a dashboard's `authorize` hook loses
-   the 401-vs-403 distinction.** Telescope's dashboard guard decides 401 vs
-   403 by whether the *request* presented an `Authorization` header /
-   `?token=` — a heuristic built for its own `credentials: {token, basic}`
-   gate. `authorizeByRoles` authenticates via the app's session cookie
-   instead, which that heuristic never inspects, so an authenticated-but-
-   wrong-role denial and a genuinely anonymous one both come back as 401.
-   Access is still correctly denied either way; only the status code is
-   imprecise in this specific composition. Noted in `smoke-test.sh` step 10.
+1. **`node ace configure @adonis-agora/authkit-client` always crashed** — the
+   published config stub had a literal backtick inside a comment and the stub
+   codemod compiles stub content by wrapping it in a JS template literal.
+   Fixed in
+   [`authkit-client@0.18.3`](https://www.npmjs.com/package/@adonis-agora/authkit-client);
+   `config/authkit_client.ts` here is now that codemod's real output, with
+   `resolveUser` filled in.
+2. **The built-in login/consent/signup screens crashed without a `branding`
+   key**, which every doc treats as optional theming. `defineConfig` now
+   resolves a default `BrandingConfig`
+   ([`authkit-server@0.66.0`](https://www.npmjs.com/package/@adonis-agora/authkit-server)).
+   `config/authkit.ts` still sets `branding`, but only as theming now — drop it
+   and the screens work.
+3. **The documented minimal `AuthUser` model produced broken accounts** — no
+   `fullName` column for the signup screen's "Name" field, no `@beforeCreate`
+   id hook, and no `static selfAssignPrimaryKey = true` (so Lucid overwrote the
+   generated UUID with the raw INSERT result). The scaffolded stub and the docs
+   now ship the complete model; `app/models/auth_user.ts` matches it.
+4. **`configure` never scaffolded the `auth_users` migration**, so a host that
+   followed getting-started verbatim hit `no such table: auth_users` on the
+   first signup. It does now, and
+   `database/migrations/*_create_auth_users_table.ts` here matches that stub.
+5. **Mounting `registerAuthHost` behind shield's default CSRF broke the OIDC
+   token exchange.** This one was never a code bug: the `authkitCsrfExceptions`
+   helper already existed, it just was not mentioned anywhere you would look.
+   The docs and the `authkit:doctor` hint now name it, and `config/shield.ts`
+   uses it.
 
-None of these are workarounds for *this app's* design choices — each is
-reproducible by following the relevant library's own getting-started doc
-verbatim, and each is called out at its exact location in the code so it's
-easy to find and easy to remove once fixed upstream.
+One rough edge this example *closed itself* rather than worked around:
+telescope's dashboard guard used to infer 401-vs-403 from the request's shape,
+which never sees the session cookie `authorizeByRoles` authenticates with. Since
+[`telescope@0.20.0`](https://www.npmjs.com/package/@adonis-agora/telescope) an
+`authorize` hook may return `{ allowed, reason }` instead of a bare boolean, and
+`config/telescope_ui.ts` does — so a wrong-role denial is a 403 and only an
+anonymous one is a 401 (asserted in `smoke-test.sh` step 10). `authz`'s
+`authorizeByRoles` still returns a plain boolean, so this composition is worth
+copying if you gate a dashboard the same way.

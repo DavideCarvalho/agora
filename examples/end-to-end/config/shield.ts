@@ -1,4 +1,5 @@
 import { defineConfig } from '@adonisjs/shield'
+import { authkitCsrfExceptions } from '@adonis-agora/authkit-server'
 
 /**
  * Security configuration using Shield.
@@ -42,24 +43,23 @@ const shieldConfig = defineConfig({
     enabled: true,
 
     /**
-     * Routes that should be excluded from CSRF protection.
-     * Useful for webhooks or API endpoints that use other auth methods.
+     * Routes excluded from CSRF protection.
      *
-     * `/oidc/*` is authkit-server's own OAuth2/OIDC protocol surface
-     * (`registerAuthHost`'s `mountPath`) — token, introspection, revocation,
-     * userinfo, etc. Those are machine-to-machine requests authenticated by
-     * the OIDC spec itself (client_secret_basic, PKCE), never by a browser
-     * form carrying our `_csrf` field. Left un-exempted, `exchangeCode()` in
+     * `authkitCsrfExceptions` is authkit-server's own helper for exactly this:
+     * it covers the IdP protocol surface mounted at `mountPath` (token,
+     * introspection, revocation, userinfo...), the PAT introspection route and
+     * the client's back-channel logout route. Those are machine-to-machine
+     * requests authenticated by the OIDC spec itself (client_secret_basic,
+     * PKCE), never by a browser form carrying shield's `_csrf` field — left
+     * un-exempted, `exchangeCode()` in
      * app/controllers/oidc_session_controller.ts gets shield's CSRF-denial
-     * HTML back from POST /oidc/token instead of a JSON token response, and
-     * fails with `SyntaxError: Unexpected token '<'... is not valid JSON` —
-     * reproduced with the web-starter-kit's default shield config (CSRF
-     * enabled) plus authkit-server's documented `registerAuthHost` setup.
-     * The actual interactive pages (login/signup/consent) live under
-     * `/auth/interaction/*`, a different prefix, so their CSRF protection is
-     * untouched by this exemption. See this repo's README.
+     * HTML back from `POST /oidc/token` instead of a JSON token response.
+     *
+     * The interactive pages (login/signup/consent) live under
+     * `/auth/interaction/*`, which the helper does not match, so their CSRF
+     * protection is untouched.
      */
-    exceptRoutes: (ctx) => ctx.request.url().startsWith('/oidc/'),
+    exceptRoutes: (ctx) => authkitCsrfExceptions(ctx.request.url(), { mountPath: '/oidc' }),
 
     /**
      * Enable XSRF-TOKEN cookie for JavaScript frameworks.
