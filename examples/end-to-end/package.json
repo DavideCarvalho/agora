@@ -56,13 +56,13 @@
     "youch": "^4.1.0-beta.13"
   },
   "dependencies": {
-    "@adonis-agora/authkit-client": "0.18.2",
-    "@adonis-agora/authkit-server": "0.65.2",
+    "@adonis-agora/authkit-client": "0.18.4",
+    "@adonis-agora/authkit-server": "0.66.0",
     "@adonis-agora/authz": "0.13.3",
     "@adonis-agora/context": "0.6.1",
-    "@adonis-agora/media": "0.15.1",
-    "@adonis-agora/telescope": "0.19.0",
-    "@adonis-agora/telescope-ui": "1.4.0",
+    "@adonis-agora/media": "0.18.0",
+    "@adonis-agora/telescope": "0.21.0",
+    "@adonis-agora/telescope-ui": "1.5.0",
     "@adonisjs/core": "^7.0.0-next.20",
     "@adonisjs/drive": "^4.0.0",
     "@adonisjs/lucid": "^22.0.0-next.4",

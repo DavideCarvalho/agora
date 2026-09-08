@@ -4,23 +4,8 @@ import type { Identity } from '@adonis-agora/authkit-client'
 import AppUser from '#models/app_user'
 
 /**
- * Hand-written rather than published by `node ace configure @adonis-agora/authkit-client`.
- *
- * That codemod currently crashes on this exact file: its published stub
- * (config/authkit_client.stub) contains a literal backtick inside a comment
- * (`` `resolveRoles` ``), and the codemod's template engine (tempura) compiles
- * a stub by wrapping its raw source in a JS template literal — an unescaped
- * backtick in the stub's own content closes that literal early and the
- * generated code fails with `SyntaxError: Unexpected identifier 'resolveRoles'`.
- * Reproduced directly against the installed package:
- *
- *   node -e "require('tempura').compile(require('fs').readFileSync(
- *     'node_modules/@adonis-agora/authkit-client/build/stubs/config/authkit_client.stub','utf8'))"
- *
- * This is a genuine upstream bug in @adonis-agora/authkit-client@0.18.2 (not a
- * misconfiguration on this app's part) — see this example's README for the
- * full writeup. Below is the config the codemod would have published, typed
- * by hand.
+ * Published verbatim by `node ace configure @adonis-agora/authkit-client`,
+ * with the stub's commented-out `resolveUser` placeholder filled in below.
  */
 const authkitClientConfig = defineConfig({
   issuer: env.get('AUTHKIT_ISSUER'),
@@ -39,6 +24,9 @@ const authkitClientConfig = defineConfig({
       { id: identity.userId, email: identity.email, fullName: identity.profile?.name ?? null },
     )
   },
+
+  // App roles? Configure `resolveRoles` in @adonis-agora/authz, not here —
+  // AuthKit only authenticates. See config/authz.ts.
 })
 
 export default authkitClientConfig

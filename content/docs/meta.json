@@ -1,6 +1,7 @@
 {
   "pages": [
     "index",
+    "conventions",
     "---Libraries---",
     "context",
     "diagnostics",

@@ -29,3 +29,6 @@ emit to one diagnostics bus, and surface in one observability console.
 Everything is wired through small `Symbol.for('@agora/<lib>:<name>')` capability slots, so a library
 lights up its neighbours **when present** and no-ops when absent — no hard dependencies between repos.
 Install only what you need.
+
+Cross-cutting shapes are shared the same way — matched structurally, never imported. See
+**[Conventions](/docs/conventions)** for the ones that hold ecosystem-wide, starting with pagination.

@@ -8,8 +8,7 @@
 #   - authenticated but missing the "member" role -> 403
 #   - authenticated with "member" -> 200, can create + download own file
 #   - a second user, without the "manage" grant -> 403 on someone else's file
-#   - the Telescope dashboard -> denied anonymous AND non-admin (401 either
-#     way — see the note by step 10), 200 for ADMIN
+#   - the Telescope dashboard -> 401 anonymous, 403 non-admin, 200 for ADMIN
 #
 # Usage: BASE_URL=http://localhost:3333 ./smoke-test.sh
 set -euo pipefail
@@ -125,23 +124,15 @@ node ace authz:assign member "$(node -e "const D=require('better-sqlite3');const
 code="$(curl -s -o /dev/null -w '%{http_code}' -b "$WORKDIR/bob.jar" "$BASE_URL/documents/$doc_id/file")"
 expect_code "GET /documents/$doc_id/file (non-owner)" "403" "$code"
 
-echo "== 10. non-admin -> Telescope dashboard is still denied =="
-# NOTE: telescope's dashboard guard (ui/guard.js's runGuard) picks 401 vs 403
-# by whether the REQUEST presented a credential — an Authorization header or
-# a ?token= query param — not by what authorize() concluded. That heuristic
-# fits telescope's own built-in `credentials: {token, basic}` gate, but
-# authorizeByRoles authenticates via the app's session COOKIE, which this
-# heuristic never inspects — so with authorizeByRoles wired in (as here),
-# an authenticated-but-wrong-role denial and a genuinely anonymous one both
-# come back as 401, never the 403 the authz-side docs describe. Access is
-# correctly denied either way; only the status code is imprecise in this
-# specific composition. Accepting either code here rather than asserting one.
+echo "== 10. non-admin -> Telescope dashboard is 403, anonymous is 401 =="
+# config/telescope_ui.ts returns telescope's `AuthorizeDecision`
+# (`{ allowed, reason }`) rather than the bare boolean `authorizeByRoles`
+# gives, so the guard does not have to guess the status from the request's
+# shape — a session-cookie denial is told apart from an anonymous one.
 code="$(curl -s -o /dev/null -w '%{http_code}' -b "$WORKDIR/ada.jar" "$BASE_URL/telescope")"
-if [ "$code" = "401" ] || [ "$code" = "403" ]; then
-  pass "GET /telescope (ada, member only) denied ($code)"
-else
-  fail "GET /telescope (ada, member only)" "401 or 403" "$code"
-fi
+expect_code "GET /telescope (ada, member only)" "403" "$code"
+code="$(curl -s -o /dev/null -w '%{http_code}' -H 'Accept: application/json' "$BASE_URL/telescope")"
+expect_code "GET /telescope (anonymous)" "401" "$code"
 
 echo "== 11. promote ada to ADMIN -> Telescope dashboard 200 =="
 node ace authz:assign ADMIN "$ada_id" > /dev/null 2>&1
