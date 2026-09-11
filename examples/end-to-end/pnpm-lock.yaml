@@ -12,8 +12,8 @@ importers:
         specifier: 0.18.4
         version: 0.18.4(@adonisjs/auth@10.1.0(9b3340e2852c810345912eec0a476284))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(supports-color@10.2.2))(@adonisjs/session@8.1.0(f12882818712c60afe6fbbc569625e5d))
       '@adonis-agora/authkit-server':
-        specifier: 0.66.0
-        version: 0.66.0(8f5233e1b0b582333e175614c4d1ae70)
+        specifier: 0.66.1
+        version: 0.66.1(8f5233e1b0b582333e175614c4d1ae70)
       '@adonis-agora/authz':
         specifier: 0.13.3
         version: 0.13.3(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(supports-color@10.2.2))
@@ -148,8 +148,8 @@ packages:
   '@adonis-agora/authkit-core@0.8.0':
     resolution: {integrity: sha512-uGa/fpdlIRczVubcy6Y4KsYFl6dt5AQOxHBE2Qpd+G0GY8QMl/6XtyDpZgNMawLGIHZxf5GgjsdzlHri1BsUhg==}
 
-  '@adonis-agora/authkit-server@0.66.0':
-    resolution: {integrity: sha512-/wFfbPnc6HnViFN/7WngDs5p/ICPhQrM+Ivq3BIfqXRE+mukf4iAh3yHLdChE5Od+vrWfRVy+zKnrXSa8DmDHA==}
+  '@adonis-agora/authkit-server@0.66.1':
+    resolution: {integrity: sha512-G4Y5H/niBkbjDognKGtwLGGh+aSQxigksG/HEY/XDqX0Hez5DCuHukyIAYS253/YPijmRQS2gqur10OAyayDEQ==}
     peerDependencies:
       '@adonis-agora/durable': '>=0.7.0 <1.0.0'
       '@adonis-agora/media': '>=0.5.0 <1.0.0'
@@ -2540,9 +2540,6 @@ packages:
     resolution: {integrity: sha512-e3cNNMpv8Kh20MjjphTXs+3Vz7DQyLM1nft7KJhnh46atFhjVJRa+0Hq0beywuwsACtMQUBihQkFl8zxb7gt1Q==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  jose@6.2.10:
-    resolution: {integrity: sha512-iiW7J9qRFlGxvCOIBDBDxFePQSn7ZMAnrYGhrrOo6siO/MIqwfyilLR27pkfDgUk+raLuzADS8A3S/KLBisc0g==}
-
   jose@6.2.12:
     resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
@@ -3601,7 +3598,7 @@ snapshots:
 
   '@adonis-agora/authkit-core@0.8.0': {}
 
-  '@adonis-agora/authkit-server@0.66.0(8f5233e1b0b582333e175614c4d1ae70)':
+  '@adonis-agora/authkit-server@0.66.1(8f5233e1b0b582333e175614c4d1ae70)':
     dependencies:
       '@adonis-agora/authkit-core': 0.8.0
       '@adonisjs/core': 7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1)
@@ -5774,8 +5771,6 @@ snapshots:
       chalk: 4.1.2
       pretty-format: 30.5.1
 
-  jose@6.2.10: {}
-
   jose@6.2.12: {}
 
   joycon@3.1.1: {}
@@ -5985,7 +5980,7 @@ snapshots:
   oidc-provider@9.12.2(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
-      jose: 6.2.10
+      jose: 6.2.12
       koa: 3.2.1
     transitivePeerDependencies:
       - supports-color
