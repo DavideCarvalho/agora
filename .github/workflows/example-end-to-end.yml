@@ -25,15 +25,15 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
 
       # Reads the pnpm version from examples/end-to-end/package.json's own
       # `packageManager` field (its own project, own version pin).
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@v6.1.0
         with:
           package_json_file: examples/end-to-end/package.json
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: 22
           cache: pnpm
