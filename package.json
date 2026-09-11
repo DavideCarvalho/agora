@@ -4,7 +4,7 @@
   "private": true,
   "description": "The Agora documentation site \u2014 a unified, AdonisJS-themed docs hub that syncs each library's docs.",
   "type": "module",
-  "packageManager": "pnpm@11.24.0",
+  "packageManager": "pnpm@11.26.0",
   "scripts": {
     "sync:docs": "node scripts/sync-docs.mjs",
     "check:links": "node scripts/check-links.mjs --strict",
