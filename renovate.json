@@ -39,6 +39,11 @@
       "enabled": false
     },
     {
+      "description": "`ai` and `@ai-sdk/*` ship as one release train, and `@ai-sdk/react` depends on an exact `ai`. Updating either side alone leaves two copies of `ai` in the tree, whose types are not the same types — the inferred return of a hook wrapping `useChat` then cannot be named (TS2742) and the build fails on a version bump that is individually fine. Grouping them keeps the tree at one copy.",
+      "matchPackageNames": ["ai", "@ai-sdk/**"],
+      "groupName": "ai sdk"
+    },
+    {
       "description": "A peer range is the compatibility window this package advertises. Widen it rather than pinning it, and never without a human deciding the window is really that wide.",
       "matchDepTypes": ["peerDependencies"],
       "rangeStrategy": "widen",
