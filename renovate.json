@@ -1,6 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "description": [
+    "minimumReleaseAge mirrors pnpm's own policy. pnpm 11 refuses to install a package published within the last 24 hours, and `--frozen-lockfile` turns that into ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION, so an update proposed sooner than that cannot pass CI no matter what it contains. Three days rather than one because the entries that trip the check are usually the update's siblings, published as a set alongside it, and Renovate ages only the package it names."
+  ],
+  "minimumReleaseAge": "3 days",
   "rangeStrategy": "pin",
   "packageRules": [
     {
