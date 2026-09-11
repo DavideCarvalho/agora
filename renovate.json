@@ -9,9 +9,9 @@
       "enabled": false
     },
     {
-      "description": "Patch and minor bumps merge on their own once CI is green. These are the ones `release.yml` turns into an automatic patch release.",
+      "description": "Patch, minor and pin bumps merge on their own once CI is green. These are the ones `release.yml` turns into an automatic patch release. `pin` is its own update type in Renovate rather than a flavour of patch, so it has to be named here or the initial pinning PR sits open forever.",
       "matchDepTypes": ["dependencies", "devDependencies"],
-      "matchUpdateTypes": ["patch", "minor"],
+      "matchUpdateTypes": ["patch", "minor", "pin"],
       "automerge": true,
       "automergeStrategy": "squash"
     },
@@ -20,6 +20,13 @@
       "matchDepTypes": ["dependencies", "devDependencies"],
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "description": "A GitHub Actions bump changes nothing a consumer installs, so it merges on its own and never cuts a release. Its updates arrive under the `github-actions` manager rather than as a dependency depType, so the rules above do not reach them. Majors still wait for a person.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch", "minor", "pin", "pinDigest", "digest"],
+      "automerge": true,
+      "automergeStrategy": "squash"
     },
     {
       "description": "A peer range is the compatibility window this package advertises. Widen it rather than pinning it, and never without a human deciding the window is really that wide.",
