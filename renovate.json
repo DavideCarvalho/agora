@@ -4,13 +4,27 @@
   "rangeStrategy": "pin",
   "packageRules": [
     {
-      "matchDepTypes": ["dependencies", "devDependencies"],
-      "matchUpdateTypes": ["patch", "minor"],
-      "automerge": true
+      "description": "Never touch `engines.node`. It declares the range of runtimes a package SUPPORTS, not a dependency to pin: the global `rangeStrategy: pin` rewrites it to the exact version Renovate happened to run on, which warns on install for every consumer on another Node and hard-fails under `engine-strict`.",
+      "matchDepTypes": ["engines"],
+      "enabled": false
     },
     {
+      "description": "Patch and minor bumps merge on their own once CI is green. These are the ones `release.yml` turns into an automatic patch release.",
+      "matchDepTypes": ["dependencies", "devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true,
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Majors are reviewed by hand, and merging one by hand means no automatic release either.",
       "matchDepTypes": ["dependencies", "devDependencies"],
       "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "A peer range is the compatibility window this package advertises. Widen it rather than pinning it, and never without a human deciding the window is really that wide.",
+      "matchDepTypes": ["peerDependencies"],
+      "rangeStrategy": "widen",
       "automerge": false
     }
   ],
@@ -18,5 +32,5 @@
     "enabled": true,
     "automerge": true
   },
-  "ignorePaths": ["**/dist/**", "**/node_modules/**", "**/.next/**"]
+  "ignorePaths": ["**/dist/**", "**/node_modules/**", "**/.next/**", "**/build/**"]
 }
