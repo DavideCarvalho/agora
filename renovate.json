@@ -44,6 +44,12 @@
       "groupName": "ai sdk"
     },
     {
+      "description": "typescript-eslint gates the TypeScript that adonis-agora-durable's eslint-plugin package can use: its latest release, 8.70.0, declares `typescript: >=4.8.4 <6.1.0` and throws `typescript-eslint does not support TS 7.0` at run time. Scoped by path, so it is inert in every repo without that file. Lift it once typescript-eslint ships TS 7 support.",
+      "matchFileNames": ["packages/eslint-plugin/package.json"],
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<6.1.0"
+    },
+    {
       "description": "A peer range is the compatibility window this package advertises. Widen it rather than pinning it, and never without a human deciding the window is really that wide.",
       "matchDepTypes": ["peerDependencies"],
       "rangeStrategy": "widen",
