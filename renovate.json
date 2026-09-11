@@ -29,6 +29,12 @@
       "automergeStrategy": "squash"
     },
     {
+      "description": "changesets/action v2 refuses to run against Changesets CLI v2, which is what this repo has: it exits with `This version of the Changesets action is designed to work with Changesets CLI v3`. The action major is blocked until `@changesets/cli` is on v3, and a PR for it would look safe because no CI job exercises the release path.",
+      "matchPackageNames": ["changesets/action"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "A peer range is the compatibility window this package advertises. Widen it rather than pinning it, and never without a human deciding the window is really that wide.",
       "matchDepTypes": ["peerDependencies"],
       "rangeStrategy": "widen",
