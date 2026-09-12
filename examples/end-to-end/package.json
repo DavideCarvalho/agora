@@ -46,7 +46,7 @@
     "@types/alpinejs": "3.13.11",
     "@types/luxon": "3.7.5",
     "@types/node": "25.9.5",
-    "alpinejs": "3.17.1",
+    "alpinejs": "3.17.2",
     "eslint": "10.10.0",
     "hot-hook": "0.4.1-next.4",
     "pino-pretty": "13.1.3",
