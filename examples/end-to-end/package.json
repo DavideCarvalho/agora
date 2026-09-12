@@ -69,7 +69,7 @@
     "@adonisjs/session": "8.1.0",
     "@adonisjs/shield": "9.0.0",
     "@adonisjs/static": "2.0.1",
-    "@adonisjs/vite": "5.1.1",
+    "@adonisjs/vite": "6.0.2",
     "@vinejs/vine": "4.4.0",
     "better-sqlite3": "12.11.1",
     "edge.js": "6.5.1",
