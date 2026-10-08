@@ -1,6 +1,6 @@
 # Generative UI: native vs CopilotKit vs OpenUI
 
-One AdonisJS 7 agent ([`@adonis-agora/agent`](https://www.npmjs.com/package/@adonis-agora/agent) 0.66.0),
+One AdonisJS 7 agent ([`@adonis-agora/agent`](https://www.npmjs.com/package/@adonis-agora/agent) 0.66.1),
 three pages that drive it with three different frontends, and the same generative-UI tasks on each:
 
 | Page | Frontend | Talks to |
