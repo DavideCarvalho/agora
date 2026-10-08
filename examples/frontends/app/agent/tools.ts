@@ -1,19 +1,35 @@
 import { defineTool } from '@adonis-agora/agent'
 import { z } from 'zod'
-import { OrderList } from '#genui/catalog'
 import { formatCents, listOrders, refundOrder, revenueByMonth } from '#agent/orders'
+import { openSlot } from '#agent/ui_slot'
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
- * 1. A tool-driven component. `present` turns the result into `OrderList` — drawn by a client that
- * can, sent as its `fallbackText` to one that cannot.
+ * 1. A tool-driven component, with its skeleton. The tool knows it will show `OrderList` before it
+ * reads, so it pushes the list's loading state at once and the rows under the same `id` when the
+ * (deliberately slow) read returns — drawn by a client that declared `OrderList`, sent as its
+ * `fallbackText` to one that did not. No orders ends the skeleton as `empty`, a failed read as
+ * `error`: a skeleton is never left standing.
  */
 export const listOrdersTool = defineTool({
   name: 'list_orders',
   kind: 'read',
   description: 'List the customer’s recent orders.',
   input: z.object({}),
-  execute: async () => ({ orders: listOrders() }),
-  present: ({ orders }) => OrderList({ orders }),
+  execute: async (_input, ctx) => {
+    const slot = await openSlot(ctx, 'OrderList', 'Your orders')
+    try {
+      await sleep(1500) // a slow query, so the skeleton is visible
+      const orders = listOrders()
+      if (orders.length === 0) await slot.settle('empty')
+      else await slot.show({ orders })
+      return { orders }
+    } catch (error) {
+      await slot.settle('error').catch(() => {})
+      throw error
+    }
+  },
 })
 
 /**

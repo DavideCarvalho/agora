@@ -10,7 +10,7 @@ import {
 import { GenerativeUI } from '@adonis-agora/agent/react/genui'
 import { catalog } from '#genui/catalog'
 import { Shell } from '../shared/shell.js'
-import { AgentActions, registry } from '../shared/renderers.js'
+import { AgentActions, heldPlaceholder, registry } from '../shared/renderers.js'
 import { onScenario } from '../shared/scenarios.js'
 
 // What this page can draw: the server sends anything else as its text instead.
@@ -21,8 +21,9 @@ const uiCapabilities = {
 function NativePage() {
   return (
     <Shell current="/native" subtitle="@adonis-agora/agent/react over the native stream">
-      {/* Session cookie + shield CSRF header on every request: nothing to configure. */}
-      <AgentProvider genui={{ registry, catalog }} uiCapabilities={uiCapabilities}>
+      {/* Session cookie + shield CSRF header on every request: nothing to configure.
+          `placeholder`: what a tree node held back while the model writes it (the chart) draws. */}
+      <AgentProvider genui={{ registry, catalog, placeholder: heldPlaceholder }} uiCapabilities={uiCapabilities}>
         <Native />
       </AgentProvider>
     </Shell>
@@ -72,12 +73,7 @@ function Native() {
 }
 
 function Chat(props: { threadId?: string; onThreadCreated: (id: string) => void }) {
-  // `proposals: false`: this app uses blocking approvals, where the proposal routes answer 501.
-  const chat = useAgentChat({
-    threadId: props.threadId,
-    onThreadCreated: props.onThreadCreated,
-    proposals: false,
-  })
+  const chat = useAgentChat({ threadId: props.threadId, onThreadCreated: props.onThreadCreated })
   const { transcript, composer } = chat
   const send = (text: string) => void chat.sendMessage({ text })
 
@@ -128,6 +124,7 @@ function Block({ block }: { block: TranscriptBlock }) {
       return <details data-testid="reasoning"><summary>Reasoning</summary>{block.text}</details>
     case 'ui':
       // The registry renderer, validated against the catalog; its fallbackText if it can't draw.
+      // A tree the model is still writing (`partial`) draws too, node by node, with skeletons.
       return <GenerativeUI part={block} />
     case 'tools':
       return block.calls.map((call) => <ToolCall key={call.toolCallId} call={call} />)

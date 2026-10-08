@@ -47,9 +47,12 @@ export default defineConfig({
   // No `actorResolver`: every browser is its own anonymous actor (an HttpOnly `agent_anon` cookie).
   // Shield still checks CSRF on every POST — see config/shield.ts.
 
-  // Tree mode: besides the components tools push, the model can compose any catalog component,
-  // nested, through one `ui__render` tool — validated node by node against the catalog.
-  genui: genui({ catalog, mode: 'tree' }),
+  // Tree mode (the default): besides the components tools push, the model composes the catalog's
+  // components, nested, through one `ui__render` tool — validated node by node against the catalog.
+  // `streaming: 'partial'` draws the tree while the model writes it: the page's renderers draw
+  // skeletons for nodes still being written (`useGenuiNode()`), and the chart, which streams
+  // `complete` (app/genui/catalog.ts), is a placeholder until its props are whole.
+  genui: genui({ catalog, streaming: 'partial' }),
   adapters: [agUiAdapter()], // POST /agent/ag-ui — what the CopilotKit and OpenUI pages talk to
 
   tools: [listOrdersTool, revenueTool, refundOrderTool],

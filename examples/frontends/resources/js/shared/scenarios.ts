@@ -1,10 +1,10 @@
 /** The same prompts on every page. The scripted model keys off these words. */
 export const scenarios = [
-  { id: 'orders', label: '1. Orders table (tool → component)', prompt: 'Show my recent orders' },
+  { id: 'orders', label: '1. Orders table (tool → skeleton → rows)', prompt: 'Show my recent orders' },
   { id: 'revenue', label: '2. Revenue chart (progressive)', prompt: 'Chart revenue by month' },
   {
     id: 'dashboard',
-    label: '3. Dashboard (model-composed)',
+    label: '3. Dashboard (model-composed, streamed)',
     prompt: 'Show a dashboard with a chart of revenue by month plus the top 3 orders',
   },
   { id: 'invalid', label: '7. Invalid props (pie chart)', prompt: 'Show order statuses as a pie chart' },

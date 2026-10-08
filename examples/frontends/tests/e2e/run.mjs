@@ -16,8 +16,10 @@ await mkdir(shots, { recursive: true })
 await mkdir(output, { recursive: true })
 
 const pages = {
-  native: { newChat: '.threads .new', dashMid: 'text=Here is your dashboard.', midSelector: 'text=loading 2/6', langDelay: 0 },
-  copilotkit: { newChat: '.threads .new', dashMid: 'text=Sales dashboard', midSelector: 'text=loading 2/6', langDelay: 0 },
+  // `dashMid`: the dashboard while the model is still writing it — on the native page, the streamed
+  // tree with the chart still a placeholder. `ordersLoading`: the orders table before its rows.
+  native: { newChat: '.threads .new', dashMid: '[data-testid="chart-skeleton"]', midSelector: 'text=loading 2/6', ordersLoading: '[data-testid="order-list-skeleton"]', langDelay: 0 },
+  copilotkit: { newChat: '.threads .new', dashMid: 'text=Sales dashboard', midSelector: 'text=loading 2/6', ordersLoading: 'text=Looking up orders…', langDelay: 0 },
   openui: { newChat: 'text=New Chat', dashMid: '.openui-agent-thread-container >> text=Sales dashboard', midSelector: 'text=Called the revenue_by_month tool', midWait: 1700, langDelay: 3000 },
 }
 
@@ -32,7 +34,7 @@ for (const [name, cfg] of Object.entries(pages)) {
   page.on('console', (m) => m.type() === 'error' && log.push(`console: ${m.text().slice(0, 200)}`))
   const r = (results[name] = { log })
   const text = async () => (await page.innerText('main')).replace(/\s+/g, ' ')
-  const shot = (file) => page.screenshot({ path: `${shots}${name}-${file}.png` })
+  const shot = (file) => page.screenshot({ path: `${shots}${name}-${file}.png`, timeout: 90000 })
   const scenario = async (id) => page.click(`[data-scenario="${id}"]`)
   const newChat = async () => {
     await page.click(cfg.newChat)
@@ -64,6 +66,7 @@ for (const [name, cfg] of Object.entries(pages)) {
   await page.waitForSelector(cfg.dashMid, { timeout: 15000 }).catch(() => log.push('dashboard mid missed'))
   await shot('3-dashboard-mid')
   r.dashboardMid = await text()
+  r.dashboardMidSkeletons = await page.locator('[data-genui-skeleton]').count()
   await page.waitForTimeout(4000 + cfg.langDelay)
   await shot('3-dashboard')
   r.dashboard = await text()
@@ -78,7 +81,15 @@ for (const [name, cfg] of Object.entries(pages)) {
   // 1. Tool-driven component, then 4. its Refund buttons → approval.
   await newChat()
   await scenario('orders')
-  await page.waitForTimeout(3500 + cfg.langDelay)
+  if (cfg.ordersLoading) {
+    await page.waitForSelector(cfg.ordersLoading, { timeout: 15000 }).catch(() => log.push('orders loading missed'))
+    await shot('1-orders-loading')
+    r.ordersLoading = await text()
+  }
+  // The read takes 1.5 s (list_orders), then OpenUI's model writes the list.
+  await page.waitForSelector('[data-testid="order-list"]', { timeout: 20000 }).catch(() => log.push('order list missed'))
+  await page.waitForTimeout(1500 + cfg.langDelay)
+  r.skeletonsAfterOrders = await page.locator('[data-genui-skeleton]').count()
   await shot('1-orders')
   r.orders = await text()
 
@@ -106,6 +117,7 @@ for (const [name, cfg] of Object.entries(pages)) {
   await page.waitForTimeout(3500)
   r.afterReloadUrl = page.url()
   r.afterReload = await text()
+  r.skeletonsAfterReload = await page.locator('[data-genui-skeleton]').count()
   if (name === 'openui') {
     await page.click('text=Show my recent orders')
     await page.waitForTimeout(2500)

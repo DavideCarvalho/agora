@@ -13,3 +13,25 @@ body { font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; color: 
 .kpi { border: 1px solid #e3e6ea; border-radius: 8px; padding: 6px 12px; display: flex; flex-direction: column; background: #fafbfc; }
 .kpi span { font-size: 12px; color: #666; } .kpi strong { font-size: 18px; } .trend-up { color: #1a7f37; font-style: normal; }
 .callout { border-radius: 8px; padding: 8px 12px; background: #eef4ff; } .callout-success { background: #e9f8ec; } .callout-warning, .callout-danger { background: #fff4e5; }
+
+/*
+ * Skeletons (renderers.tsx): blocks one step darker than the card they sit on, the same footprint
+ * as the component that replaces them, a shimmer only for users who have not asked for reduced
+ * motion. The container is `aria-busy` and announces "Loading…" once; the blocks are decoration.
+ */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skeleton-bar { --shimmer: rgba(255, 255, 255, 0.7); display: block; position: relative; overflow: hidden; height: 12px; min-width: 40px; border-radius: 4px; background: #e2e6eb; }
+.skeleton-title { width: 160px; height: 14px; margin: 2px 0 8px; }
+.skeleton-label { width: 56px; height: 10px; margin: 3px 0 6px; }
+.skeleton-value { width: 72px; height: 18px; }
+.skeleton-plot { height: 158px; width: 360px; border-radius: 6px; background: linear-gradient(to top, #e2e6eb 1px, transparent 1px) 0 140px / 100% 1px no-repeat, #f3f5f7; }
+.genui-ended { margin: 6px 0; padding: 6px 10px; border-radius: 6px; background: #f3f5f7; color: #555; }
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-bar::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, var(--shimmer), transparent);
+    transform: translateX(-100%);
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+@keyframes skeleton-shimmer { to { transform: translateX(100%); } }
