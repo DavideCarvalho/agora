@@ -1,0 +1,15 @@
+/* Styles of the catalog renderers (resources/js/shared/renderers.tsx) — also used by the server renderer (scripts/non_visual.tsx). */
+body { font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; color: #1f2328; }
+.status { padding: 1px 7px; border-radius: 10px; font-size: 12px; background: #eee; }
+.status-paid { background: #fff3c4; } .status-shipped { background: #d7f5dd; } .status-refunded { background: #f9d7d7; }
+.genui-table { border-collapse: collapse; margin: 6px 0; background: #fff; font-size: 13px; }
+.genui-table th, .genui-table td { border: 1px solid #e3e6ea; padding: 5px 10px; text-align: left; }
+.genui-table th { background: #f3f5f7; }
+.genui-table button { padding: 2px 8px; border: 1px solid #e0a0a0; background: #fff5f5; border-radius: 5px; cursor: pointer; }
+.genui-block { margin: 6px 0; } .genui-block figcaption { font-weight: 600; margin-bottom: 4px; }
+.genui-card { border: 1px solid #d5d9de; border-radius: 10px; padding: 10px 14px; background: #fff; }
+.genui-card h3 { margin: 0 0 6px; } .genui-card small { font-weight: normal; color: #777; }
+.kpis { display: flex; gap: 10px; margin: 6px 0; }
+.kpi { border: 1px solid #e3e6ea; border-radius: 8px; padding: 6px 12px; display: flex; flex-direction: column; background: #fafbfc; }
+.kpi span { font-size: 12px; color: #666; } .kpi strong { font-size: 18px; } .trend-up { color: #1a7f37; font-style: normal; }
+.callout { border-radius: 8px; padding: 8px 12px; background: #eef4ff; } .callout-success { background: #e9f8ec; } .callout-warning, .callout-danger { background: #fff4e5; }

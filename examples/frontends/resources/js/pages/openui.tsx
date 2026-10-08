@@ -11,12 +11,12 @@ import {
   type ChatStorage,
   type StreamProtocolAdapter,
 } from '@openuidev/react-ui'
-import { openuiChatLibrary } from '@openuidev/react-ui/genui-lib'
 import '@openuidev/react-ui/styles/index.css'
 import { Shell } from '../shared/shell'
 import { onScenario } from '../shared/scenarios'
 import { csrfFetch } from '../shared/csrf'
 import { listThreads, threadMessages } from '../shared/agora_rest'
+import { library } from '../shared/openui_library'
 
 /**
  * OpenUI over `POST /agent/ag-ui`. Generative UI here is text: the server adds the library's
@@ -112,7 +112,7 @@ function OpenUiPage() {
   return (
     <Shell current="/openui" subtitle="OpenUI 0.17 AgentInterface → POST /agent/ag-ui">
       <div className="openui-frame" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-        <AgentInterface llm={llm} storage={storage} componentLibrary={openuiChatLibrary} agentName="Orders assistant" theme={{ mode: 'light' }}>
+        <AgentInterface llm={llm} storage={storage} componentLibrary={library} agentName="Orders assistant" theme={{ mode: 'light' }}>
           <AgentInterface.Sidebar>
             <AgentInterface.SidebarHeader />
             <AgentInterface.NewChatButton />

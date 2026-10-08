@@ -78,8 +78,8 @@ for (const [name, cfg] of Object.entries(pages)) {
   await shot('1-orders')
   r.orders = await text()
 
-  const refund = (id) =>
-    name === 'openui' ? page.click(`button:has-text("Refund #${id}")`) : page.click(`[data-testid="refund-${id}"]`)
+  // The same app component on every page — on OpenUI as a custom library component.
+  const refund = (id) => page.locator(`[data-testid="refund-${id}"]`).last().click()
   await refund('1002')
   await page.waitForTimeout(2500)
   await shot('4-approval')

@@ -22,6 +22,7 @@ import { OPENUI_PROMPT_MARKER } from '#agent/openui_prompt'
  */
 export class ScriptedOrdersModel implements ModelProvider {
   async runTurn(args: ModelTurnArgs): Promise<ModelTurnResult> {
+    if (process.env.DEBUG_TOOLS) dumpTools(args)
     const turn = readTurn(args.messages)
     const openui = args.system.includes(OPENUI_PROMPT_MARKER)
     const plan = openui ? openUiScript(turn) : nativeScript(turn)
@@ -301,21 +302,15 @@ function openUiScript(turn: Turn): Plan {
     if (!listed) {
       return { text: 'Let me look up your orders.', toolCalls: [{ name: 'list_orders', input: {} }] }
     }
+    // The app's own component (resources/js/shared/openui_library.tsx), with its Refund buttons.
     const orders = (listed.output as { orders: Order[] }).orders
-    const refundable = orders.filter((o) => o.status !== 'refunded')
+    const rows = orders.map(
+      (o) => `{id: ${q(o.id)}, customer: ${q(o.customer)}, totalCents: ${o.totalCents}, status: ${q(o.status)}}`
+    )
     return lang([
-      'root = Card([header, table, actions])',
+      'root = Card([header, list])',
       `header = CardHeader("Your orders", "${orders.length} orders")`,
-      'table = Table([Col("Order", ids), Col("Customer", customers), Col("Total", totals), Col("Status", statuses)])',
-      `ids = ${arr(orders.map((o) => `#${o.id}`))}`,
-      `customers = ${arr(orders.map((o) => o.customer))}`,
-      `totals = ${arr(orders.map((o) => formatCents(o.totalCents)))}`,
-      `statuses = ${arr(orders.map((o) => o.status))}`,
-      `actions = Buttons([${refundable.map((_, i) => `b${i}`).join(', ')}])`,
-      ...refundable.map(
-        (o, i) =>
-          `b${i} = Button(${q(`Refund #${o.id}`)}, Action([@ToAssistant(${q(`Refund order #${o.id}`)})]), "secondary", "destructive")`
-      ),
+      `list = OrderList([${rows.join(', ')}])`,
     ])
   }
 
@@ -342,4 +337,17 @@ function lines(text: string): string[] {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/** `DEBUG_TOOLS=1`: what this turn put in front of the model (used for the token-cost row). */
+function dumpTools(args: ModelTurnArgs) {
+  const tools = args.tools.map((tool) => {
+    const standard = (tool.inputSchema as any)?.['~standard']
+    const schema = standard?.jsonSchema?.input?.({ target: 'draft-2020-12' }) ?? null
+    return { name: tool.name, description: tool.description, schema }
+  })
+  console.log(`[scripted] system=${args.system.length} chars tools=${JSON.stringify(tools).length} chars: ${tools.map((t) => t.name).join(',')}`)
+  if (process.env.DEBUG_TOOLS === 'dump') {
+    void import('node:fs').then((fs) => fs.writeFileSync('tmp/turn-dump.json', JSON.stringify({ system: args.system, tools }, null, 1)))
+  }
 }
