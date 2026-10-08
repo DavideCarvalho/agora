@@ -28,7 +28,7 @@ export const rows: Row[] = [
   {
     id: '2',
     capability: 'Progressive render',
-    native: { status: 'built-in', note: 'A push under the same `id` replaces in place (placeholder → 6 updates). A `ui__render` layout appears only once the call ran — nothing is drawn while the model writes it.' },
+    native: { status: 'built-in', note: 'A push under the same `id` replaces in place (placeholder, then 5 updates). A `ui__render` layout appears only once the call ran — nothing is drawn while the model writes it.' },
     copilotkit: { status: 'glue', note: 'Tool pushes: 20 lines to read the `agora.ui` events CopilotKit ignores. Model-written layouts: built in — render gets partially parsed arguments while they stream.' },
     openui: { status: 'built-in', note: 'Each OpenUI Lang statement renders as it arrives, with placeholders for what is not written yet. Tool pushes: not possible (CUSTOM events ignored).' },
   },

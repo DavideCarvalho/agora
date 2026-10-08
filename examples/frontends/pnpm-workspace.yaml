@@ -5,6 +5,10 @@ allowBuilds:
   better-sqlite3: true
   esbuild: true
   '@swc/core': true
+  # Install-time telemetry: OpenUI's lang-core postinstall pings PostHog, @scarf/scarf (a
+  # CopilotKit dependency) reports installs. Neither is needed to build or run.
+  '@openuidev/lang-core': false
+  '@scarf/scarf': false
 minimumReleaseAgeExclude:
   - '@adonis-agora/agent@0.64.1'
   - '@ai-sdk/gateway@4.0.108'
@@ -17,7 +21,6 @@ minimumReleaseAgeExclude:
   - '@copilotkit/core@1.77.1'
   - '@copilotkit/mcp-apps-renderer@1.77.1'
   - '@copilotkit/react-core@1.77.1'
-  - '@copilotkit/react-ui@1.77.1'
   - '@copilotkit/runtime-client-gql@1.77.1'
   - '@copilotkit/shared@1.77.1'
   - '@copilotkit/web-components@1.77.1'
