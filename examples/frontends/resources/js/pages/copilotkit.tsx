@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo, useState } from 'react'
+import { StrictMode, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   CopilotChat,
@@ -14,14 +14,14 @@ import '@copilotkit/react-core/v2/styles.css'
 import { Observable } from 'rxjs'
 import { z } from 'zod'
 import { Shell } from '../shared/shell'
-import { OrderList, type OrderRow } from '../shared/order_list'
+import { AgentActions, Chart, OrderList, registry, type OrderRow } from '../shared/renderers'
 import { onScenario } from '../shared/scenarios'
 import { csrfFetch } from '../shared/csrf'
-import { cancelRun, listThreads, threadMessages, type ThreadSummary } from '../shared/agora_rest'
+import { listThreads, threadMessages, type ThreadSummary } from '../shared/agora_rest'
 
 /**
- * GLUE (threads): `HttpAgent.connect` is not implemented, so a CopilotChat opened on an existing
- * `threadId` shows nothing. Load the thread over the REST route and replay it as a snapshot.
+ * GLUE (persistence, 13 lines): `HttpAgent.connect` is not implemented, so a CopilotChat opened on
+ * an existing `threadId` shows nothing. Load the thread over the REST route and replay it.
  */
 class AgoraHttpAgent extends HttpAgent {
   protected connect(input: Parameters<HttpAgent['run']>[0]): Observable<any> {
@@ -38,29 +38,29 @@ class AgoraHttpAgent extends HttpAgent {
 }
 
 function CopilotKitPage() {
-  const [threadId, setThreadId] = useState(() => new URLSearchParams(location.search).get('thread') ?? crypto.randomUUID())
-  // `fetch` override: the session cookie rides by default; the CSRF header has to be added.
+  const [threadId, setThreadId] = useState(
+    () => new URLSearchParams(location.search).get('thread') ?? crypto.randomUUID()
+  )
+  // `fetch` override: the session cookie rides by default; shield's CSRF header has to be added.
   const agent = useMemo(() => new AgoraHttpAgent({ url: '/agent/ag-ui', fetch: csrfFetch }), [])
-  const open = (id: string) => {
-    history.replaceState(null, '', `?thread=${id}`)
-    setThreadId(id)
-  }
   useEffect(() => history.replaceState(null, '', `?thread=${threadId}`), [threadId])
 
   return (
     <Shell current="/copilotkit" subtitle="CopilotKit 1.77 (v2 API) → POST /agent/ag-ui">
       <CopilotKitProvider agents__unsafe_dev_only={{ default: agent }} enableInspector={false}>
-        <Threads current={threadId} onOpen={open} />
+        <Threads current={threadId} onOpen={setThreadId} />
         <Renderers />
-        <div className="copilot-chat" style={{ flex: 1, minWidth: 0 }}>
-          <CopilotChat threadId={threadId} attachments={{ enabled: true, accept: 'image/*,application/pdf,text/plain' }} />
-        </div>
+        <ActionsBridge>
+          <div className="copilot-chat" style={{ flex: 1, minWidth: 0 }}>
+            <CopilotChat threadId={threadId} />
+          </div>
+        </ActionsBridge>
       </CopilotKitProvider>
     </Shell>
   )
 }
 
-/** GLUE (threads): CopilotKit's own thread list needs its hosted Intelligence platform. */
+/** GLUE (thread list): CopilotKit's own thread list needs its hosted Intelligence platform. */
 function Threads(props: { current: string; onOpen: (id: string) => void }) {
   const [threads, setThreads] = useState<ThreadSummary[]>([])
   const { agent } = useAgent()
@@ -71,9 +71,16 @@ function Threads(props: { current: string; onOpen: (id: string) => void }) {
   }, [agent])
   return (
     <nav className="threads" aria-label="Threads">
-      <button type="button" className="new" onClick={() => props.onOpen(crypto.randomUUID())}>+ New chat</button>
+      <button type="button" className="new" onClick={() => props.onOpen(crypto.randomUUID())}>
+        + New chat
+      </button>
       {threads.map((thread) => (
-        <button key={thread.id} type="button" aria-current={thread.id === props.current} onClick={() => props.onOpen(thread.id)}>
+        <button
+          key={thread.id}
+          type="button"
+          aria-current={thread.id === props.current}
+          onClick={() => props.onOpen(thread.id)}
+        >
           {thread.title || 'New chat'}
         </button>
       ))}
@@ -81,87 +88,107 @@ function Threads(props: { current: string; onOpen: (id: string) => void }) {
   )
 }
 
-function Renderers() {
+/** A component's buttons send the next user turn: CopilotKit's agent API, wrapped for the renderers. */
+function ActionsBridge({ children }: { children: ReactNode }) {
   const { agent } = useAgent()
   const { copilotkit } = useCopilotKit()
+  const send = (text: string) => {
+    agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: text })
+    void copilotkit.runAgent({ agent })
+  }
+  useEffect(() => onScenario(send), [agent, copilotkit])
+  return <AgentActions.Provider value={{ send }}>{children}</AgentActions.Provider>
+}
 
-  // Generative UI the CopilotKit way: render the tool CALL from its result.
+/**
+ * GLUE (progressive render, 12 lines): the server's `agora.ui` custom events carry each push of a
+ * component, keyed by the tool call that made it. CopilotKit ignores them; keep the latest per call.
+ */
+function usePushes() {
+  const { agent } = useAgent()
+  const [pushes, setPushes] = useState<Record<string, { component: string; props: any }>>({})
+  useEffect(() => {
+    const sub = agent.subscribe({
+      onCustomEvent: ({ event }) => {
+        if (event.name !== 'agora.ui') return
+        const push = event.value as { toolCallId?: string; component: string; props: unknown }
+        if (push.toolCallId) setPushes((all) => ({ ...all, [push.toolCallId!]: push as any }))
+      },
+    })
+    return () => sub.unsubscribe()
+  }, [agent])
+  return pushes
+}
+
+/**
+ * GLUE (composed layouts, 9 lines): `ui__render`'s input is the library's `{ type, props, children }`
+ * tree. CopilotKit renders a tool call, not a tree, so walk it with the same renderers. No client
+ * validation here — the server already validated it (an invalid tree is a failed call).
+ */
+function Tree({ node }: { node: any }): ReactNode {
+  const Component = (registry as Record<string, (props: any) => ReactNode>)[node?.type]
+  if (!Component) return null
+  return (
+    <Component {...node.props}>
+      {(node.children ?? []).map((child: any, i: number) => <Tree key={i} node={child} />)}
+    </Component>
+  )
+}
+
+const parse = (result: unknown) => (typeof result === 'string' ? JSON.parse(result) : result)
+
+function Renderers() {
+  const pushes = usePushes()
+
+  // Generative UI the CopilotKit way: render a tool CALL — from its arguments while it runs, from
+  // its result once it lands (which is also what a reloaded thread has).
   useRenderTool({
     name: 'list_orders',
     parameters: z.object({}),
     render: ({ result }) =>
-      result ? <OrderList orders={(JSON.parse(String(result)) as { orders: OrderRow[] }).orders} /> : <p>Looking up orders…</p>,
+      result ? <OrderList orders={(parse(result) as { orders: OrderRow[] }).orders} /> : <p>Looking up orders…</p>,
+  })
+  useRenderTool({
+    name: 'revenue_by_month',
+    parameters: z.object({}),
+    render: ({ toolCallId, result }) => {
+      const live = pushes[toolCallId]
+      if (live) return <Chart {...live.props} />
+      if (!result) return <p>Loading revenue…</p>
+      const { months } = parse(result) as { months: Array<{ month: string; revenue: number }> }
+      return <Chart type="line" title="Revenue by month" xKey="month" series={[{ key: 'revenue' }]} data={months} />
+    },
+  })
+  useRenderTool({
+    name: 'ui__render',
+    parameters: z.any(),
+    render: ({ parameters, result, status }) => {
+      if (status === 'complete' && typeof result === 'string' && /error|invalid/i.test(result) && !result.startsWith('{"ok'))
+        return <p className="error">ui__render refused: {result.slice(0, 160)}</p>
+      return <Tree node={parameters} />
+    },
   })
   useDefaultRenderTool() // every other tool call: CopilotKit's built-in card
 
-  // Approvals and questions: the server ends the run with an AG-UI interrupt; `resolve` resumes it.
+  // The refund approval: the server ends the run with an AG-UI interrupt; `resolve` resumes it.
   useInterrupt({
-    render: ({ interrupt, resolve, cancel }) => {
-      if (!interrupt) return <></>
-      if (interrupt.reason === 'tool_approval') {
-        return (
-          <div className="card" data-testid="approval">
-            <strong>{interrupt.message ?? 'Approve?'}</strong>
-            <p>{JSON.stringify(interrupt.metadata?.['agora.input'])}</p>
-            <button type="button" className="primary" onClick={() => resolve({ approved: true }, interrupt.id)}>Approve</button>
-            <button type="button" onClick={() => resolve({ approved: false }, interrupt.id)}>Reject</button>
-          </div>
-        )
-      }
-      // `input_required`: the question set. The options are in the interrupt's JSON Schema.
-      const schema = interrupt.responseSchema as any
-      const questions = Object.entries<any>(schema?.properties?.answers?.properties ?? {})
-      return (
-        <div className="card" data-testid="elicitation">
-          {questions.map(([id, question]) => (
-            <div key={id}>
-              <strong>{question.title}</strong>
-              <div>
-                {(question.items?.enum ?? []).map((value: string) => (
-                  <button key={value} type="button" className="option" onClick={() => resolve({ answers: { [id]: [value] } }, interrupt.id)}>
-                    {value}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-          <button type="button" onClick={() => cancel(interrupt.id)}>Skip</button>
+    render: ({ interrupt, resolve }) =>
+      interrupt ? (
+        <div className="card" data-testid="approval">
+          <strong>{interrupt.message ?? 'Approve?'}</strong>
+          <p>
+            <button type="button" className="primary" onClick={() => resolve({ approved: true }, interrupt.id)}>
+              Approve
+            </button>
+            <button type="button" onClick={() => resolve({ approved: false }, interrupt.id)}>
+              Reject
+            </button>
+          </p>
         </div>
-      )
-    },
+      ) : (
+        <></>
+      ),
   })
-
-  // GLUE (cancel): Stop only aborts the fetch. Remember the server's run id (the `agora.run`
-  // custom event) and cancel it through the native route when the run is aborted.
-  useEffect(() => {
-    let runId: string | null = null
-    const sub = agent.subscribe({
-      onCustomEvent: ({ event }) => {
-        if (event.name === 'agora.run') runId = (event.value as { runId: string }).runId
-      },
-      onRunFailed: () => void (runId && cancelRun(runId)),
-      onRunFinalized: () => void (runId = null),
-    })
-    const abort = agent.abortRun.bind(agent)
-    agent.abortRun = () => {
-      if (runId) void cancelRun(runId)
-      abort()
-    }
-    return () => {
-      sub.unsubscribe()
-      agent.abortRun = abort
-    }
-  }, [agent])
-
-  // The shell's scenario buttons.
-  useEffect(
-    () =>
-      onScenario((prompt) => {
-        agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: prompt })
-        void copilotkit.runAgent({ agent })
-      }),
-    [agent, copilotkit]
-  )
   return null
 }
 

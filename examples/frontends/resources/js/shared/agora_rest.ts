@@ -64,7 +64,7 @@ export async function threadMessages(threadId: string): Promise<AgUiMessage[]> {
   })
 }
 
-/** AG-UI has no cancel request: stop the server-side run through the native route. */
+
 export async function cancelRun(runId: string): Promise<void> {
   await csrfFetch(`/agent/chat/${encodeURIComponent(runId)}/cancel`, { method: 'POST' })
 }

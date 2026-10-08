@@ -72,7 +72,12 @@ function Native() {
 }
 
 function Chat(props: { threadId?: string; onThreadCreated: (id: string) => void }) {
-  const chat = useAgentChat({ threadId: props.threadId, onThreadCreated: props.onThreadCreated })
+  // `proposals: false`: this app uses blocking approvals, where the proposal routes answer 501.
+  const chat = useAgentChat({
+    threadId: props.threadId,
+    onThreadCreated: props.onThreadCreated,
+    proposals: false,
+  })
   const { transcript, composer } = chat
   const send = (text: string) => void chat.sendMessage({ text })
 
