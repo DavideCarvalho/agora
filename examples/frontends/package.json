@@ -42,7 +42,7 @@
     "@adonisjs/session": "8.1.0",
     "@adonisjs/shield": "9.0.0",
     "@adonisjs/static": "2.0.1",
-    "@adonisjs/vite": "5.1.1",
+    "@adonisjs/vite": "6.0.3",
     "@ai-sdk/openai": "4.0.89",
     "@ai-sdk/react": "4.0.136",
     "@copilotkit/react-core": "1.77.1",
