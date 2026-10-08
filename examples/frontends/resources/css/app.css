@@ -64,3 +64,5 @@ body { font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; color: 
 .kpi { border: 1px solid #e3e6ea; border-radius: 8px; padding: 6px 12px; display: flex; flex-direction: column; background: #fafbfc; }
 .kpi span { font-size: 12px; color: #666; } .kpi strong { font-size: 18px; } .trend-up { color: #1a7f37; font-style: normal; }
 .callout { border-radius: 8px; padding: 8px 12px; background: #eef4ff; } .callout-success { background: #e9f8ec; } .callout-warning, .callout-danger { background: #fff4e5; }
+/* OpenUI's AgentInterface sizes itself to the whole viewport (100dvw × 100dvh); fit it in the frame. */
+.openui-frame .openui-agent-container { width: 100%; height: 100%; }

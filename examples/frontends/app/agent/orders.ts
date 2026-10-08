@@ -48,3 +48,8 @@ export const revenueByMonth = [
 export function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`
 }
+
+/** Back to the seeded statuses — the e2e driver calls it before each page. */
+export function resetOrders() {
+  for (const order of initial) orders.set(order.id, { ...order })
+}

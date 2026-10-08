@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { StrictMode, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   CopilotChat,
@@ -101,23 +101,39 @@ function ActionsBridge({ children }: { children: ReactNode }) {
 }
 
 /**
- * GLUE (progressive render, 12 lines): the server's `agora.ui` custom events carry each push of a
- * component, keyed by the tool call that made it. CopilotKit ignores them; keep the latest per call.
+ * GLUE (progressive render, 16 lines): the server's `agora.ui` custom events carry every push of a
+ * component, keyed by the tool call that made it. CopilotKit ignores them: keep the latest per call
+ * in a store, and read it from inside the tool renderer.
  */
-function usePushes() {
+const pushes = new Map<string, { component: string; props: any }>()
+const subscribers = new Set<() => void>()
+function useLivePush(toolCallId: string) {
+  return useSyncExternalStore(
+    (notify) => (subscribers.add(notify), () => void subscribers.delete(notify)),
+    () => pushes.get(toolCallId)
+  )
+}
+function usePushCollector() {
   const { agent } = useAgent()
-  const [pushes, setPushes] = useState<Record<string, { component: string; props: any }>>({})
   useEffect(() => {
     const sub = agent.subscribe({
       onCustomEvent: ({ event }) => {
-        if (event.name !== 'agora.ui') return
         const push = event.value as { toolCallId?: string; component: string; props: unknown }
-        if (push.toolCallId) setPushes((all) => ({ ...all, [push.toolCallId!]: push as any }))
+        if (event.name !== 'agora.ui' || !push.toolCallId) return
+        pushes.set(push.toolCallId, push)
+        subscribers.forEach((notify) => notify())
       },
     })
     return () => sub.unsubscribe()
   }, [agent])
-  return pushes
+}
+
+function RevenueChart({ toolCallId, result }: { toolCallId: string; result: unknown }) {
+  const live = useLivePush(toolCallId)
+  if (live) return <Chart {...live.props} />
+  if (!result) return <p>Loading revenue…</p>
+  const { months } = parse(result) as { months: Array<{ month: string; revenue: number }> }
+  return <Chart type="line" title="Revenue by month" xKey="month" series={[{ key: 'revenue' }]} data={months} />
 }
 
 /**
@@ -138,7 +154,7 @@ function Tree({ node }: { node: any }): ReactNode {
 const parse = (result: unknown) => (typeof result === 'string' ? JSON.parse(result) : result)
 
 function Renderers() {
-  const pushes = usePushes()
+  usePushCollector()
 
   // Generative UI the CopilotKit way: render a tool CALL — from its arguments while it runs, from
   // its result once it lands (which is also what a reloaded thread has).
@@ -151,13 +167,7 @@ function Renderers() {
   useRenderTool({
     name: 'revenue_by_month',
     parameters: z.object({}),
-    render: ({ toolCallId, result }) => {
-      const live = pushes[toolCallId]
-      if (live) return <Chart {...live.props} />
-      if (!result) return <p>Loading revenue…</p>
-      const { months } = parse(result) as { months: Array<{ month: string; revenue: number }> }
-      return <Chart type="line" title="Revenue by month" xKey="month" series={[{ key: 'revenue' }]} data={months} />
-    },
+    render: ({ toolCallId, result }) => <RevenueChart toolCallId={toolCallId} result={result} />,
   })
   useRenderTool({
     name: 'ui__render',

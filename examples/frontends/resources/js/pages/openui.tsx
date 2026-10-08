@@ -111,7 +111,7 @@ function Bridge() {
 function OpenUiPage() {
   return (
     <Shell current="/openui" subtitle="OpenUI 0.17 AgentInterface → POST /agent/ag-ui">
-      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+      <div className="openui-frame" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
         <AgentInterface llm={llm} storage={storage} componentLibrary={openuiChatLibrary} agentName="Orders assistant" theme={{ mode: 'light' }}>
           <AgentInterface.Sidebar>
             <AgentInterface.SidebarHeader />

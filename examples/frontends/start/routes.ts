@@ -1,4 +1,5 @@
 import router from '@adonisjs/core/services/router'
+import app from '@adonisjs/core/services/app'
 
 /**
  * Four pages, one agent. Each page is an Edge shell that mounts one React entry; the chat itself
@@ -13,4 +14,13 @@ const pages = {
 
 for (const [path, page] of Object.entries(pages)) {
   router.get(path, ({ view }) => view.render('page', page))
+}
+
+// Development only: put the demo orders back (tests/e2e/run.mjs calls it before each page).
+if (!app.inProduction) {
+  router.post('/demo/reset', async () => {
+    const { resetOrders } = await import('#agent/orders')
+    resetOrders()
+    return { ok: true }
+  })
 }
