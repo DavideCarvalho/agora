@@ -50,3 +50,5 @@ body { font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; color: 
 .home td.yes { background: #eefaf0; } .home td.glue { background: #fff8e6; } .home td.no { background: #fdeeee; }
 /* OpenUI's AgentInterface sizes itself to the whole viewport (100dvw × 100dvh); fit it in the frame. */
 .openui-frame .openui-agent-container { width: 100%; height: 100%; }
+.home h1 { font-size: 20px; margin: 0 0 8px; } .home p { max-width: 900px; color: #444; }
+.home code { background: #eef1f4; padding: 0 4px; border-radius: 4px; font-size: 12px; }

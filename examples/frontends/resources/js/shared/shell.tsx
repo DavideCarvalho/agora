@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { scenarios, sendScenario } from './scenarios'
+import { scenarios, sendScenario } from './scenarios.js'
 
 const pages = [
   { href: '/', label: 'Matrix' },

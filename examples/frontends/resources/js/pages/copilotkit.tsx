@@ -13,11 +13,11 @@ import {
 import '@copilotkit/react-core/v2/styles.css'
 import { Observable } from 'rxjs'
 import { z } from 'zod'
-import { Shell } from '../shared/shell'
-import { AgentActions, Chart, OrderList, registry, type OrderRow } from '../shared/renderers'
-import { onScenario } from '../shared/scenarios'
-import { csrfFetch } from '../shared/csrf'
-import { listThreads, threadMessages, type ThreadSummary } from '../shared/agora_rest'
+import { Shell } from '../shared/shell.js'
+import { AgentActions, Chart, OrderList, registry, type OrderRow } from '../shared/renderers.js'
+import { onScenario } from '../shared/scenarios.js'
+import { csrfFetch } from '../shared/csrf.js'
+import { listThreads, threadMessages, type ThreadSummary } from '../shared/agora_rest.js'
 
 /**
  * GLUE (persistence, 13 lines): `HttpAgent.connect` is not implemented, so a CopilotChat opened on

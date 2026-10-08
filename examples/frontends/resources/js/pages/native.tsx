@@ -9,9 +9,9 @@ import {
 } from '@adonis-agora/agent/react'
 import { GenerativeUI } from '@adonis-agora/agent/react/genui'
 import { catalog } from '#genui/catalog'
-import { Shell } from '../shared/shell'
-import { AgentActions, registry } from '../shared/renderers'
-import { onScenario } from '../shared/scenarios'
+import { Shell } from '../shared/shell.js'
+import { AgentActions, registry } from '../shared/renderers.js'
+import { onScenario } from '../shared/scenarios.js'
 
 // What this page can draw: the server sends anything else as its text instead.
 const uiCapabilities = {

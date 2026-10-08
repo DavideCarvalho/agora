@@ -114,6 +114,12 @@ for (const [name, cfg] of Object.entries(pages)) {
   await shot('5-reloaded')
   await context.close()
 }
+if (!only) {
+  const page = await browser.newPage({ viewport: { width: 1600, height: 1300 } })
+  await page.goto(`${base}/`)
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${shots}matrix.png` })
+}
 await browser.close()
 await writeFile(`${output}results${only ? `-${only}` : ''}.json`, JSON.stringify(results, null, 2))
 for (const [name, r] of Object.entries(results)) console.log(name, 'errors:', r.log.length, r.log.slice(0, 5))

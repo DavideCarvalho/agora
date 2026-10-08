@@ -1,4 +1,4 @@
-import '../shared/no_openui_devtools'
+import '../shared/no_openui_devtools.js'
 import { StrictMode, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { createRoot } from 'react-dom/client'
@@ -12,11 +12,11 @@ import {
   type StreamProtocolAdapter,
 } from '@openuidev/react-ui'
 import '@openuidev/react-ui/styles/index.css'
-import { Shell } from '../shared/shell'
-import { onScenario } from '../shared/scenarios'
-import { csrfFetch } from '../shared/csrf'
-import { listThreads, threadMessages } from '../shared/agora_rest'
-import { library } from '../shared/openui_library'
+import { Shell } from '../shared/shell.js'
+import { onScenario } from '../shared/scenarios.js'
+import { csrfFetch } from '../shared/csrf.js'
+import { listThreads, threadMessages } from '../shared/agora_rest.js'
+import { library } from '../shared/openui_library.js'
 
 /**
  * OpenUI over `POST /agent/ag-ui`. Generative UI here is text: the server adds the library's

@@ -1,4 +1,4 @@
-import { csrfFetch } from './csrf'
+import { csrfFetch } from './csrf.js'
 
 /**
  * GLUE for the third-party pages: the agent's own REST routes (threads, cancel) that AG-UI has no
