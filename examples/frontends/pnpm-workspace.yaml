@@ -1,0 +1,27 @@
+# Standalone example, intentionally NOT part of the agora Next.js site's pnpm
+# workspace — its own dependency tree and lockfile.
+
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  '@swc/core': true
+minimumReleaseAgeExclude:
+  - '@adonis-agora/agent@0.64.1'
+  - '@ai-sdk/gateway@4.0.108'
+  - '@ai-sdk/mcp@2.0.71'
+  - '@ai-sdk/openai@4.0.89'
+  - '@ai-sdk/provider-utils@5.0.57'
+  - '@ai-sdk/provider@4.0.25'
+  - '@ai-sdk/react@4.0.136'
+  - '@copilotkit/a2ui-renderer@1.77.1'
+  - '@copilotkit/core@1.77.1'
+  - '@copilotkit/mcp-apps-renderer@1.77.1'
+  - '@copilotkit/react-core@1.77.1'
+  - '@copilotkit/react-ui@1.77.1'
+  - '@copilotkit/runtime-client-gql@1.77.1'
+  - '@copilotkit/shared@1.77.1'
+  - '@copilotkit/web-components@1.77.1'
+  - '@copilotkit/web-inspector@1.77.1'
+  - ai@7.0.133
+  - playwright-core@1.64.0
+  - playwright@1.64.0
