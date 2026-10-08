@@ -16,9 +16,9 @@ await mkdir(shots, { recursive: true })
 await mkdir(output, { recursive: true })
 
 const pages = {
-  native: { newChat: '.threads .new', midSelector: 'text=loading 2/6', langDelay: 0 },
-  copilotkit: { newChat: '.threads .new', midSelector: 'text=loading 2/6', langDelay: 0 },
-  openui: { newChat: 'text=New Chat', midSelector: 'text=Called the revenue_by_month tool', midWait: 1700, langDelay: 3000 },
+  native: { newChat: '.threads .new', dashMid: 'text=Here is your dashboard.', midSelector: 'text=loading 2/6', langDelay: 0 },
+  copilotkit: { newChat: '.threads .new', dashMid: 'text=Sales dashboard', midSelector: 'text=loading 2/6', langDelay: 0 },
+  openui: { newChat: 'text=New Chat', dashMid: '.openui-agent-thread-container >> text=Sales dashboard', midSelector: 'text=Called the revenue_by_month tool', midWait: 1700, langDelay: 3000 },
 }
 
 const browser = await chromium.launch()
@@ -60,6 +60,10 @@ for (const [name, cfg] of Object.entries(pages)) {
   // 3. Model-composed dashboard.
   await newChat()
   await scenario('dashboard')
+  // Mid-stream: while the model is still writing the layout (ui__render arguments / OpenUI Lang).
+  await page.waitForSelector(cfg.dashMid, { timeout: 15000 }).catch(() => log.push('dashboard mid missed'))
+  await shot('3-dashboard-mid')
+  r.dashboardMid = await text()
   await page.waitForTimeout(4000 + cfg.langDelay)
   await shot('3-dashboard')
   r.dashboard = await text()

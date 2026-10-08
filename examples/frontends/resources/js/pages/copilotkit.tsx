@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { Component, StrictMode, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   CopilotChat,
@@ -137,17 +137,30 @@ function RevenueChart({ toolCallId, result }: { toolCallId: string; result: unkn
 }
 
 /**
- * GLUE (composed layouts, 9 lines): `ui__render`'s input is the library's `{ type, props, children }`
- * tree. CopilotKit renders a tool call, not a tree, so walk it with the same renderers. No client
- * validation here — the server already validated it (an invalid tree is a failed call).
+ * GLUE (composed layouts, 21 lines): `ui__render`'s input is the library's `{ type, props, children }`
+ * tree. CopilotKit renders a tool call, not a tree, so walk it with the same renderers. While the
+ * model is still writing it, CopilotKit passes the partially parsed arguments: a half-written node
+ * can throw, so each node gets an error boundary. No client-side validation here — the server
+ * validates the finished tree (an invalid one is a failed call).
  */
+class NodeBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    return this.state.failed ? null : this.props.children
+  }
+}
 function Tree({ node }: { node: any }): ReactNode {
-  const Component = (registry as Record<string, (props: any) => ReactNode>)[node?.type]
-  if (!Component) return null
+  const Render = (registry as Record<string, (props: any) => ReactNode>)[node?.type]
+  if (!Render) return null
   return (
-    <Component {...node.props}>
-      {(node.children ?? []).map((child: any, i: number) => <Tree key={i} node={child} />)}
-    </Component>
+    <NodeBoundary key={JSON.stringify(node).length}>
+      <Render {...node.props}>
+        {(node.children ?? []).map((child: any, i: number) => <Tree key={i} node={child} />)}
+      </Render>
+    </NodeBoundary>
   )
 }
 

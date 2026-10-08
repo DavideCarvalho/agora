@@ -46,6 +46,17 @@ export class ScriptedOrdersModel implements ModelProvider {
       name: call.name,
       input: call.input,
     }))
+    // Stream a composed layout's arguments the way `aiSdkModel` relays a real model's tool-input
+    // deltas, so a client that draws from partial arguments can be compared with one that cannot.
+    for (const call of toolCalls.filter((c) => c.name === 'ui__render' && plan.streamArgs)) {
+      const json = JSON.stringify(call.input)
+      await args.sink.write({ t: 'event', event: { kind: 'tool-input-start', id: call.id, name: call.name, toolKind: 'read' } })
+      for (let at = 0; at < json.length; at += 60) {
+        await args.sink.write({ t: 'event', event: { kind: 'tool-input-delta', id: call.id, delta: json.slice(at, at + 60) } })
+        await sleep(120)
+      }
+      await args.sink.write({ t: 'event', event: { kind: 'tool-input-available', id: call.id, name: call.name, input: call.input, toolKind: 'read' } })
+    }
     return {
       text,
       toolCalls,
@@ -65,6 +76,8 @@ interface Plan {
   wordDelayMs?: number
   /** Stream line by line (OpenUI Lang statements) instead of word by word. */
   lines?: boolean
+  /** Stream the `ui__render` arguments in chunks, as a real model's tool input arrives. */
+  streamArgs?: boolean
 }
 
 interface Turn {
@@ -115,6 +128,7 @@ function nativeScript(turn: Turn): Plan {
         reasoning: 'A dashboard: a card with KPIs, the revenue chart and the top orders.',
         text: 'Here is your dashboard.',
         toolCalls: [{ name: 'ui__render', input: dashboardTree() }],
+        streamArgs: true,
       }
     }
     return { text: 'Revenue is up 50% since January; Alan Turing’s order is the largest.' }
