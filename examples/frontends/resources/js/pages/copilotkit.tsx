@@ -15,7 +15,7 @@ import {
 import '@copilotkit/react-core/v2/styles.css'
 import { Observable } from 'rxjs'
 import { z } from 'zod'
-import { GenuiActionProvider, GenuiNodeScope, type UiAction } from '@adonis-agora/agent/react/genui'
+import { GenuiActionProvider, GenuiNodeScope, uiActionSummary, type UiAction } from '@adonis-agora/agent/react/genui'
 import { Shell } from '../shared/shell.js'
 import { AgentActions, Chart, OrderList, registry, type OrderRow } from '../shared/renderers.js'
 import { onScenario } from '../shared/scenarios.js'
@@ -116,23 +116,32 @@ function Threads(props: { current: string; onOpen: (id: string) => void }) {
  * A component's buttons send the next user turn: CopilotKit's agent API, wrapped for the renderers.
  * GLUE (sandbox actions, 4 lines): a sandbox's `agent.send(...)` goes out the same way, its values as
  * `forwardedProps.uiAction` — the server makes the turn from them (`uiActionText`), the chat shows
- * what the user said.
+ * one line: what the user said and a few values (`uiActionSummary`).
  */
 function ActionsBridge({ children }: { children: ReactNode }) {
   const { agent } = useAgent()
   const { copilotkit } = useCopilotKit()
-  const send = (text: string) => {
+  // A component can be clicked while the turn that drew it is still running (the model is still
+  // writing its answer): the server refuses a second turn on a busy thread (409 run_active), so
+  // wait for this one to end first.
+  // (Polled: a subscriber added mid-run is not told when that run ends.)
+  const idle = async () => {
+    while (agent.isRunning) await new Promise((resolve) => setTimeout(resolve, 200))
+  }
+  const send = async (text: string) => {
+    await idle()
     agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: text })
     void copilotkit.runAgent({ agent })
   }
-  const sendUiAction = (action: UiAction) => {
-    agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: action.text ?? `[${action.name}]` })
+  const sendUiAction = async (action: UiAction) => {
+    await idle()
+    agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: uiActionSummary(action) })
     void copilotkit.runAgent({ agent, forwardedProps: { uiAction: action } })
   }
-  useEffect(() => onScenario(send), [agent, copilotkit])
+  useEffect(() => onScenario((text) => void send(text)), [agent, copilotkit])
   return (
-    <AgentActions.Provider value={{ send }}>
-      <GenuiActionProvider onAction={sendUiAction}>{children}</GenuiActionProvider>
+    <AgentActions.Provider value={{ send: (text) => void send(text) }}>
+      <GenuiActionProvider onAction={(action) => void sendUiAction(action)}>{children}</GenuiActionProvider>
     </AgentActions.Provider>
   )
 }
@@ -217,16 +226,19 @@ function Renderers() {
   // Generative UI the CopilotKit way: render a tool CALL — from its arguments while it runs, from
   // its result once it lands (which is also what a reloaded thread has).
   // With CopilotKit's A2UI renderer, the UI arrives as `a2ui-surface` activities instead.
+  // `show: false`: the model only wanted the data (for a dashboard it composes) — draw nothing.
+  const shows = z.object({ show: z.boolean().optional() })
   useRenderTool({
     name: 'list_orders',
-    parameters: z.object({}),
-    render: ({ result }) =>
-      a2uiMode ? <></> : result ? <OrderList orders={(parse(result) as { orders: OrderRow[] }).orders} /> : <p>Looking up orders…</p>,
+    parameters: shows,
+    render: ({ parameters, result }) =>
+      a2uiMode || parameters?.show === false ? <></> : result ? <OrderList orders={(parse(result) as { orders: OrderRow[] }).orders} /> : <p>Looking up orders…</p>,
   })
   useRenderTool({
     name: 'revenue_by_month',
-    parameters: z.object({}),
-    render: ({ toolCallId, result }) => (a2uiMode ? <></> : <RevenueChart toolCallId={toolCallId} result={result} />),
+    parameters: shows,
+    render: ({ toolCallId, parameters, result }) =>
+      a2uiMode || parameters?.show === false ? <></> : <RevenueChart toolCallId={toolCallId} result={result} />,
   })
   useRenderTool({
     name: 'ui__render',

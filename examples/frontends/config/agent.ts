@@ -8,10 +8,37 @@ import { orderListToA2ui, sandboxToA2ui } from '#genui/a2ui'
 import { listOrdersTool, refundOrderTool, revenueTool } from '#agent/tools'
 import { openUiPrompt } from '#agent/openui_prompt'
 
-const basePrompt =
-  'You are the orders and analytics assistant of a small shop. Use list_orders to look orders up, ' +
-  'revenue_by_month for revenue, ui__render to compose a dashboard, refund_order to refund. ' +
-  'For a one-off interactive tool no component fits (a calculator, a bill splitter), render a Sandbox.'
+const basePrompt = [
+  'You are the orders and analytics assistant of a small shop. Amounts in tool results are in cents ' +
+    '(`totalCents`): show them as dollars ($129.99).',
+  'Tools: list_orders (recent orders), revenue_by_month (revenue per month), refund_order (refunds ' +
+    'one order — the user approves it in the app first; call it, never ask for confirmation in text), ' +
+    'ui__render (compose a layout from the catalog components).',
+  'For a one-off interactive tool no component fits (a calculator, a bill splitter, a converter), ' +
+    'render a Sandbox with ui__render — always for a request to split a bill or to calculate something, ' +
+    'even when you could answer in text: the user adjusts the numbers there. Pre-fill it with their ' +
+    'numbers; it must validate its own input, compute live as the user types, ' +
+    'and have a button that calls agent.send({ text, ...values }) — `text` a short sentence of what the ' +
+    'user asks for ("Settle it for 4 people"). A message that comes from such a button carries those ' +
+    'values as JSON: answer with the numbers it carries, in a sentence or two.',
+].join('\n')
+
+/** What the native, CopilotKit and A2UI pages add: a tool's own UI is already on screen. */
+const componentPrompt =
+  'list_orders and revenue_by_month draw their own table and chart for the user (the orders with a ' +
+  'Refund button per row; the chart as it loads). Do not draw them again with ui__render and do not ' +
+  'repeat their rows as text or a markdown table: say one or two sentences about them. Use ui__render ' +
+  'for what no tool draws — a dashboard that combines several things (KpiCards, a Chart, a DataTable ' +
+  'in a Stack or Card), or a Sandbox. To build a dashboard, read the data with `show: false` so the ' +
+  'dashboard is the only thing drawn.'
+
+/** What the OpenUI page adds: it draws no tool UI of its own, so results are written in OpenUI Lang. */
+const openUiNote =
+  'On this page the tools draw nothing: show their results yourself in openui-lang (the orders with ' +
+  'the OrderList component). The Sandbox is the exception: render it with ui__render, and the page ' +
+  'draws it in the thread. Every reply is openui-lang, even a one-sentence one — after a ui__render ' +
+  'call, or answering a sandbox button: root = Card([body]) with body = TextContent("…"). Plain prose ' +
+  'is not shown on this page.'
 
 /**
  * One agent, four frontends. The only per-frontend difference is the prompt: the OpenUI page sends
@@ -21,24 +48,39 @@ const basePrompt =
  * `ui__render`.
  */
 async function systemPrompt(ctx: PromptContext): Promise<string> {
-  if (ctx.pageContext?.frontend === 'openui') return `${await openUiPrompt()}\n\n${basePrompt}`
-  return basePrompt
+  if (ctx.pageContext?.frontend === 'openui') return `${await openUiPrompt()}\n\n${basePrompt}\n\n${openUiNote}`
+  return `${basePrompt}\n\n${componentPrompt}`
 }
 
 export default defineConfig({
   /**
-   * `AGENT_MODEL=openai:gpt-4.1-mini` (+ `OPENAI_API_KEY`) runs a real model; anything else runs the
-   * scripted, offline one (`app/agent/scripted_model.ts`). Both are lazy, so the AI SDK provider is
-   * only imported when it is selected.
+   * A real model, or the scripted, offline one (`app/agent/scripted_model.ts`):
+   *  - `AGENT_MODEL=openai:<model>` (+ `OPENAI_API_KEY`), e.g. `openai:gpt-4.1-mini`;
+   *  - `AGENT_MODEL=openrouter:<model>` (+ `OPENROUTER_API_KEY`), e.g. `openrouter:openai/gpt-4.1-mini`
+   *    or `openrouter:anthropic/claude-sonnet-4.5` — OpenRouter's OpenAI-compatible API, through the
+   *    same `@ai-sdk/openai` provider;
+   *  - anything else: scripted.
+   * Lazy, so the AI SDK provider is only imported when one is selected.
    */
   model: async () => {
     const choice = env.get('AGENT_MODEL', 'scripted')
-    if (choice.startsWith('openai:')) {
-      const [{ aiSdkModel }, { openai }] = await Promise.all([
+    const [provider, ...rest] = choice.split(':')
+    const id = rest.join(':')
+    if ((provider === 'openai' || provider === 'openrouter') && id.length > 0) {
+      const [{ aiSdkModel }, { createOpenAI }] = await Promise.all([
         import('@adonis-agora/agent/ai-sdk'),
         import('@ai-sdk/openai'),
       ])
-      return aiSdkModel(openai(choice.slice('openai:'.length)))
+      const openai =
+        provider === 'openrouter'
+          ? createOpenAI({
+              baseURL: 'https://openrouter.ai/api/v1',
+              apiKey: env.get('OPENROUTER_API_KEY'),
+              headers: { 'X-Title': 'Agora frontends example' },
+            })
+          : createOpenAI({ apiKey: env.get('OPENAI_API_KEY') })
+      // OpenRouter speaks Chat Completions, not the Responses API `openai(id)` defaults to.
+      return aiSdkModel(provider === 'openrouter' ? openai.chat(id) : openai(id))
     }
     const { ScriptedOrdersModel } = await import('#agent/scripted_model')
     return new ScriptedOrdersModel()
@@ -61,16 +103,10 @@ export default defineConfig({
   adapters: [
     // POST /agent/ag-ui — what the CopilotKit and OpenUI pages talk to. `a2ui`: every UI frame is
     // also an `a2ui-surface` activity (A2UI's AG-UI binding) on A2UI's basic catalog, which
-    // CopilotKit's own A2UI renderer draws (/copilotkit?renderer=a2ui); the `Sandbox` has no basic
-    // component, so it travels there as its summary text. `catalogId`: CopilotKit 1.77's renderer
-    // (on @a2ui/web_core 0.10) registers the basic catalog under its older id, not the current
-    // `.../v0_9/catalogs/basic/catalog.json` the library (and @a2ui/react 0.12) default to.
-    agUiAdapter({
-      a2ui: {
-        catalogId: 'https://a2ui.org/specification/v0_9/basic_catalog.json',
-        components: { OrderList: orderListToA2ui },
-      },
-    }),
+    // CopilotKit's own A2UI renderer draws (/copilotkit?renderer=a2ui) — under the catalog id the
+    // client advertises, else the one AG-UI's binding and CopilotKit use. The `Sandbox` has no basic
+    // component, so it travels there as its summary text.
+    agUiAdapter({ a2ui: { components: { OrderList: orderListToA2ui } } }),
     // POST /agent/a2ui — JSON Lines of A2UI v0.9 messages, for the /a2ui page (the official
     // `@a2ui/react` renderer). Its catalog is the basic one plus a `Sandbox` component of its own.
     a2uiAdapter({

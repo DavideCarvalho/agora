@@ -316,7 +316,7 @@ function openUiScript(turn: Turn): Plan {
   }
 
   // 8. OpenUI Lang has no sandbox: the model calls `ui__render` with one, as on the other pages, and
-  // the page draws it from the `agora.ui` events OpenUI itself ignores (resources/js/pages/openui.tsx).
+  // the page draws that tool call inline with an OpenUI artifact renderer (resources/js/pages/openui.tsx).
   if (/split|bill/.test(text)) {
     if (!called(turn, 'ui__render').length) {
       return {

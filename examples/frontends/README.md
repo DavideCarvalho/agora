@@ -53,12 +53,29 @@ node --import=@poppinss/ts-exec scripts/token_cost.ts    # row 9: the dashboard 
 ### A real model
 
 ```dotenv
+# OpenAI
 AGENT_MODEL=openai:gpt-4.1-mini
 OPENAI_API_KEY=sk-...
+
+# or anything on OpenRouter (its OpenAI-compatible API, through the same @ai-sdk/openai provider)
+AGENT_MODEL=openrouter:anthropic/claude-haiku-5.5
+OPENROUTER_API_KEY=sk-or-...
 ```
 
-Any `openai:<model>` goes through `aiSdkModel()`; everything else keeps the scripted model
-([`app/agent/scripted_model.ts`](app/agent/scripted_model.ts)).
+`openai:<model>` and `openrouter:<model>` go through `aiSdkModel()`; everything else keeps the
+scripted model ([`app/agent/scripted_model.ts`](app/agent/scripted_model.ts)). Every page was run
+with `openrouter:anthropic/claude-haiku-5.5` — see [with a real model](#with-a-real-model).
+
+### Serving it on another host (a tailnet)
+
+Vite's dev server answers only `localhost` unless told otherwise. `VITE_ALLOWED_HOSTS` (comma-separated,
+a leading dot matches subdomains) opens it to other names — for a Tailscale tailnet:
+
+```dotenv
+HOST=0.0.0.0
+APP_URL=http://my-box.my-tailnet.ts.net:3333
+VITE_ALLOWED_HOSTS=.ts.net
+```
 
 ## The scenario
 
@@ -88,7 +105,8 @@ library's `Sandbox`):
    markup (no code runs), then the live view. It validates its own input; its "Ask the assistant to
    settle it" button calls `agent.send({ text, total, people, tip, perPerson })`, which the host
    checks and sends as the next user turn (`[UI action "send" from interactive view …]` + the values
-   as JSON) — and the assistant answers "Each of the 4 people pays $34.50 …".
+   as JSON, for the model) — the chat shows it as one line, "Settle it for 4 people · total: 120,
+   people: 4, tip: 15, +1" — and the assistant answers "Each of the 4 people pays $34.50 …".
 
 **What differs per frontend, by design.** Native and CopilotKit get their UI from components the
 tools push and from `ui__render` (the catalog in tree mode, the default). OpenUI does generative UI
@@ -121,13 +139,13 @@ non-comment lines.
 | 2 | Progressive render | **Built in** for pushes: the same `id` replaces in place (a chart, then 5 updates). **Built in** for model-written layouts: with `streaming: 'partial'` the `ui__render` tree draws while the model writes it; nodes keep their place, renderers draw skeletons from `useGenuiNode().incomplete`, and the chart (`streaming: 'complete'`) is a placeholder until its props are whole. Only the final, validated tree is stored. | **Glue (20 lines)** for pushes: read the `agora.ui` events CopilotKit ignores. **Built in** for model-written layouts: `render` gets partially parsed arguments while they stream. | **Built in** for model-written UI: each statement renders as it arrives, with placeholders for the rest. Tool pushes: **not possible** (CUSTOM events are ignored). | **Built in.** One surface per UI frame `id`: a re-push under the same `id`, and every preview of a streamed `ui__render` tree, is an `updateComponents` on the same surface, which grows in place. The chart arrives as a table (the basic catalog has no chart). |
 | 3 | Model-composed layout | **Built in.** `genui({ catalog })` (tree mode is the default): `ui__render` nests any catalog component, with an exact schema per component, validated node by node. The builtins are definitions only, so you write every renderer (9 here, 88 lines with their skeletons, plus 29 of shared skeleton pieces). | **Glue (20 lines)** to draw the `ui__render` tree with your renderers, including per-node error boundaries for partial arguments. CopilotKit's own route to model-composed UI is A2UI, which works against this server too (row 11). | **Built in, and the strongest.** 84 ready, styled components (charts, tables, forms, tabs, carousels…) the model composes freely; no renderer to write. | **Built in, on the basic catalog.** The library maps its builtins onto A2UI's basic components (Card, Column/Row, Text, Button…) and the official renderer styles them; no renderer to write. A `Chart` becomes a table of its points. |
 | 4 | Interactive component → agent | **Built in.** Renderers are your React components; a 3-line context reaches `chat.sendMessage`. The approval card comes from the transcript (`call.approve.run()`). | **Built in.** `agent.addMessage` + `copilotkit.runAgent` (4 lines); `useInterrupt` answers the AG-UI interrupt with `resume`. Its default tool card says "Done" for a rejected call. | Clicks **built in** (`Button(..., Action([@ToAssistant(...)]))` in Lang, `useTriggerAction()` in a component). Approvals **glue (46 lines)**: OpenUI ignores interrupts, so the reply goes out as a synthetic "Approved." message that carries `resume`. | **Built in.** A `Button`'s action event (`refund` + `{ orderId }`) comes back through the processor's action handler and is posted as `{ action }`; the approval is a surface with Approve / Reject buttons (`agora.approve` / `agora.reject`). The page's whole action path is ~10 lines. |
-| 5 | Persistence (reload, reopen) | **Built in.** `useAgentChat({ threadId })` + `useThreads()`; components redraw from the message's persisted `ui` list. | **Glue.** 13 lines (`connect` → `MESSAGES_SNAPSHOT`) + ~30 to convert stored messages + 26 for a thread list (CopilotKit's own needs its hosted platform). Redraws from the stored tool arguments and results. | **Glue.** A 15-line `ChatStorage` over the agent's thread routes (plus the same converter). The OpenUI Lang source is the message text, so it redraws exactly. | **No.** A2UI has no history message: the page keeps surfaces in memory and only the thread id across turns, so a reload starts empty (the thread is stored server-side; rebuilding its surfaces is not built). |
+| 5 | Persistence (reload, reopen) | **Built in.** `useAgentChat({ threadId })` + `useThreads()`; components redraw from the message's persisted `ui` list. | **Glue.** 13 lines (`connect` → `MESSAGES_SNAPSHOT`) + ~30 to convert stored messages + 26 for a thread list (CopilotKit's own needs its hosted platform). Redraws from the stored tool arguments and results. | **Glue.** A 15-line `ChatStorage` over the agent's thread routes (plus the same converter), and 6 lines to keep the open thread in the URL. The OpenUI Lang source is the message text, so it redraws exactly; the sandbox redraws from its stored tool call. | **Glue (12 lines).** A2UI has no history message: the page keeps the thread id in the URL, and `GET /agent/a2ui/threads/:id` (`a2uiAdapter()`) answers the stored thread as user lines plus each step's surfaces under their live ids, which the page feeds its processor. An approval still waiting is not redrawn. |
 | 6 | Non-visual surfaces, fallback | **Built in.** Capability negotiation + server-generated `fallbackText`: a client that draws only `Card` and `KpiCards` received the whole dashboard as readable text (its previews withdrawn); a text-only client is not offered `ui__render` at all, and received the orders as a text list, never a skeleton. The same React renderer rendered to PNG on the server ([screenshot](docs/screenshots/server-render-order-list.png)). | **No.** Rendering is client-side only; a tool call without a renderer draws nothing (or the generic card). A text channel gets the prose. | **No.** The UI is the model's text: a text channel would receive OpenUI Lang source. No fallback text, no server render. | **Built in (server).** A component nothing maps travels as its `fallbackText` in a `Text` (CopilotKit's A2UI renderer got the sandbox that way). A2UI is renderer-agnostic JSON (Lit, Angular, Flutter, React renderers); only React was run here. |
 | 7 | Typing, validation, versioning | **Built in.** A props schema per component, validated on the server before anything streams (and again on the client). The invalid pie chart was refused against `ui__render`'s exact schema, came back as a tool error, and the model retried with a bar chart. Per-component `version`. | **No.** The zod `parameters` type the renderer only: arguments reach `render` unvalidated (and partial while streaming). No component versioning. | **No.** zod props per component, but invalid arguments are dropped silently: the chart simply did not appear and the model is never told. No versioning. | **Built in (server).** The server validates before anything streams — the invalid pie chart was refused and retried, as on the native page — and the processor checks every message against A2UI v0.9's schema. The refusal itself is not drawn, only the model's words about it. |
 | 8 | DX: one new component end to end | A 24-line definition in a file both sides import (schema, description, `fallbackText`, a loading state) + the React renderer + 1 registry key. The loading state shared by every component is 9 more lines. | The React renderer + a 5-line `useRenderTool`, all client-side; the component is bound to a tool, not to a catalog. | **Leanest:** one 17-line `defineComponent` (zod props + description + React component). The catch: the server imports that client module to build the prompt. | **Glue.** Per app component: a server-side mapper to basic components (`OrderList`: 30 lines), or a custom component in the page's A2UI catalog (the `Sandbox`: ~25 lines with `createBinderlessComponentImplementation`). |
 | 9 | Targets, token cost | React; a framework-free client for anything else; HTML/PNG/PDF; text channels. `ui__render` over 9 components adds ~2.1k prompt tokens with its exact schema (~680 with `treeSchema: 'loose'`); the `Sandbox` adds ~2.2k characters more of description and schema (not re-measured with the tokenizer). The dashboard is 279 output tokens. | React, Vue, Angular and React Native packages (published; only React was run here). No prompt of its own. | React, Vue, Svelte, Angular and React Email renderers (published; only React was run here). The full chat-library prompt is ~14k tokens per turn (an 11-component library: ~1.3k); the dashboard is 198 output tokens, 29% fewer than the JSON. | React (run), Lit, Angular, Flutter (published). No prompt of its own: the model writes `ui__render` trees, the server converts them. |
-| 10 | Sandboxed generated UI (scenario 8) | **Built in.** `Sandbox` in the shared catalog, `Sandbox: SandboxView` in the registry, `<GenuiActionProvider onAction={chat.sendUiAction}>` (1 line). The server trims what streams (never half-written CSS or JS), so the frame goes placeholder → preview → live while the model writes; `agent.send` becomes the next user message, shown with its JSON block (what the model reads). | **Glue (4 lines + the tree glue).** The tree glue draws the node with `SandboxView` inside `GenuiNodeScope` (incomplete until the call is complete: CopilotKit's partial arguments are raw, so the code waits for the whole call); the action goes out as `forwardedProps.uiAction`. All three phases shown. With CopilotKit's A2UI renderer: the summary text only. CopilotKit's own sandbox ("Open Generative UI", its own tool and activity) — **not tried** here. | **Glue (35 lines).** OpenUI Lang has no sandbox and OpenUI ignores `agora.ui` events: the stream adapter keeps the latest `Sandbox` frame (the server's trimmed previews), the page draws it in a panel beside the chat, and the action rides the next request as `forwardedProps.uiAction`. Gone after a reload. | **Glue (~25 lines).** A custom `Sandbox` component in the page's A2UI catalog wraps `SandboxView`; the server sends it flat with `incomplete` while it streams (a 3-line mapper), and `agent.send` is dispatched as an A2UI action. All three phases shown. |
-| 11 | A2UI (v0.9) | **Built in (server).** `a2uiAdapter()` (`POST /agent/a2ui`: JSON Lines of A2UI messages; actions and approval decisions in) and `agUiAdapter({ a2ui })` (`a2ui-surface` activities on the AG-UI stream). The native page does not need it. | **Built in, one catch.** `/copilotkit?renderer=a2ui`: `renderActivityMessages={[createA2UIMessageRenderer(...)]}` draws the activities with no renderer of ours; the Refund button's action returns as `forwardedProps.a2uiAction`; the approval still comes through `useInterrupt`. Catch: CopilotKit 1.77 (on `@a2ui/web_core` 0.10) registers the basic catalog as `…/v0_9/basic_catalog.json`, not the current `…/v0_9/catalogs/basic/catalog.json`, so the AG-UI route sets that `catalogId`. | **No.** OpenUI renders OpenUI Lang only. | **Built in.** Google's official `@a2ui/react` renderer + `@a2ui/web_core` processor; the page (135 lines, composer and markdown included) POSTs, feeds each JSON line to the processor, draws every surface in order and posts actions back. |
+| 10 | Sandboxed generated UI (scenario 8) | **Built in.** `Sandbox` in the shared catalog, `Sandbox: SandboxView` in the registry, `<GenuiActionProvider onAction={chat.sendUiAction}>` (1 line). The server trims what streams (never half-written CSS or JS), so the frame goes placeholder → preview → live while the model writes; `agent.send` becomes the next user message, whose JSON block the model reads and the transcript hides: the bubble is a chip, "Settle it for 4 people · total: 120, people: 4, tip: 15, +1" (`block.uiAction` → `<UiActionChip>`, 3 lines). | **Glue (4 lines + the tree glue).** The tree glue draws the node with `SandboxView` inside `GenuiNodeScope` (incomplete until the call is complete: CopilotKit's partial arguments are raw, so the code waits for the whole call); the action goes out as `forwardedProps.uiAction`, after the running turn ends (a click while the model is still answering would hit a busy thread), shown as its one line (`uiActionSummary`). All three phases shown. With CopilotKit's A2UI renderer: the summary text only. CopilotKit's own sandbox ("Open Generative UI", its own tool and activity) — **not tried** here. | **Glue (30 lines).** OpenUI Lang has no sandbox, but OpenUI draws a tool call with an "artifact renderer": one for `ui__render` finds the `Sandbox` node and draws it with `SandboxView`, inline in the thread, while the call streams (incomplete until it lands) and from the stored call after a reload. The page declares only `Sandbox` in its UI capabilities, so `ui__render` offers the model nothing else (everything else is OpenUI Lang). The action rides the next request as `forwardedProps.uiAction`. | **Glue (~25 lines).** A custom `Sandbox` component in the page's A2UI catalog wraps `SandboxView`; the server sends it flat with `incomplete` while it streams (a 3-line mapper), and `agent.send` is dispatched as an A2UI action. All three phases shown. |
+| 11 | A2UI (v0.9) | **Built in (server).** `a2uiAdapter()` (`POST /agent/a2ui`: JSON Lines of A2UI messages; actions and approval decisions in) and `agUiAdapter({ a2ui })` (`a2ui-surface` activities on the AG-UI stream). The native page does not need it. | **Built in.** `/copilotkit?renderer=a2ui`: `renderActivityMessages={[createA2UIMessageRenderer(...)]}` draws the activities with no renderer of ours; the Refund button's action returns as `forwardedProps.a2uiAction`; the approval still comes through `useInterrupt`. CopilotKit 1.77 (on `@a2ui/web_core` 0.10) registers the basic catalog under its earlier id (`…/v0_9/basic_catalog.json`); the AG-UI route sends that id unless a client advertises another, so nothing is configured. | **No.** OpenUI renders OpenUI Lang only. | **Built in.** Google's official `@a2ui/react` renderer + `@a2ui/web_core` processor; the page (135 lines, composer and markdown included) POSTs, feeds each JSON line to the processor, draws every surface in order and posts actions back. |
 
 Token counts: o200k tokenizer over the exact system prompt and tool definitions the model received
 (`DEBUG_TOOLS=dump node ace serve` writes them to `tmp/turn-dump.json`) and over the two dashboard
@@ -149,7 +167,7 @@ outputs (`scripts/token_cost.ts`). `OrderList` is `internal` (only its tool push
   renderer (and CopilotKit's) with no component code for the builtins, actions and approvals included,
   and Lit/Angular/Flutter renderers exist. It loses on looks and persistence: the basic catalog has
   no chart (a table instead) and no skeletons, app components need a mapper or a client-side custom
-  component, and there is no history to reload from.
+  component, and reopening a thread takes the agent's own replay route (A2UI has no history message).
 - **Native** wins where the server matters: validated, versioned components with a server-side
   source of truth (row 7), the same output on non-visual surfaces (row 6), and persistence and
   approvals with no glue (rows 4–5). It now draws a layout while the model writes it too (row 2),
@@ -170,12 +188,13 @@ outputs (`scripts/token_cost.ts`). `OrderList` is `internal` (only its tool push
 | 4 Approval from the Refund button | ![](docs/screenshots/native-4-approval.png) | ![](docs/screenshots/copilotkit-4-approval.png) | ![](docs/screenshots/openui-4-approval.png) | ![](docs/screenshots/a2ui-4-approval.png) |
 | 4 Approved | ![](docs/screenshots/native-4-approved.png) | ![](docs/screenshots/copilotkit-4-approved.png) | ![](docs/screenshots/openui-4-approved.png) | ![](docs/screenshots/a2ui-4-approved.png) |
 | 4 Approved, then rejected | ![](docs/screenshots/native-4-rejected.png) | ![](docs/screenshots/copilotkit-4-rejected.png) | ![](docs/screenshots/openui-4-rejected.png) | ![](docs/screenshots/a2ui-4-rejected.png) |
-| 5 After a reload | ![](docs/screenshots/native-5-reloaded.png) | ![](docs/screenshots/copilotkit-5-reloaded.png) | ![](docs/screenshots/openui-5-reloaded.png) | — |
+| 5 After a reload | ![](docs/screenshots/native-5-reloaded.png) | ![](docs/screenshots/copilotkit-5-reloaded.png) | ![](docs/screenshots/openui-5-reloaded.png) | ![](docs/screenshots/a2ui-5-reloaded.png) |
 | 7 Invalid props | ![](docs/screenshots/native-7-invalid.png) | ![](docs/screenshots/copilotkit-7-invalid.png) | ![](docs/screenshots/openui-7-invalid.png) | — |
 | 8 Sandbox: placeholder | ![](docs/screenshots/native-8-sandbox-placeholder.png) | ![](docs/screenshots/copilotkit-8-sandbox-placeholder.png) | ![](docs/screenshots/openui-8-sandbox-placeholder.png) | ![](docs/screenshots/a2ui-8-sandbox-placeholder.png) |
 | 8 Sandbox: preview (markup, no code yet) | ![](docs/screenshots/native-8-sandbox-preview.png) | ![](docs/screenshots/copilotkit-8-sandbox-preview.png) | ![](docs/screenshots/openui-8-sandbox-preview.png) | ![](docs/screenshots/a2ui-8-sandbox-preview.png) |
 | 8 Sandbox: live | ![](docs/screenshots/native-8-sandbox-live.png) | ![](docs/screenshots/copilotkit-8-sandbox-live.png) | ![](docs/screenshots/openui-8-sandbox-live.png) | ![](docs/screenshots/a2ui-8-sandbox-live.png) |
 | 8 Sandbox: its button → the follow-up turn | ![](docs/screenshots/native-8-sandbox-followup.png) | ![](docs/screenshots/copilotkit-8-sandbox-followup.png) | ![](docs/screenshots/openui-8-sandbox-followup.png) | ![](docs/screenshots/a2ui-8-sandbox-followup.png) |
+| 8 Sandbox: after a reload | ![](docs/screenshots/native-8-sandbox-reloaded.png) | ![](docs/screenshots/copilotkit-8-sandbox-reloaded.png) | ![](docs/screenshots/openui-8-sandbox-reloaded.png) | ![](docs/screenshots/a2ui-8-sandbox-reloaded.png) |
 
 CopilotKit with its own A2UI renderer (`/copilotkit?renderer=a2ui`, `pnpm e2e copilotkit-a2ui`):
 [dashboard](docs/screenshots/copilotkit-a2ui-3-dashboard.png),
@@ -197,8 +216,8 @@ CopilotKit with its own A2UI renderer (`/copilotkit?renderer=a2ui`, `pnpm e2e co
 | OpenUI's library prompt on the server | `app/agent/openui_prompt.ts`, `resources/js/shared/openui_library.tsx` |
 | Native page | `resources/js/pages/native.tsx` |
 | CopilotKit page and its glue (history, thread list, `agora.ui`, tree, sandbox actions, `?renderer=a2ui`) | `resources/js/pages/copilotkit.tsx`, `resources/js/shared/agora_rest.ts` |
-| OpenUI page and its glue (storage, interrupts, the sandbox panel) | `resources/js/pages/openui.tsx`, `resources/js/shared/agora_rest.ts` |
-| A2UI page (official renderer, JSONL reader, actions, the custom `Sandbox` component) | `resources/js/pages/a2ui.tsx` |
+| OpenUI page and its glue (storage, the thread in the URL, interrupts, the inline sandbox) | `resources/js/pages/openui.tsx`, `resources/js/shared/agora_rest.ts` |
+| A2UI page (official renderer, JSONL reader, actions, the custom `Sandbox` component, reopening a thread) | `resources/js/pages/a2ui.tsx` |
 | Shared React renderers, with their skeletons (`useGenuiNode()`) | `resources/js/shared/renderers.tsx`, `resources/css/genui.css` |
 | Session cookie + CSRF for the AG-UI clients | `resources/js/shared/csrf.ts`, `config/shield.ts` (`enableXsrfCookie`) |
 | E2E driver, non-visual, text-client and token scripts | `tests/e2e/run.mjs`, `scripts/non_visual.tsx`, `scripts/text_clients.mjs`, `scripts/token_cost.ts` |
@@ -214,9 +233,9 @@ CopilotKit with its own A2UI renderer (`/copilotkit?renderer=a2ui`, `pnpm e2e co
 - **OpenUI's `AgentInterface`** sizes itself to the whole viewport; `app.css` overrides that to fit the
   shared layout. In development OpenUI also mounts an Inspect widget, and CopilotKit an inspector;
   both are turned off here so the screenshots compare the chats.
-- **The OpenUI page sends no `uiCapabilities`.** Tool pushes then travel as `agora.ui` events, which
-  OpenUI ignores. Declaring `{ components: [] }` would stream their fallback text into the reply
-  instead (not tried with OpenUI).
+- **The OpenUI page declares only `Sandbox`** in its `uiCapabilities`: `ui__render` is offered with
+  that one component (the model writes everything else in OpenUI Lang), and tool pushes it did not
+  declare travel as `agora.ui` events, which OpenUI ignores.
 - **CopilotKit's console** shows a `404` when the history glue asks for a brand-new thread that does
   not exist yet (expected). The renderers default every prop, so half-streamed `ui__render`
   arguments no longer throw; the glue's per-node boundaries stay for renderers that do.
@@ -227,18 +246,49 @@ CopilotKit with its own A2UI renderer (`/copilotkit?renderer=a2ui`, `pnpm e2e co
   `@openuidev/lang-core` (a PostHog ping) and `@scarf/scarf` (a CopilotKit dependency).
 - **The sandbox's way out.** The iframe has `sandbox="allow-scripts"` only (an opaque origin: no cookies,
   storage or page DOM) and a CSP with no network; `agent.send` is the only thing that leaves it, and the
-  host checks the frame, its token, size, rate and count before it becomes a turn. On the native page
-  the user's bubble shows the whole action text — the sentence, then `[UI action …]` and the JSON the
-  model reads; CopilotKit and OpenUI show only the sentence (the action rides `forwardedProps.uiAction`
-  and the server builds the turn).
-- **The OpenUI sandbox panel** is the page's own: it shows the latest sandbox of the session and is
-  not restored from a stored thread.
-- **The A2UI page keeps no history.** A2UI has no "load the conversation" message; after a reload the
-  page starts a new thread. An approval surface stays on screen, buttons and all, after its decision.
-- **Two A2UI catalog ids.** `@a2ui/react` 0.12 and the library use the v0.9 basic catalog id
-  `https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json`; CopilotKit 1.77's renderer still
-  registers `https://a2ui.org/specification/v0_9/basic_catalog.json`, hence the `catalogId` on the
-  AG-UI route. The `/a2ui` page creates its UI surfaces on its own catalog id (basic components +
-  `Sandbox`); text and approval surfaces always use the basic catalog.
+  host checks the frame, its token, size, rate and count before it becomes a turn. The turn's text
+  carries the values as JSON for the model; every page shows it as one line instead — the native
+  page as a `<UiActionChip>` (the transcript's `uiAction`), the others with `uiActionSummary` (live)
+  and `readUiActionText` (history, `agora_rest.ts`).
+- **The A2UI page's history** comes from `GET /agent/a2ui/threads/:id`; an approval the thread is
+  still waiting on is not redrawn after a reload. An approval surface stays on screen, buttons and
+  all, after its decision.
+- **Two A2UI catalog ids.** `@a2ui/react` 0.12 and the library's A2UI route use the v0.9 basic catalog
+  id `https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json`; CopilotKit 1.77's renderer
+  registers the earlier `https://a2ui.org/specification/v0_9/basic_catalog.json`. The server sends
+  the one each client advertises (the `/a2ui` page sends `a2uiClientCapabilities`), and over AG-UI
+  defaults to the earlier one — no `catalogId` in `config/agent.ts`. The `/a2ui` page creates its UI
+  surfaces on its own catalog id (basic components + `Sandbox`); text and approval surfaces always
+  use the basic catalog.
 - **The scripted model** writes what a model would; it does not prove a real model writes valid
   OpenUI Lang or valid `ui__render` trees as reliably. Row 7 shows what each side does when it does not.
+
+## With a real model
+
+Every page was also driven with `AGENT_MODEL=openrouter:anthropic/claude-haiku-5.5` — the orders
+table, a refund approved and one rejected, the dashboard, and the bill splitter whose button starts a
+follow-up turn — on `/native`, `/copilotkit`, `/openui`, `/a2ui` and `/copilotkit?renderer=a2ui`.
+What it took, all in this example's prompt and tools ([`config/agent.ts`](config/agent.ts),
+[`app/agent/tools.ts`](app/agent/tools.ts)) unless noted:
+
+- **Tools that draw their own UI.** The model redrew `list_orders`' table with `ui__render` and again
+  as a markdown table. The prompt now says what each tool already shows, and the data tools take
+  `show: false` for a dashboard the model composes from their data (the CopilotKit glue draws
+  nothing for such a call).
+- **Cents.** The first dashboards showed `totalCents` as dollars; the prompt now states the unit (the
+  model still slips now and then, and corrects itself in the same turn).
+- **The sandbox, every time.** Asked to split a bill, the model sometimes just answered in text. The
+  prompt now asks for a Sandbox for any calculation, pre-filled, computing as the user types, with a
+  short `text` on `agent.send`.
+- **A malformed first `ui__render`.** Writing a big Sandbox, the model sometimes sent the props
+  without the `{ type, props }` envelope, or the whole tree as a JSON string. It retries by itself; the
+  library now accepts the stringified tree and its error says what an element looks like
+  (`@adonis-agora/agent` 0.72).
+- **A click while the model is still answering.** The sandbox goes live before the turn that drew it
+  ends; on CopilotKit a click then hit a busy thread (`409 run_active`). The glue waits for the run.
+- **OpenUI.** The model used `ui__render` for the dashboard (which this page cannot draw) and answered
+  in plain prose after a sandbox (which OpenUI does not show). The page now declares only `Sandbox`,
+  and the OpenUI prompt asks for OpenUI Lang in every reply.
+- **Approval wording.** Over AG-UI and A2UI the approval reads "Approve refund_order?": the tool's
+  `confirm.title` ("Refund order #1002?") is filled in on the native client, not in the interrupt.
+

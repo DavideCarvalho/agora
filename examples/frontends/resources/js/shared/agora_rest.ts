@@ -1,3 +1,4 @@
+import { readUiActionText, uiActionSummary } from '@adonis-agora/agent/genui'
 import { csrfFetch } from './csrf.js'
 
 /**
@@ -36,13 +37,26 @@ export async function listThreads(): Promise<ThreadSummary[]> {
   return Array.isArray(body) ? body : (body.threads ?? body.data ?? [])
 }
 
-/** A stored thread as AG-UI messages: assistant tool calls, then one `tool` message per result. */
+/**
+ * What a user message shows: its text — or, for a UI action (a sandbox's `agent.send`, whose stored
+ * text carries the values as JSON for the model), one line: "Recalculate · people: 4, tip: 15".
+ */
+export const userLine = (content: string) => {
+  const action = readUiActionText(content)
+  return action ? uiActionSummary(action) : content
+}
+
+/**
+ * A stored thread as AG-UI messages: assistant tool calls, then one `tool` message per result.
+ * A UI action's user message shows as its one line (the server keeps the whole text).
+ */
 export async function threadMessages(threadId: string): Promise<AgUiMessage[]> {
   const response = await csrfFetch(`/agent/threads/${encodeURIComponent(threadId)}`)
   if (response.status === 404) return []
   if (!response.ok) throw new Error(`GET /agent/threads/${threadId}: ${response.status}`)
   const { messages } = (await response.json()) as { messages: StoredMessage[] }
   return messages.flatMap((message): AgUiMessage[] => {
+    if (message.role === 'user') return [{ id: message.id, role: 'user', content: userLine(message.content) }]
     if (message.role !== 'assistant') return [{ id: message.id, role: message.role, content: message.content }]
     const calls = message.toolCalls ?? []
     return [

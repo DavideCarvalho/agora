@@ -9,7 +9,11 @@ export default await Env.create(new URL('../', import.meta.url), {
   LOG_LEVEL: Env.schema.string(),
   SESSION_DRIVER: Env.schema.enum(['cookie', 'memory'] as const),
 
-  /** `scripted` (default, offline) or `openai:<model id>`. */
+  /** `scripted` (default, offline), `openai:<model id>` or `openrouter:<model id>`. */
   AGENT_MODEL: Env.schema.string.optional(),
   OPENAI_API_KEY: Env.schema.string.optional(),
+  OPENROUTER_API_KEY: Env.schema.string.optional(),
+
+  /** Extra hosts Vite's dev server answers (comma-separated; `.ts.net` = any tailnet name). */
+  VITE_ALLOWED_HOSTS: Env.schema.string.optional(),
 })

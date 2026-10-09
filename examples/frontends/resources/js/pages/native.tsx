@@ -7,7 +7,7 @@ import {
   type TranscriptBlock,
   type TranscriptToolCall,
 } from '@adonis-agora/agent/react'
-import { GenerativeUI, GenuiActionProvider } from '@adonis-agora/agent/react/genui'
+import { GenerativeUI, GenuiActionProvider, UiActionChip } from '@adonis-agora/agent/react/genui'
 import { catalog } from '#genui/catalog'
 import { Shell } from '../shared/shell.js'
 import { AgentActions, heldPlaceholder, registry } from '../shared/renderers.js'
@@ -122,7 +122,15 @@ function Chat(props: { threadId?: string; onThreadCreated: (id: string) => void 
 function Block({ block }: { block: TranscriptBlock }) {
   switch (block.kind) {
     case 'text':
-      return <p>{block.text}</p>
+      // A sandbox's `agent.send` (or a Refund button) is a user message whose text carries the
+      // values as JSON, for the model: draw it as a chip — the sentence and a few values.
+      return block.uiAction ? (
+        <p>
+          <UiActionChip action={block.uiAction} className="ui-action-chip" />
+        </p>
+      ) : (
+        <p>{block.text}</p>
+      )
     case 'reasoning':
       return <details data-testid="reasoning"><summary>Reasoning</summary>{block.text}</details>
     case 'ui':

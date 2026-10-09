@@ -6,6 +6,17 @@ import { openSlot } from '#agent/ui_slot'
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
+ * A real model composing a dashboard reads the data first: `show: false` gets the data without the
+ * tool's own table or chart, so the dashboard is the only thing drawn.
+ */
+const showInput = z.object({
+  show: z
+    .boolean()
+    .optional()
+    .describe('false when you only need the data (e.g. for a dashboard you compose with ui__render). Default true.'),
+})
+
+/**
  * 1. A tool-driven component, with its skeleton. The tool knows it will show `OrderList` before it
  * reads, so it pushes the list's loading state at once and the rows under the same `id` when the
  * (deliberately slow) read returns — drawn by a client that declared `OrderList`, sent as its
@@ -15,9 +26,12 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 export const listOrdersTool = defineTool({
   name: 'list_orders',
   kind: 'read',
-  description: 'List the customer’s recent orders.',
-  input: z.object({}),
-  execute: async (_input, ctx) => {
+  description:
+    'List the customer’s recent orders (totals in cents). Also shows them to the user as a table with a ' +
+    'Refund button per row.',
+  input: showInput,
+  execute: async ({ show }, ctx) => {
+    if (show === false) return { orders: listOrders() }
     const slot = await openSlot(ctx, 'OrderList', 'Your orders')
     try {
       await sleep(1500) // a slow query, so the skeleton is visible
@@ -39,9 +53,12 @@ export const listOrdersTool = defineTool({
 export const revenueTool = defineTool({
   name: 'revenue_by_month',
   kind: 'read',
-  description: 'Revenue per month this year, as a line chart.',
-  input: z.object({}),
-  execute: async (_input, ctx) => {
+  description:
+    'Revenue per month this year, in USD. Also shows it to the user as a line chart that fills in as ' +
+    'the months load.',
+  input: showInput,
+  execute: async ({ show }, ctx) => {
+    if (show === false) return { months: revenueByMonth }
     const chart = (points: typeof revenueByMonth, loading: boolean) => ({
       type: 'line' as const,
       title: loading ? `Revenue by month (loading ${points.length}/6…)` : 'Revenue by month',
