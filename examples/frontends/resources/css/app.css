@@ -53,12 +53,8 @@ body { font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; color: 
 .home h1 { font-size: 20px; margin: 0 0 8px; } .home p { max-width: 900px; color: #444; }
 .home code { background: #eef1f4; padding: 0 4px; border-radius: 4px; font-size: 12px; }
 
-/* The OpenUI page's sandbox panel: beside the chat (OpenUI draws no sandbox of its own). */
-.openui-sandbox {
-  width: 400px;
-  flex: none;
-  padding: 16px;
-  border-left: 1px solid #e3e5ea;
-  background: #fff;
-  overflow: auto;
-}
+/* The OpenUI page's sandbox: inline in the thread, where OpenUI draws the `ui__render` call. */
+.openui-sandbox { width: 100%; max-width: 640px; margin: 8px 0; }
+/* A UI action the user sent from a component or a sandbox: its sentence and a few values. */
+.ui-action-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; border-radius: 999px; padding: 2px 10px; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.35); }
+.ui-action-chip::before { content: '↯'; opacity: 0.7; }

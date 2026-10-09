@@ -9,20 +9,29 @@ import {
 } from '@a2ui/react/v0_9'
 import { renderMarkdown } from '@a2ui/markdown-it'
 import { Catalog, MessageProcessor, type ActionPayload, type ComponentContext } from '@a2ui/web_core/v0_9'
-import { GenuiActionProvider, GenuiNodeScope, SandboxView, type UiAction } from '@adonis-agora/agent/react/genui'
+import {
+  GenuiActionProvider,
+  GenuiNodeScope,
+  SandboxView,
+  uiActionSummary,
+  type UiAction,
+  type UiActionMessage,
+} from '@adonis-agora/agent/react/genui'
 import type { SandboxProps } from '@adonis-agora/agent/genui'
 import { z } from 'zod'
 import { A2UI_CATALOG_ID, catalog } from '#genui/catalog'
 import { Shell } from '../shared/shell.js'
 import { onScenario } from '../shared/scenarios.js'
 import { csrfFetch } from '../shared/csrf.js'
+import { listThreads, type ThreadSummary } from '../shared/agora_rest.js'
 
 /**
  * A2UI (https://a2ui.org, v0.9) with Google's official React renderer (`@a2ui/react`) and message
  * processor (`@a2ui/web_core`), over `POST /agent/a2ui` (`a2uiAdapter()` in config/agent.ts). The
  * server sends JSON Lines of A2UI messages; every surface they create is drawn in order; an action a
  * surface raises (a Refund button, Approve / Reject, the sandbox's `agent.send`) is posted back and
- * becomes the next turn. No chat framework: the page keeps the thread id and the user's lines.
+ * becomes the next turn. No chat framework: the page keeps the thread id (in the URL) and the user's
+ * lines, and a reload redraws the thread from `GET /agent/a2ui/threads/:id` (the same surfaces).
  */
 
 /**
@@ -73,12 +82,56 @@ const uiCapabilities = { components: catalog.components.map((c) => ({ name: c.na
 
 type Entry = { kind: 'user'; key: string; text: string } | { kind: 'surface'; key: string }
 
-function A2uiChat() {
+/** A stored thread, as `GET /agent/a2ui/threads/:id` answers it. */
+type ReplayEntry =
+  | { role: 'user'; id: string; text: string; action?: UiActionMessage }
+  | { role: 'assistant'; id: string; messages: unknown[] }
+
+function A2uiPage() {
+  // The thread lives in the URL, so a reload (or a link) reopens it; `mount` remounts the chat.
+  const [opened, setOpened] = useState(() => ({ threadId: new URLSearchParams(location.search).get('thread') ?? undefined, mount: 0 }))
+  const [current, setCurrent] = useState(opened.threadId)
+  const [threads, setThreads] = useState<ThreadSummary[]>([])
+  const refresh = () => void listThreads().then(setThreads, () => {})
+  useEffect(refresh, [])
+  const open = (id: string | undefined) => {
+    history.replaceState(null, '', id ? `?thread=${id}` : location.pathname)
+    setOpened((previous) => ({ threadId: id, mount: previous.mount + 1 }))
+    setCurrent(id)
+  }
+  return (
+    <div className="native">
+      <nav className="threads" aria-label="Threads">
+        <button type="button" className="new" onClick={() => open(undefined)}>
+          + New chat
+        </button>
+        {threads.map((thread) => (
+          <button key={thread.id} type="button" aria-current={thread.id === current} onClick={() => open(thread.id)}>
+            {thread.title || 'New chat'}
+          </button>
+        ))}
+      </nav>
+      <A2uiChat
+        key={opened.mount}
+        threadId={opened.threadId}
+        onThread={(id) => {
+          if (id !== current) {
+            history.replaceState(null, '', `?thread=${id}`)
+            setCurrent(id)
+          }
+          refresh()
+        }}
+      />
+    </div>
+  )
+}
+
+function A2uiChat(props: { threadId?: string; onThread: (id: string) => void }) {
   const [entries, setEntries] = useState<Entry[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [text, setText] = useState('')
-  const threadId = useRef<string | undefined>(undefined)
+  const threadId = useRef<string | undefined>(props.threadId)
   const post = useRef<(body: Record<string, unknown>, said: string) => Promise<void>>(async () => {})
 
   // One processor per page: surfaces live in it, `A2uiSurface` draws them; actions come back here.
@@ -86,11 +139,13 @@ function A2uiChat() {
     () =>
       new MessageProcessor<ReactComponentImplementation>([appCatalog, basicCatalog], (action: ActionPayload) => {
         const { text: said, ...context } = action.context as Record<string, unknown>
-        const label = typeof said === 'string' ? said : describe(action.name, context)
+        const label = typeof said === 'string' ? uiActionSummary({ text: said, context }) : describe(action.name, context)
         void post.current({ action: { version: 'v0.9', action: { ...action, context, ...(typeof said === 'string' ? { text: said } : {}) } } }, label)
       }),
     []
   )
+  // What this page draws, as A2UI clients say it: the server picks the catalog ids from it.
+  const capabilities = useMemo(() => processor.getRendererCapabilities({ versions: ['v0.9'] }), [processor])
   useEffect(() => {
     const created = processor.onSurfaceCreated((surface) =>
       setEntries((list) => [...list, { kind: 'surface', key: surface.id }])
@@ -104,6 +159,29 @@ function A2uiChat() {
     }
   }, [processor])
 
+  // GLUE (persistence, 12 lines): A2UI has no "load the conversation" message. The agent answers a
+  // stored thread as user lines and each step's surfaces; feed them to the processor in order.
+  useEffect(() => {
+    if (!props.threadId) return
+    let live = true
+    setBusy(true)
+    csrfFetch(`/agent/a2ui/threads/${encodeURIComponent(props.threadId)}`)
+      .then((response) => (response.ok ? response.json() : { entries: [] }))
+      .then(({ entries: stored }: { entries: ReplayEntry[] }) => {
+        if (!live) return
+        for (const entry of stored) {
+          if (entry.role === 'user') {
+            const line = entry.action ? uiActionSummary(entry.action) : entry.text
+            setEntries((list) => [...list, { kind: 'user', key: entry.id, text: line }])
+          } else processor.processMessages(entry.messages as never)
+        }
+      }, (caught) => setError(String(caught)))
+      .finally(() => live && setBusy(false))
+    return () => {
+      live = false
+    }
+  }, [processor, props.threadId])
+
   // POST, then read the JSON Lines as they arrive and hand each message to the processor.
   post.current = async (body, said) => {
     setEntries((list) => [...list, { kind: 'user', key: crypto.randomUUID(), text: said }])
@@ -113,10 +191,11 @@ function A2uiChat() {
       const response = await csrfFetch('/agent/a2ui', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/jsonl' },
-        body: JSON.stringify({ threadId: threadId.current, uiCapabilities, ...body }),
+        body: JSON.stringify({ threadId: threadId.current, uiCapabilities, a2uiClientCapabilities: capabilities, ...body }),
       })
       if (!response.ok || !response.body) throw new Error(`POST /agent/a2ui: ${response.status} ${await response.text()}`)
       threadId.current = response.headers.get('X-Agent-Thread-Id') ?? threadId.current
+      if (threadId.current) props.onThread(threadId.current)
       const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
       let buffer = ''
       for (;;) {
@@ -188,7 +267,7 @@ createRoot(document.getElementById('root')!).render(
     <Shell current="/a2ui" subtitle="A2UI v0.9 — @a2ui/react (official renderer) → POST /agent/a2ui">
       {/* A2UI's `Text` is markdown; the renderer takes the markdown engine from this context. */}
       <MarkdownContext.Provider value={renderMarkdown}>
-        <A2uiChat />
+        <A2uiPage />
       </MarkdownContext.Provider>
     </Shell>
   </StrictMode>

@@ -88,7 +88,7 @@ function update() {
 function settle() {
   var s = update()
   if (!s) return
-  agent.send({ text: 'Settle the bill: ' + money(s.total) + ' with a ' + s.tip + '% tip, split ' + s.people + ' ways.', total: s.total, people: s.people, tip: s.tip, perPerson: s.perPerson })
+  agent.send({ text: 'Settle it for ' + s.people + ' people', total: s.total, people: s.people, tip: s.tip, perPerson: s.perPerson })
   var button = document.getElementById('settle')
   button.disabled = true
   button.textContent = 'Sent to the assistant'

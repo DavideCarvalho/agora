@@ -123,6 +123,21 @@ async function sandboxScenario(h, { langDelay = 0 } = {}) {
   for (const phase of ['placeholder', 'preview', 'live']) {
     check(r.sandboxPhases.includes(phase), `sandbox: phase "${phase}" never shown (${r.sandboxPhases})`)
   }
+  // The user's action reads as one line — what they said and a few values — not as the JSON block
+  // the model reads (`uiActionSummary`).
+  check(!r.sandboxFollowup.includes('[UI action'), 'sandbox: the action shows its JSON block')
+  check(/Settle it for 4 people · total: 120, people: 4, tip: 15/.test(r.sandboxFollowup), 'sandbox: the action line is missing')
+
+  // Reload: the thread comes back with its sandbox (from the stored call) and the action's line.
+  await page.reload()
+  await page.waitForSelector('iframe[data-sandbox-phase="live"]', { timeout: 20000 }).catch(() => check(false, 'sandbox: not restored after a reload'))
+  await page.waitForTimeout(2500 + langDelay)
+  r.sandboxReloaded = await h.text()
+  check(!r.sandboxReloaded.includes('[UI action'), 'sandbox: after a reload, the action shows its JSON block')
+  check(r.sandboxReloaded.includes(answer), 'sandbox: after a reload, the follow-up answer is missing')
+  await page.locator('iframe[data-sandbox-phase]').last().scrollIntoViewIfNeeded().catch(() => {})
+  await page.waitForTimeout(1500)
+  await shot('8-sandbox-reloaded')
 }
 
 for (const [name, cfg] of Object.entries(pages)) {
@@ -258,6 +273,14 @@ if (!only || only === 'a2ui') {
   await shot('4-rejected')
   r.rejected = await text()
   check(/not\s*refunded/.test(r.rejected), 'a2ui: rejected refund should say "not refunded"')
+
+  // 5. Persistence: the thread id is in the URL, and the agent answers the stored thread as A2UI.
+  await page.reload()
+  await page.waitForSelector('text=Edsger Dijkstra', { timeout: 15000 }).catch(() => check(false, 'a2ui: orders not restored after a reload'))
+  await page.waitForTimeout(1500)
+  r.afterReload = await text()
+  check(r.afterReload.includes('Show my recent orders') && r.afterReload.includes('refunded $129.99'), 'a2ui: the conversation was not restored')
+  await shot('5-reloaded')
 
   // 3. The model-composed dashboard, streamed into one surface (a fresh thread: reload).
   await h.goto()
