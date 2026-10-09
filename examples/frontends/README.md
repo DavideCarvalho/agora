@@ -131,6 +131,30 @@ library's `Sandbox`):
    as JSON, for the model) — the chat shows it as one line, "Settle it for 4 people · total: 120,
    people: 4, tip: 15, +1" — and the assistant answers "Each of the 4 people pays $34.50 …".
 
+9. **The sandbox in the app's design system** — "Split a $90 dinner between 4 friends with a 10%
+   tip, using the app components": the same splitter, written as **JSX** with the app's own
+   `Button`, `Card`, `Input` and `Slider` ([`resources/js/kit`](resources/js/kit), a shadcn-style kit)
+   and Tailwind classes. `genuiSandboxKit()` in [`vite.config.ts`](vite.config.ts) bundles the kit,
+   serves it and the Tailwind runtime, and writes its docs (props read from the components' types —
+   what the model is told); `defineSandbox({ kit: true, tailwind: true })` in the catalog turns it on.
+   The frame inherits the page's theme (the CSS variables in
+   [`resources/css/theme.css`](resources/css/theme.css)) and follows **Light / dark** (the
+   `data-theme` attribute on `<html>`) without reloading. While the model writes the JSX, the view
+   is drawn each time what has arrived parses (`pnpm e2e kit`).
+
+**The same prompts on WhatsApp** — [`/whatsapp`](resources/js/pages/whatsapp.tsx) is a simulated
+WhatsApp: the real channel handler (`channels.handle`) over an adapter that records what it would
+send ([`app/channels/whatsapp_sim.ts`](app/channels/whatsapp_sim.ts)). `genui({ channels: {
+whatsapp: { mode: 'per-component', chartImages: chartImages() } } })` offers the model only what
+WhatsApp can draw: the orders arrive as a list message (`OrderList`'s `channels.whatsapp`
+conversion — picking an order is the next turn, as a UI action), charts as PNG images, tables and
+KPIs as text, and the bill splitter as words (no sandbox there) (`pnpm e2e whatsapp`).
+
+**A private design system, locally.** `SANDBOX_KIT=<name> node ace serve --hmr` swaps the kit for
+`local-kits/<name>/vite.config.ts` (gitignored) exporting `{ kit, css?, alias?, plugins? }` — e.g.
+an entry re-exporting another repo's `components/ui`, its globals stylesheet as `css` (the whole
+page then wears it), and `tailwindCss` with its custom variants. Nothing of it is committed.
+
 **What differs per frontend, by design.** Native and CopilotKit get their UI from components the
 tools push and from `ui__render` (the catalog in tree mode, the default). OpenUI does generative UI
 differently: the model writes "OpenUI Lang" text, and the page renders it with an OpenUI component
@@ -225,6 +249,12 @@ CopilotKit with its own A2UI renderer (`/copilotkit?renderer=a2ui`, `pnpm e2e co
 [approval](docs/screenshots/copilotkit-a2ui-4-approval.png),
 [approved](docs/screenshots/copilotkit-a2ui-4-approved.png),
 [the sandbox as text](docs/screenshots/copilotkit-a2ui-8-sandbox.png).
+
+The app kit (scenario 9, `pnpm e2e kit`): [preview](docs/screenshots/kit-9-kit-preview.png),
+[light](docs/screenshots/kit-9-kit-light.png), [dark](docs/screenshots/kit-9-kit-dark.png),
+[settled](docs/screenshots/kit-9-kit-settled.png). WhatsApp (`pnpm e2e whatsapp`):
+[the orders list](docs/screenshots/whatsapp-wa-orders-list.png),
+[every scenario](docs/screenshots/whatsapp-wa-all.png).
 
 ## The file tour
 
