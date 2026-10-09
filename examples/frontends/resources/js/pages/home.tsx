@@ -20,15 +20,16 @@ function CellView({ cell }: { cell: Cell }) {
 
 function Home() {
   return (
-    <Shell current="/" subtitle="Generative UI: one agent, three frontends">
+    <Shell current="/" subtitle="Generative UI: one agent, four frontends">
       <div className="home">
-        <h1>Generative UI: native vs CopilotKit vs OpenUI</h1>
+        <h1>Generative UI: native vs CopilotKit vs OpenUI vs A2UI</h1>
         <p>
-          One AdonisJS agent (<code>@adonis-agora/agent</code>), three pages. <a href="/native">Native</a> uses{' '}
+          One AdonisJS agent (<code>@adonis-agora/agent</code>), four pages. <a href="/native">Native</a> uses{' '}
           <code>@adonis-agora/agent/react</code> over the native stream; <a href="/copilotkit">CopilotKit</a> and{' '}
-          <a href="/openui">OpenUI</a> drive the same agent through <code>agUiAdapter()</code>. Every cell below
-          was checked by running the pages (<code>pnpm e2e</code>). “Glue” is app code that bridges the frontend
-          to this agent, with its line count.
+          <a href="/openui">OpenUI</a> drive the same agent through <code>agUiAdapter()</code>;{' '}
+          <a href="/a2ui">A2UI</a> draws it with Google’s official A2UI renderer over <code>a2uiAdapter()</code>.
+          Every cell below was checked by running the pages (<code>pnpm e2e</code>). “Glue” is app code that
+          bridges the frontend to this agent, with its line count.
         </p>
         <table>
           <thead>
@@ -38,6 +39,7 @@ function Home() {
               <th><a href="/native">Native</a></th>
               <th><a href="/copilotkit">CopilotKit</a></th>
               <th><a href="/openui">OpenUI</a></th>
+              <th><a href="/a2ui">A2UI</a></th>
             </tr>
           </thead>
           <tbody>
@@ -48,6 +50,7 @@ function Home() {
                 <CellView cell={row.native} />
                 <CellView cell={row.copilotkit} />
                 <CellView cell={row.openui} />
+                <CellView cell={row.a2ui} />
               </tr>
             ))}
           </tbody>

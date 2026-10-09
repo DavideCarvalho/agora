@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react'
-import { useGenuiNode, type GenuiNodeState } from '@adonis-agora/agent/react/genui'
+import { SandboxView, useGenuiNode, type GenuiNodeState } from '@adonis-agora/agent/react/genui'
 
 /**
  * The React renderers of every catalog component (app/genui/catalog.ts): the app's `OrderList` and
@@ -221,5 +221,9 @@ export const Heading = ({ text = '' }: { text?: string }) => <h3>{text}</h3>
 export const Text = ({ text = '', muted }: { text?: string; muted?: boolean }) => <p style={{ color: muted ? '#777' : undefined }}>{text}</p>
 export const Badge = ({ text = '', tone = 'neutral' }: { text?: string; tone?: string }) => <span className={`status status-${tone}`}>{text}</span>
 
-/** Keys are the catalog's component names. */
-export const registry = { OrderList, DataTable, Chart, KpiCards, Callout, Stack, Card, Heading, Text, Badge }
+/**
+ * Keys are the catalog's component names. `Sandbox` is the library's renderer: the model's HTML, CSS
+ * and JS in an isolated iframe (placeholder → preview → live), whose `agent.send(...)` reaches the
+ * enclosing `GenuiActionProvider` — each page wires that to its own "send the next turn".
+ */
+export const registry = { OrderList, DataTable, Chart, KpiCards, Callout, Stack, Card, Heading, Text, Badge, Sandbox: SandboxView }

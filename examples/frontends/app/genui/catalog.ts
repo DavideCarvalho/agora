@@ -7,6 +7,7 @@ import {
   DataTable,
   Heading,
   KpiCards,
+  Sandbox,
   Stack,
   Text,
 } from '@adonis-agora/agent/genui/builtins'
@@ -67,6 +68,11 @@ export const OrderList = createComponent({
  * composes the builtins, nested, through `ui__render` (tree mode, the default — config/agent.ts).
  * The chart streams `complete`: a chart cannot draw half its points, so while the model writes it
  * the page draws a placeholder, and the chart appears once its props are whole and valid.
+ *
+ * `Sandbox` is the last resort for an answer no component fits (scenario 8, the bill splitter): the
+ * model writes HTML, CSS and JS that the page runs in an isolated iframe — no network (its default
+ * policy), and `agent.send(values)` as its only way out. Here, not in `genui({ sandbox: true })`, so
+ * the browser's renderer reads the same definition (and policy) as the server.
  */
 export const catalog = defineCatalog([
   OrderList.definition,
@@ -79,4 +85,11 @@ export const catalog = defineCatalog([
   Heading,
   Text,
   Badge,
+  Sandbox,
 ])
+
+/**
+ * The A2UI catalog the `/a2ui` page registers: A2UI's basic components plus a `Sandbox` of its own
+ * (resources/js/pages/a2ui.tsx). The server names it on every surface it creates (config/agent.ts).
+ */
+export const A2UI_CATALOG_ID = 'https://frontends.example/a2ui/catalog.json'

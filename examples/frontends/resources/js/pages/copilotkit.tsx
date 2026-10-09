@@ -1,8 +1,10 @@
 import { Component, StrictMode, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
+  a2uiDefaultTheme,
   CopilotChat,
   CopilotKitProvider,
+  createA2UIMessageRenderer,
   HttpAgent,
   useAgent,
   useCopilotKit,
@@ -13,6 +15,7 @@ import {
 import '@copilotkit/react-core/v2/styles.css'
 import { Observable } from 'rxjs'
 import { z } from 'zod'
+import { GenuiActionProvider, GenuiNodeScope, type UiAction } from '@adonis-agora/agent/react/genui'
 import { Shell } from '../shared/shell.js'
 import { AgentActions, Chart, OrderList, registry, type OrderRow } from '../shared/renderers.js'
 import { onScenario } from '../shared/scenarios.js'
@@ -37,17 +40,38 @@ class AgoraHttpAgent extends HttpAgent {
   }
 }
 
+/**
+ * Two ways to draw the agent's UI here. Default: this page's glue draws the `ui__render` tree (and
+ * the tools' pushes) with the shared React renderers. `?renderer=a2ui`: CopilotKit's own A2UI
+ * renderer draws the `a2ui-surface` activities the server adds (`agUiAdapter({ a2ui })`), on A2UI's
+ * basic catalog — no renderer of ours at all.
+ */
+const a2uiMode = new URLSearchParams(location.search).get('renderer') === 'a2ui'
+const activityRenderers = a2uiMode ? [createA2UIMessageRenderer({ theme: a2uiDefaultTheme })] : []
+
 function CopilotKitPage() {
   const [threadId, setThreadId] = useState(
     () => new URLSearchParams(location.search).get('thread') ?? crypto.randomUUID()
   )
   // `fetch` override: the session cookie rides by default; shield's CSRF header has to be added.
   const agent = useMemo(() => new AgoraHttpAgent({ url: '/agent/ag-ui', fetch: csrfFetch }), [])
-  useEffect(() => history.replaceState(null, '', `?thread=${threadId}`), [threadId])
+  useEffect(() => history.replaceState(null, '', `?${a2uiMode ? 'renderer=a2ui&' : ''}thread=${threadId}`), [threadId])
 
   return (
-    <Shell current="/copilotkit" subtitle="CopilotKit 1.77 (v2 API) → POST /agent/ag-ui">
-      <CopilotKitProvider agents__unsafe_dev_only={{ default: agent }} enableInspector={false}>
+    <Shell
+      current="/copilotkit"
+      subtitle={
+        <>
+          CopilotKit 1.77 (v2 API) → POST /agent/ag-ui ·{' '}
+          {a2uiMode ? <a href="/copilotkit">draw with our renderers</a> : <a href="/copilotkit?renderer=a2ui">draw with CopilotKit’s A2UI renderer</a>}
+        </>
+      }
+    >
+      <CopilotKitProvider
+        agents__unsafe_dev_only={{ default: agent }}
+        enableInspector={false}
+        renderActivityMessages={activityRenderers}
+      >
         <Threads current={threadId} onOpen={setThreadId} />
         <Renderers />
         <ActionsBridge>
@@ -88,7 +112,12 @@ function Threads(props: { current: string; onOpen: (id: string) => void }) {
   )
 }
 
-/** A component's buttons send the next user turn: CopilotKit's agent API, wrapped for the renderers. */
+/**
+ * A component's buttons send the next user turn: CopilotKit's agent API, wrapped for the renderers.
+ * GLUE (sandbox actions, 4 lines): a sandbox's `agent.send(...)` goes out the same way, its values as
+ * `forwardedProps.uiAction` — the server makes the turn from them (`uiActionText`), the chat shows
+ * what the user said.
+ */
 function ActionsBridge({ children }: { children: ReactNode }) {
   const { agent } = useAgent()
   const { copilotkit } = useCopilotKit()
@@ -96,8 +125,16 @@ function ActionsBridge({ children }: { children: ReactNode }) {
     agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: text })
     void copilotkit.runAgent({ agent })
   }
+  const sendUiAction = (action: UiAction) => {
+    agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: action.text ?? `[${action.name}]` })
+    void copilotkit.runAgent({ agent, forwardedProps: { uiAction: action } })
+  }
   useEffect(() => onScenario(send), [agent, copilotkit])
-  return <AgentActions.Provider value={{ send }}>{children}</AgentActions.Provider>
+  return (
+    <AgentActions.Provider value={{ send }}>
+      <GenuiActionProvider onAction={sendUiAction}>{children}</GenuiActionProvider>
+    </AgentActions.Provider>
+  )
 }
 
 /**
@@ -137,29 +174,37 @@ function RevenueChart({ toolCallId, result }: { toolCallId: string; result: unkn
 }
 
 /**
- * GLUE (composed layouts, 21 lines): `ui__render`'s input is the library's `{ type, props, children }`
+ * GLUE (composed layouts, 25 lines): `ui__render`'s input is the library's `{ type, props, children }`
  * tree. CopilotKit renders a tool call, not a tree, so walk it with the same renderers. While the
  * model is still writing it, CopilotKit passes the partially parsed arguments: a half-written node
- * can throw, so each node gets an error boundary. No client-side validation here — the server
- * validates the finished tree (an invalid one is a failed call).
+ * can throw, so each node gets an error boundary (reset when the node changes — never remounted, so
+ * a sandbox's frame survives the stream), and `GenuiNodeScope` tells the renderers the call is still
+ * streaming (skeletons; a sandbox shows its preview and runs no code until the call is complete).
+ * No client-side validation here — the server validates the finished tree (an invalid one is a
+ * failed call).
  */
-class NodeBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false }
+class NodeBoundary extends Component<{ reset: string; children: ReactNode }, { failed: boolean; reset: string }> {
+  state = { failed: false, reset: this.props.reset }
   static getDerivedStateFromError() {
     return { failed: true }
+  }
+  static getDerivedStateFromProps(props: { reset: string }, state: { reset: string }) {
+    return props.reset === state.reset ? null : { failed: false, reset: props.reset }
   }
   render() {
     return this.state.failed ? null : this.props.children
   }
 }
-function Tree({ node }: { node: any }): ReactNode {
+function Tree({ node, id = 'root', incomplete }: { node: any; id?: string; incomplete: boolean }): ReactNode {
   const Render = (registry as Record<string, (props: any) => ReactNode>)[node?.type]
   if (!Render) return null
   return (
-    <NodeBoundary key={JSON.stringify(node).length}>
-      <Render {...node.props}>
-        {(node.children ?? []).map((child: any, i: number) => <Tree key={i} node={child} />)}
-      </Render>
+    <NodeBoundary reset={JSON.stringify(node)}>
+      <GenuiNodeScope node={{ id, type: node.type, incomplete, held: false }}>
+        <Render {...node.props}>
+          {(node.children ?? []).map((child: any, i: number) => <Tree key={i} id={`${id}.${i}`} node={child} incomplete={incomplete} />)}
+        </Render>
+      </GenuiNodeScope>
     </NodeBoundary>
   )
 }
@@ -171,16 +216,17 @@ function Renderers() {
 
   // Generative UI the CopilotKit way: render a tool CALL — from its arguments while it runs, from
   // its result once it lands (which is also what a reloaded thread has).
+  // With CopilotKit's A2UI renderer, the UI arrives as `a2ui-surface` activities instead.
   useRenderTool({
     name: 'list_orders',
     parameters: z.object({}),
     render: ({ result }) =>
-      result ? <OrderList orders={(parse(result) as { orders: OrderRow[] }).orders} /> : <p>Looking up orders…</p>,
+      a2uiMode ? <></> : result ? <OrderList orders={(parse(result) as { orders: OrderRow[] }).orders} /> : <p>Looking up orders…</p>,
   })
   useRenderTool({
     name: 'revenue_by_month',
     parameters: z.object({}),
-    render: ({ toolCallId, result }) => <RevenueChart toolCallId={toolCallId} result={result} />,
+    render: ({ toolCallId, result }) => (a2uiMode ? <></> : <RevenueChart toolCallId={toolCallId} result={result} />),
   })
   useRenderTool({
     name: 'ui__render',
@@ -188,7 +234,7 @@ function Renderers() {
     render: ({ parameters, result, status }) => {
       if (status === 'complete' && typeof result === 'string' && /error|invalid/i.test(result) && !result.startsWith('{"ok'))
         return <p className="error">ui__render refused: {result.slice(0, 160)}</p>
-      return <Tree node={parameters} />
+      return a2uiMode ? <></> : <Tree node={parameters} incomplete={status !== 'complete'} />
     },
   })
   useDefaultRenderTool() // every other tool call: CopilotKit's built-in card
