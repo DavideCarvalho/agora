@@ -364,7 +364,17 @@ if (!only || only === 'kit') {
     }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-sandbox-phase'] })
   })
   await h.scenario('kit')
-  await page.waitForSelector('iframe[data-sandbox-kit][data-sandbox-phase="preview"]', { timeout: 20000 }).then(() => shot('9-kit-preview')).catch(() => log.push('kit preview missed'))
+  // The preview: the JSX drawn while the model still writes it — the card before its footer.
+  await page.waitForSelector('iframe[data-sandbox-kit][data-sandbox-phase="preview"]', { timeout: 20000 }).catch(() => log.push('kit preview missed'))
+  await page
+    .frameLocator('iframe[data-sandbox-phase="preview"]')
+    .locator('[data-slot="card"]')
+    .waitFor({ timeout: 20000 })
+    .then(async () => {
+      r.previewDrawn = await page.locator('iframe[data-sandbox-phase="preview"]').count()
+      await shot('9-kit-preview')
+    })
+    .catch(() => check(false, 'kit: nothing was drawn while the JSX streamed'))
   await page.waitForSelector('iframe[data-sandbox-kit][data-sandbox-phase="live"]', { timeout: 60000 }).catch(() => check(false, 'kit: the JSX sandbox never went live'))
   const frame = page.frameLocator('iframe[data-sandbox-phase="live"]').last()
   await frame.locator('[data-testid="kit-bill-splitter"]').waitFor({ timeout: 20000 }).catch(() => check(false, 'kit: the splitter did not render'))
