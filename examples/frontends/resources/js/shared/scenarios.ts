@@ -8,6 +8,11 @@ export const scenarios = [
     prompt: 'Show a dashboard with a chart of revenue by month plus the top 3 orders',
   },
   { id: 'invalid', label: '7. Invalid props (pie chart)', prompt: 'Show order statuses as a pie chart' },
+  {
+    id: 'sandbox',
+    label: '8. Bill splitter (sandbox)',
+    prompt: 'Split a $120 bill between 3 people with a 15% tip',
+  },
 ] as const
 
 export const SCENARIO_EVENT = 'demo:scenario'

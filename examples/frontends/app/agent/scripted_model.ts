@@ -8,6 +8,7 @@ import type {
 } from '@adonis-agora/agent'
 import { formatCents, listOrders, revenueByMonth, topOrders, type Order } from '#agent/orders'
 import { OPENUI_PROMPT_MARKER } from '#agent/openui_prompt'
+import { billSplitterTree, readBill, settle } from '#agent/bill_splitter'
 
 /**
  * A deterministic, offline model that plays the same "orders & analytics assistant" script for
@@ -48,12 +49,15 @@ export class ScriptedOrdersModel implements ModelProvider {
     }))
     // Stream a composed layout's arguments the way `aiSdkModel` relays a real model's tool-input
     // deltas, so a client that draws from partial arguments can be compared with one that cannot.
-    for (const call of toolCalls.filter((c) => c.name === 'ui__render' && plan.streamArgs)) {
+    const pace = plan.streamArgs === true ? { chunk: 60, delayMs: 120, slowFirst: 0 } : plan.streamArgs
+    for (const call of toolCalls.filter((c) => c.name === 'ui__render')) {
+      if (!pace) break
       const json = JSON.stringify(call.input)
       await args.sink.write({ t: 'event', event: { kind: 'tool-input-start', id: call.id, name: call.name, toolKind: 'read' } })
-      for (let at = 0; at < json.length; at += 60) {
-        await args.sink.write({ t: 'event', event: { kind: 'tool-input-delta', id: call.id, delta: json.slice(at, at + 60) } })
-        await sleep(120)
+      for (let at = 0; at < json.length; at += pace.chunk) {
+        await args.sink.write({ t: 'event', event: { kind: 'tool-input-delta', id: call.id, delta: json.slice(at, at + pace.chunk) } })
+        // The sandbox's first fields (its placeholder) arrive slowly, so each state can be seen.
+        await sleep(at < (pace.slowFirst ?? 0) ? pace.delayMs * 4 : pace.delayMs)
       }
       await args.sink.write({ t: 'event', event: { kind: 'tool-input-available', id: call.id, name: call.name, input: call.input, toolKind: 'read' } })
     }
@@ -77,11 +81,13 @@ interface Plan {
   /** Stream line by line (OpenUI Lang statements) instead of word by word. */
   lines?: boolean
   /** Stream the `ui__render` arguments in chunks, as a real model's tool input arrives. */
-  streamArgs?: boolean
+  streamArgs?: boolean | { chunk: number; delayMs: number; slowFirst?: number }
 }
 
 interface Turn {
   userText: string
+  /** A UI action this turn stands for (a sandbox's `agent.send`, an A2UI button), if any. */
+  action?: { name: string; context: Record<string, unknown> }
   results: NonNullable<ModelMessage['toolResults']>
   position: number
 }
@@ -91,15 +97,53 @@ function readTurn(messages: ModelMessage[]): Turn {
   while (index >= 0 && !(messages[index]!.role === 'user' && messages[index]!.content.length > 0)) {
     index -= 1
   }
+  const raw = messages[index]?.content ?? ''
+  const action = readUiAction(raw)
   return {
-    userText: (messages[index]?.content ?? '').toLowerCase(),
+    userText: raw.toLowerCase(),
+    ...(action ? { action } : {}),
     results: messages.slice(index + 1).flatMap((message) => message.toolResults ?? []),
     position: messages.length,
   }
 }
 
+/**
+ * A UI action arrives as a user message (the library's `uiActionText`): what the user said, then
+ * `[UI action "<name>" from …]` and its values as a JSON block. A model reads both; so does this one.
+ */
+function readUiAction(text: string): Turn['action'] {
+  const name = /\[UI action "([^"]+)" from [^\]]*\]/.exec(text)?.[1]
+  if (!name) return undefined
+  const json = /```json\n([\s\S]*?)\n```/.exec(text)?.[1]
+  try {
+    return { name, context: json ? JSON.parse(json) : {} }
+  } catch {
+    return { name, context: {} }
+  }
+}
+
 const called = (turn: Turn, name: string) => turn.results.filter((r) => r.name === name)
-const orderIdIn = (text: string) => /(\d{4})/.exec(text)?.[1] ?? '1002'
+const orderIdIn = (turn: Turn) =>
+  (typeof turn.action?.context.orderId === 'string' ? turn.action.context.orderId : undefined) ??
+  /(\d{4})/.exec(turn.userText)?.[1] ??
+  '1002'
+
+/** The bill splitter's "Ask the assistant to settle it": the values it sent, settled in a sentence. */
+function settledBill(turn: Turn): string | undefined {
+  const values = turn.action?.context ?? {}
+  const total = Number(values.total)
+  const people = Number(values.people)
+  const tip = Number(values.tip)
+  if (!(total > 0 && people >= 1 && tip >= 0)) return undefined
+  const { tipAmount, grand, perPerson } = settle({ total, people, tip })
+  return (
+    `Each of the ${people} people pays ${formatCents(Math.round(perPerson * 100))}: ` +
+    `${formatCents(Math.round(total * 100))} plus a ${tip}% tip (${formatCents(Math.round(tipAmount * 100))}) ` +
+    `is ${formatCents(Math.round(grand * 100))}.`
+  )
+}
+
+const SANDBOX_STREAM = { chunk: 48, delayMs: 70, slowFirst: 260 }
 
 // ---------------------------------------------------------------------------------------------
 // Native + CopilotKit: tool-pushed components, and `ui__render` for composed layouts.
@@ -108,8 +152,14 @@ const orderIdIn = (text: string) => /(\d{4})/.exec(text)?.[1] ?? '1002'
 function nativeScript(turn: Turn): Plan {
   const text = turn.userText
 
+  // 8. The bill splitter's button: the values came back as this turn.
+  if (turn.action && turn.action.name !== 'refund') {
+    const answer = settledBill(turn)
+    return { text: answer ?? `Got it — "${turn.action.name}" with ${JSON.stringify(turn.action.context)}.` }
+  }
+
   if (/refund/.test(text)) {
-    const orderId = orderIdIn(text)
+    const orderId = orderIdIn(turn)
     const refund = called(turn, 'refund_order')[0]
     if (!refund) {
       return {
@@ -120,6 +170,19 @@ function nativeScript(turn: Turn): Plan {
     if (refund.denied || refund.error) return { text: `Order #${orderId} was **not** refunded.` }
     const amount = (refund.output as { amount: string }).amount
     return { text: `Done — order #${orderId} was refunded ${amount}.` }
+  }
+
+  // 8. No component fits a bill splitter: the model writes one into the Sandbox.
+  if (/split|bill/.test(text)) {
+    if (!called(turn, 'ui__render').length) {
+      return {
+        reasoning: 'No catalog component splits a bill. A small interactive view in the Sandbox.',
+        text: 'Here is a bill splitter.',
+        toolCalls: [{ name: 'ui__render', input: billSplitterTree(readBill(text)) }],
+        streamArgs: SANDBOX_STREAM,
+      }
+    }
+    return { text: 'Change any number, then press “Ask the assistant to settle it”.' }
   }
 
   if (/dashboard/.test(text)) {
@@ -175,7 +238,7 @@ function nativeScript(turn: Turn): Plan {
 
   return {
     reasoning: 'A greeting. I should say what I can do.',
-    text: 'Hi! I can list your orders, chart revenue, build a dashboard, and refund an order (after you approve it).',
+    text: 'Hi! I can list your orders, chart revenue, build a dashboard, refund an order (after you approve it) and split a bill.',
   }
 }
 
@@ -247,8 +310,29 @@ function statusChart() {
 function openUiScript(turn: Turn): Plan {
   const text = turn.userText
 
+  if (turn.action && turn.action.name !== 'refund') {
+    const answer = settledBill(turn) ?? `Got "${turn.action.name}".`
+    return lang(['root = Card([note])', `note = Callout("success", "Settled", ${q(answer)})`])
+  }
+
+  // 8. OpenUI Lang has no sandbox: the model calls `ui__render` with one, as on the other pages, and
+  // the page draws it from the `agora.ui` events OpenUI itself ignores (resources/js/pages/openui.tsx).
+  if (/split|bill/.test(text)) {
+    if (!called(turn, 'ui__render').length) {
+      return {
+        text: 'Building a bill splitter.',
+        toolCalls: [{ name: 'ui__render', input: billSplitterTree(readBill(text)) }],
+        streamArgs: SANDBOX_STREAM,
+      }
+    }
+    return lang([
+      'root = Card([body])',
+      `body = TextContent(${q('Your bill splitter is ready: change any number, then press “Ask the assistant to settle it”.')})`,
+    ])
+  }
+
   if (/refund/.test(text)) {
-    const orderId = orderIdIn(text)
+    const orderId = orderIdIn(turn)
     const refund = called(turn, 'refund_order')[0]
     if (!refund) {
       return {
@@ -330,7 +414,7 @@ function openUiScript(turn: Turn): Plan {
 
   return lang([
     'root = Card([body])',
-    `body = TextContent(${q('Hi! I can list your orders, chart revenue, build a dashboard, and refund an order (after you approve it).')})`,
+    `body = TextContent(${q('Hi! I can list your orders, chart revenue, build a dashboard, refund an order (after you approve it) and split a bill.')})`,
   ])
 }
 

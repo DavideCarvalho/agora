@@ -36,7 +36,10 @@
     "vite": "7.3.6"
   },
   "dependencies": {
-    "@adonis-agora/agent": "0.66.1",
+    "@a2ui/markdown-it": "0.2.0",
+    "@a2ui/react": "0.12.0",
+    "@a2ui/web_core": "0.12.0",
+    "@adonis-agora/agent": "0.71.0",
     "@adonisjs/core": "7.5.0",
     "@adonisjs/lucid": "22.4.2",
     "@adonisjs/session": "8.1.0",

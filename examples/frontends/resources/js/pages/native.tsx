@@ -7,7 +7,7 @@ import {
   type TranscriptBlock,
   type TranscriptToolCall,
 } from '@adonis-agora/agent/react'
-import { GenerativeUI } from '@adonis-agora/agent/react/genui'
+import { GenerativeUI, GenuiActionProvider } from '@adonis-agora/agent/react/genui'
 import { catalog } from '#genui/catalog'
 import { Shell } from '../shared/shell.js'
 import { AgentActions, heldPlaceholder, registry } from '../shared/renderers.js'
@@ -80,38 +80,41 @@ function Chat(props: { threadId?: string; onThreadCreated: (id: string) => void 
   useEffect(() => onScenario(send), [chat.sendMessage])
 
   return (
-    // A component's buttons reach the chat through this context (see OrderList's Refund).
+    // A component's buttons reach the chat through this context (see OrderList's Refund); a sandbox's
+    // `agent.send(...)` through the library's: `sendUiAction` sends it as the next user message.
     <AgentActions.Provider value={{ send }}>
-      <section className="conversation">
-        <div className="messages" data-testid="messages">
-          {chat.isLoadingHistory ? <p>Loading…</p> : null}
-          {transcript.items.map((item) => (
-            <article key={item.id} className="msg" data-role={item.role}>
-              {item.blocks.map((block) => (
-                <Block key={block.key} block={block} />
-              ))}
-            </article>
-          ))}
-          {chat.error ? <p className="error">{chat.error.message}</p> : null}
-        </div>
-        <form
-          className="composer"
-          onSubmit={(event) => {
-            event.preventDefault()
-            void composer.submit()
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Message the assistant"
-            value={composer.text}
-            onChange={(event) => composer.setText(event.target.value)}
-          />
-          <button type="submit" className="primary" disabled={!composer.canSend}>
-            Send
-          </button>
-        </form>
-      </section>
+      <GenuiActionProvider onAction={chat.sendUiAction}>
+        <section className="conversation">
+          <div className="messages" data-testid="messages">
+            {chat.isLoadingHistory ? <p>Loading…</p> : null}
+            {transcript.items.map((item) => (
+              <article key={item.id} className="msg" data-role={item.role}>
+                {item.blocks.map((block) => (
+                  <Block key={block.key} block={block} />
+                ))}
+              </article>
+            ))}
+            {chat.error ? <p className="error">{chat.error.message}</p> : null}
+          </div>
+          <form
+            className="composer"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void composer.submit()
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Message the assistant"
+              value={composer.text}
+              onChange={(event) => composer.setText(event.target.value)}
+            />
+            <button type="submit" className="primary" disabled={!composer.canSend}>
+              Send
+            </button>
+          </form>
+        </section>
+      </GenuiActionProvider>
     </AgentActions.Provider>
   )
 }

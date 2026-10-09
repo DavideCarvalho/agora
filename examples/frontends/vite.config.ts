@@ -12,6 +12,7 @@ export default defineConfig({
         'resources/js/pages/native.tsx',
         'resources/js/pages/copilotkit.tsx',
         'resources/js/pages/openui.tsx',
+        'resources/js/pages/a2ui.tsx',
       ],
       reload: ['resources/views/**/*.edge'],
     }),
