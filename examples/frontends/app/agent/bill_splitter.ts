@@ -115,3 +115,69 @@ export function billSplitterTree(bill: Bill) {
     },
   }
 }
+
+/**
+ * Scenario 9: the same splitter as a model writes it with the app's kit (`genuiSandboxKit()` in
+ * vite.config.ts, `sandbox: { kit: true, tailwind: true }` in config/agent.ts): JSX using the app's
+ * own Button, Card, Input and Slider, Tailwind classes mapped to the app's theme — so it is drawn
+ * in the app's look, light and dark. Streamed as JSX: it draws as soon as what has arrived parses.
+ */
+const jsx = (bill: Bill) =>
+  `
+function App() {
+  const [total, setTotal] = useState(${bill.total})
+  const [people, setPeople] = useState(${bill.people})
+  const [tip, setTip] = useState(${bill.tip})
+  const [sent, setSent] = useState(false)
+  const valid = total > 0 && people >= 1
+  const tipAmount = Math.round(total * tip) / 100
+  const each = valid ? Math.ceil(((total + tipAmount) / people) * 100) / 100 : 0
+  const money = (n) => '$' + n.toFixed(2)
+  return (
+    <Card data-testid="kit-bill-splitter" className="max-w-md">
+      <CardHeader>
+        <CardTitle>Split the bill</CardTitle>
+        <CardDescription>Drawn with the app's own components.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <label className="flex items-center justify-between gap-3 text-sm">
+          Bill total ($)
+          <Input id="total" type="number" className="w-32" value={total} aria-invalid={!(total > 0)} onChange={(e) => setTotal(Number(e.target.value))} />
+        </label>
+        <div className="space-y-1 text-sm">
+          <div className="flex justify-between"><span>People</span><span className="font-medium">{people}</span></div>
+          <Slider aria-label="People" min={1} max={12} value={[people]} onValueChange={(v) => setPeople(v[0])} />
+        </div>
+        <div className="flex gap-2">
+          {[0, 10, 15, 20].map((p) => (
+            <Button key={p} size="sm" variant={p === tip ? 'default' : 'outline'} onClick={() => setTip(p)}>{p}%</Button>
+          ))}
+        </div>
+        <div className="rounded-lg bg-muted p-3">
+          <div className="text-sm text-muted-foreground">Each person pays</div>
+          <div id="each" className="text-2xl font-semibold text-primary">{valid ? money(each) : '—'}</div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button id="settle" disabled={!valid || sent} onClick={() => { setSent(true); agent.send({ text: 'Settle the bill: ' + money(total) + ' with a ' + tip + '% tip, split ' + people + ' ways.', total, people, tip, perPerson: each }) }}>
+          {sent ? 'Sent to the assistant' : 'Ask the assistant to settle it'}
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+`.trim()
+
+/** The `ui__render` input for scenario 9: a `Sandbox` written as JSX (no html, no scripts). */
+export function billSplitterJsxTree(bill: Bill) {
+  return {
+    type: 'Sandbox',
+    props: {
+      initialHeight: 360,
+      placeholderMessages: ['Setting up the bill splitter…', 'Using the app components…'],
+      title: 'Bill splitter',
+      summary: `Splits a $${bill.total} bill with a ${bill.tip}% tip between ${bill.people} people.`,
+      jsx: jsx(bill),
+    },
+  }
+}

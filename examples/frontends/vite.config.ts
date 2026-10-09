@@ -1,7 +1,26 @@
 import { createServer } from 'node:http'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import adonisjs from '@adonisjs/vite/client'
+import { genuiSandboxKit, type GenuiSandboxKitOptions } from '@adonis-agora/agent/vite'
+
+/**
+ * `SANDBOX_KIT=<name>` swaps the committed kit (resources/js/kit — a generic shadcn-style
+ * Button/Card/Input/Slider) for a local one in `local-kits/<name>/vite.config.ts` (gitignored: for
+ * trying a private design system on the demo). That file exports `{ kit, css?, alias?, plugins? }`.
+ */
+interface LocalKit {
+  kit: GenuiSandboxKitOptions
+  css?: string
+  alias?: Record<string, string>
+  plugins?: PluginOption[]
+}
+const localPath = process.env.SANDBOX_KIT
+  ? new URL(`./local-kits/${process.env.SANDBOX_KIT}/vite.config.ts`, import.meta.url).href
+  : undefined
+const local: LocalKit | undefined = localPath
+  ? ((await import(/* @vite-ignore */ localPath)) as { default: LocalKit }).default
+  : undefined
 
 export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, process.cwd(), '')
@@ -46,12 +65,19 @@ export default defineConfig(({ mode }) => {
           'resources/js/pages/copilotkit.tsx',
           'resources/js/pages/openui.tsx',
           'resources/js/pages/a2ui.tsx',
+          'resources/js/pages/whatsapp.tsx',
+          ...(local?.css ? [local.css] : []),
         ],
         reload: ['resources/views/**/*.edge'],
       }),
+      // The app's design system in the sandbox: bundles the kit (served in dev, hashed assets in the
+      // build), writes its docs from the components' types, serves the Tailwind runtime, and reloads
+      // open sandboxes when a component changes. app/genui/catalog.ts turns it on: defineSandbox({ kit: true }).
+      genuiSandboxKit(local?.kit ?? { include: 'resources/js/kit/*.tsx' }),
+      ...(local?.plugins ?? []),
     ],
     resolve: {
-      alias: { '#genui': new URL('./app/genui', import.meta.url).pathname },
+      alias: { '#genui': new URL('./app/genui', import.meta.url).pathname, ...local?.alias },
     },
     server: {
       ...(hosts.length > 0 ? { allowedHosts: hosts.includes('true') ? true : hosts } : {}),

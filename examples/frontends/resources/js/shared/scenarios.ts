@@ -13,6 +13,11 @@ export const scenarios = [
     label: '8. Bill splitter (sandbox)',
     prompt: 'Split a $120 bill between 3 people with a 15% tip',
   },
+  {
+    id: 'kit',
+    label: '9. Bill splitter with the app kit (JSX + Tailwind)',
+    prompt: 'Split a $90 dinner between 4 friends with a 10% tip, using the app components',
+  },
 ] as const
 
 export const SCENARIO_EVENT = 'demo:scenario'

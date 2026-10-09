@@ -4,7 +4,8 @@
  *
  *   node ace serve --hmr       # in another terminal (PORT=3333 by default)
  *   pnpm e2e native             # one page at a time: native, copilotkit, openui, a2ui,
- *                               # copilotkit-a2ui, matrix (all of them in one process needs a lot of memory)
+ *                               # copilotkit-a2ui, kit, whatsapp, matrix (all of them in one process
+ *                               # needs a lot of memory)
  *
  * A check that fails is logged as `FAIL: …` and makes the run exit non-zero.
  */
@@ -341,6 +342,99 @@ if (!only || only === 'copilotkit-a2ui') {
   await page.waitForTimeout(2000)
   await shot('8-sandbox')
   r.sandbox = await text()
+  await h.context.close()
+}
+
+/**
+ * 9. The sandbox in the app's design system: the model writes the bill splitter as JSX with the
+ * app's kit (resources/js/kit, built by `genuiSandboxKit()`), Tailwind classes mapped to the theme.
+ * It must stream placeholder → preview → live, draw with the kit's components, follow the host's
+ * light/dark `data-theme` without reloading, and hand its values back with `agent.send`.
+ */
+if (!only || only === 'kit') {
+  const h = await open('kit', '/native')
+  const { page, log, r, check, shot } = h
+  await page.evaluate(() => {
+    window.__phases = []
+    new MutationObserver(() => {
+      for (const el of document.querySelectorAll('[data-sandbox-phase]')) {
+        const phase = el.getAttribute('data-sandbox-phase')
+        if (!window.__phases.includes(phase)) window.__phases.push(phase)
+      }
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-sandbox-phase'] })
+  })
+  await h.scenario('kit')
+  await page.waitForSelector('iframe[data-sandbox-kit][data-sandbox-phase="preview"]', { timeout: 20000 }).then(() => shot('9-kit-preview')).catch(() => log.push('kit preview missed'))
+  await page.waitForSelector('iframe[data-sandbox-kit][data-sandbox-phase="live"]', { timeout: 60000 }).catch(() => check(false, 'kit: the JSX sandbox never went live'))
+  const frame = page.frameLocator('iframe[data-sandbox-phase="live"]').last()
+  await frame.locator('[data-testid="kit-bill-splitter"]').waitFor({ timeout: 20000 }).catch(() => check(false, 'kit: the splitter did not render'))
+  await page.waitForTimeout(1000)
+  r.phases = await page.evaluate(() => window.__phases)
+  check(['placeholder', 'live'].every((phase) => r.phases.includes(phase)), `kit: phases ${r.phases}`)
+  // Drawn with the kit's components (their data-slot), styled by Tailwind from the theme.
+  r.slots = await frame.locator('[data-slot]').evaluateAll((els) => [...new Set(els.map((el) => el.getAttribute('data-slot')))])
+  check(['card', 'button', 'input', 'slider'].every((slot) => r.slots.includes(slot)), `kit: components missing (${r.slots})`)
+  r.light = await frame.locator('#settle').evaluate((el) => getComputedStyle(el).backgroundColor)
+  r.each = await frame.locator('#each').innerText()
+  check(r.each === '$24.75', `kit: $90 + 10% between 4 should be $24.75 (${r.each})`)
+  await shot('9-kit-light')
+  await page.click('[data-testid="theme-toggle"]')
+  await page.waitForTimeout(1000)
+  r.dark = await frame.locator('#settle').evaluate((el) => getComputedStyle(el).backgroundColor)
+  r.frameTheme = await frame.locator('html').getAttribute('data-theme')
+  check(r.frameTheme === 'dark' && r.dark !== r.light, `kit: the frame did not follow dark mode (${r.light} → ${r.dark})`)
+  await shot('9-kit-dark')
+  await frame.locator('[aria-label="People"]').fill('6')
+  r.each6 = await frame.locator('#each').innerText()
+  check(r.each6 === '$16.50', `kit: 6 people should pay $16.50 (${r.each6})`)
+  await frame.locator('#settle').click()
+  await page.waitForSelector('text=Each of the 6 people pays $16.50', { timeout: 30000 }).catch(() => check(false, 'kit: agent.send did not come back as a turn'))
+  await page.waitForTimeout(800)
+  await shot('9-kit-settled')
+  await page.click('[data-testid="theme-toggle"]')
+  await h.context.close()
+}
+
+/**
+ * The same prompts on (simulated) WhatsApp: per-component tools only, each component drawn as
+ * WhatsApp messages — the orders as a list to pick from (a pick is the next turn), charts as PNG
+ * images, the dashboard as text + image + table, the bill splitter (no sandbox there) as words.
+ */
+if (!only || only === 'whatsapp') {
+  const h = await open('whatsapp', '/whatsapp')
+  const { page, log, r, check, shot } = h
+  await page.click('[data-testid="wa-reset"]')
+  const outgoing = () => page.locator('[data-testid="wa-message"][data-direction="out"]').count()
+  const until = async (n) => {
+    const end = Date.now() + 40000
+    while ((await outgoing()) < n) {
+      if (Date.now() > end) return check(false, `whatsapp: waited for ${n} messages`)
+      await page.waitForTimeout(300)
+    }
+    await page.waitForTimeout(800)
+  }
+  await h.scenario('orders')
+  await until(3)
+  await page.locator('[data-testid="wa-list-open"]').last().click()
+  r.rows = await page.locator('[data-testid="wa-list-row"]').allInnerTexts()
+  check(r.rows.length === 4 && r.rows[1].includes('Alan Turing'), `whatsapp: list rows ${JSON.stringify(r.rows)}`)
+  await shot('wa-orders-list')
+  await page.locator('[data-testid="wa-list-row"]').nth(1).click()
+  await until(4)
+  r.pick = (await page.locator('[data-testid="wa-message"]').allInnerTexts()).at(-1)
+  check(/Order #1002 — Alan Turing/.test(r.pick ?? ''), `whatsapp: the pick did not come back as a turn (${r.pick})`)
+  await h.scenario('revenue')
+  await until(7)
+  check((await page.locator('[data-testid="wa-image"]').count()) === 1, 'whatsapp: the revenue chart should be an image')
+  await h.scenario('dashboard')
+  await until(12)
+  check((await page.locator('[data-testid="wa-image"]').count()) === 2, 'whatsapp: the dashboard chart should be an image')
+  await h.scenario('sandbox')
+  await until(13)
+  r.bill = (await page.locator('[data-testid="wa-message"]').allInnerTexts()).at(-1)
+  check(/Each of the 3 people pays \$46\.00/.test(r.bill ?? ''), `whatsapp: bill answer (${r.bill})`)
+  r.text = (await page.locator('[data-testid="wa-message"]').allInnerTexts()).join('\n---\n')
+  await shot('wa-all')
   await h.context.close()
 }
 
