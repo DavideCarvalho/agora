@@ -54,7 +54,7 @@
     "@openuidev/react-ui": "0.17.0",
     "@vinejs/vine": "4.4.0",
     "ai": "7.0.133",
-    "better-sqlite3": "12.11.1",
+    "better-sqlite3": "13.0.3",
     "edge.js": "6.5.1",
     "luxon": "3.7.2",
     "react": "19.2.8",
