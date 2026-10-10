@@ -9,13 +9,14 @@ import { listOrdersTool, refundOrderTool, revenueTool } from '#agent/tools'
 import { openUiPrompt } from '#agent/openui_prompt'
 
 const basePrompt = [
-  'You are the orders and analytics assistant of a small shop. Amounts in tool results are in cents ' +
-    '(`totalCents`): show them as dollars ($129.99).',
+  'You are the orders and analytics assistant of a small shop. Tool results carry money formatted ' +
+    '(`total: "$129.99"`): quote that; `totalCents` is the same amount in cents, only for components ' +
+    'that take cents (OrderList).',
   'Tools: list_orders (recent orders), revenue_by_month (revenue per month), refund_order (refunds ' +
     'one order — the user approves it in the app first; call it, never ask for confirmation in text), ' +
-    'ui__render (compose a layout from the catalog components).',
+    'ui__render (compose a layout from the catalog components), ui__sandbox (one Sandbox, its props directly).',
   'For a one-off interactive tool no component fits (a calculator, a bill splitter, a converter), ' +
-    'render a Sandbox with ui__render — always for a request to split a bill or to calculate something, ' +
+    'render a Sandbox with ui__sandbox — always for a request to split a bill or to calculate something, ' +
     'even when you could answer in text: the user adjusts the numbers there. Pre-fill it with their ' +
     'numbers; it must validate its own input, compute live as the user types, ' +
     'and have a button that calls agent.send({ text, ...values }) — `text` a short sentence of what the ' +
@@ -29,14 +30,14 @@ const componentPrompt =
   'Refund button per row; the chart as it loads). Do not draw them again with ui__render and do not ' +
   'repeat their rows as text or a markdown table: say one or two sentences about them. Use ui__render ' +
   'for what no tool draws — a dashboard that combines several things (KpiCards, a Chart, a DataTable ' +
-  'in a Stack or Card), or a Sandbox. To build a dashboard, read the data with `show: false` so the ' +
+  'in a Stack or Card); a Sandbox on its own goes through ui__sandbox. To build a dashboard, read the data with `show: false` so the ' +
   'dashboard is the only thing drawn.'
 
 /** What the OpenUI page adds: it draws no tool UI of its own, so results are written in OpenUI Lang. */
 const openUiNote =
   'On this page the tools draw nothing: show their results yourself in openui-lang (the orders with ' +
-  'the OrderList component). The Sandbox is the exception: render it with ui__render, and the page ' +
-  'draws it in the thread. Every reply is openui-lang, even a one-sentence one — after a ui__render ' +
+  'the OrderList component). The Sandbox is the exception: render it with ui__sandbox, and the page ' +
+  'draws it in the thread. Every reply is openui-lang, even a one-sentence one — after a ui__sandbox ' +
   'call, or answering a sandbox button: root = Card([body]) with body = TextContent("…"). Plain prose ' +
   'is not shown on this page.'
 
@@ -99,7 +100,11 @@ export default defineConfig({
   // skeletons for nodes still being written (`useGenuiNode()`), and the chart, which streams
   // `complete` (app/genui/catalog.ts), is a placeholder until its props are whole. The catalog's
   // `Sandbox` streams too: a placeholder, then its styled markup, then the live view.
-  genui: genui({ catalog, streaming: 'partial' }),
+  // `componentTools: ['Sandbox']`: the sandbox also has a flat tool, `ui__sandbox`, whose input IS its
+  // props. Nested in `ui__render`, a real model (claude-haiku-5.5) left out the `{ type, props }`
+  // envelope on 11 of 16 bill-splitter runs (the user saw a refused call before the sandbox); with
+  // `ui__sandbox`, on 0 of 16.
+  genui: genui({ catalog, streaming: 'partial', componentTools: ['Sandbox'] }),
   adapters: [
     // POST /agent/ag-ui — what the CopilotKit and OpenUI pages talk to. `a2ui`: every UI frame is
     // also an `a2ui-surface` activity (A2UI's AG-UI binding) on A2UI's basic catalog, which

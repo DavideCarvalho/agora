@@ -11,16 +11,19 @@ import {
   useDefaultRenderTool,
   useInterrupt,
   useRenderTool,
+  UseAgentUpdate,
 } from '@copilotkit/react-core/v2'
 import '@copilotkit/react-core/v2/styles.css'
 import { Observable } from 'rxjs'
 import { z } from 'zod'
 import { GenuiActionProvider, GenuiNodeScope, uiActionSummary, type UiAction } from '@adonis-agora/agent/react/genui'
+import { normalizeTreeInput } from '@adonis-agora/agent/genui'
+import { catalog } from '#genui/catalog'
 import { Shell } from '../shared/shell.js'
 import { AgentActions, Chart, OrderList, registry, type OrderRow } from '../shared/renderers.js'
 import { onScenario } from '../shared/scenarios.js'
 import { csrfFetch } from '../shared/csrf.js'
-import { listThreads, threadMessages, type ThreadSummary } from '../shared/agora_rest.js'
+import { listThreads, markNewThread, threadMessages, threadStored, type ThreadSummary } from '../shared/agora_rest.js'
 
 /**
  * GLUE (persistence, 13 lines): `HttpAgent.connect` is not implemented, so a CopilotChat opened on
@@ -51,7 +54,7 @@ const activityRenderers = a2uiMode ? [createA2UIMessageRenderer({ theme: a2uiDef
 
 function CopilotKitPage() {
   const [threadId, setThreadId] = useState(
-    () => new URLSearchParams(location.search).get('thread') ?? crypto.randomUUID()
+    () => new URLSearchParams(location.search).get('thread') ?? markNewThread(crypto.randomUUID())
   )
   // `fetch` override: the session cookie rides by default; shield's CSRF header has to be added.
   const agent = useMemo(() => new AgoraHttpAgent({ url: '/agent/ag-ui', fetch: csrfFetch }), [])
@@ -90,12 +93,17 @@ function Threads(props: { current: string; onOpen: (id: string) => void }) {
   const { agent } = useAgent()
   useEffect(() => {
     void listThreads().then(setThreads)
-    const sub = agent.subscribe({ onRunFinalized: () => void listThreads().then(setThreads) })
+    const sub = agent.subscribe({
+      onRunFinalized: () => {
+        threadStored(props.current)
+        void listThreads().then(setThreads)
+      },
+    })
     return () => sub.unsubscribe()
-  }, [agent])
+  }, [agent, props.current])
   return (
     <nav className="threads" aria-label="Threads">
-      <button type="button" className="new" onClick={() => props.onOpen(crypto.randomUUID())}>
+      <button type="button" className="new" onClick={() => props.onOpen(markNewThread(crypto.randomUUID()))}>
         + New chat
       </button>
       {threads.map((thread) => (
@@ -220,6 +228,24 @@ function Tree({ node, id = 'root', incomplete }: { node: any; id?: string; incom
 
 const parse = (result: unknown) => (typeof result === 'string' ? JSON.parse(result) : result)
 
+const refused = (status: string, result: unknown) =>
+  status === 'complete' && typeof result === 'string' && /error|invalid/i.test(result) && !result.startsWith('{"ok')
+
+/**
+ * GLUE (retried calls, 12 lines): a call the server refused, which the model then retried with the
+ * same tool, draws nothing — the person sees the view the retry drew, not the refusal before it.
+ * (`@adonis-agora/agent/react`'s transcript does this itself: `retriedCallIds`.)
+ */
+function Refused({ toolCallId, name, result }: { toolCallId: string; name: string; result: string }) {
+  const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })
+  const calls = agent.messages.flatMap((message) =>
+    message.role === 'assistant' ? (message.toolCalls ?? []) : []
+  )
+  const next = calls[calls.findIndex((call) => call.id === toolCallId) + 1]
+  if (next?.function.name === name) return null
+  return <p className="error">{name} refused: {result.slice(0, 160)}</p>
+}
+
 function Renderers() {
   usePushCollector()
 
@@ -240,14 +266,32 @@ function Renderers() {
     render: ({ toolCallId, parameters, result }) =>
       a2uiMode || parameters?.show === false ? <></> : <RevenueChart toolCallId={toolCallId} result={result} />,
   })
+  // The arguments are read the way the server reads them (`normalizeTreeInput`: a stringified tree,
+  // a dropped `{ type, props }` envelope), so what it accepted is what is drawn.
   useRenderTool({
     name: 'ui__render',
     parameters: z.any(),
-    render: ({ parameters, result, status }) => {
-      if (status === 'complete' && typeof result === 'string' && /error|invalid/i.test(result) && !result.startsWith('{"ok'))
-        return <p className="error">ui__render refused: {result.slice(0, 160)}</p>
-      return a2uiMode ? <></> : <Tree node={parameters} incomplete={status !== 'complete'} />
-    },
+    render: ({ toolCallId, parameters, result, status }) =>
+      refused(status, result) ? (
+        <Refused toolCallId={toolCallId} name="ui__render" result={result as string} />
+      ) : a2uiMode ? (
+        <></>
+      ) : (
+        <Tree node={normalizeTreeInput(catalog, parameters)} incomplete={status !== 'complete'} />
+      ),
+  })
+  // `ui__sandbox` (`componentTools: ['Sandbox']`): its arguments ARE the sandbox's props.
+  useRenderTool({
+    name: 'ui__sandbox',
+    parameters: z.any(),
+    render: ({ toolCallId, parameters, result, status }) =>
+      refused(status, result) ? (
+        <Refused toolCallId={toolCallId} name="ui__sandbox" result={result as string} />
+      ) : a2uiMode ? (
+        <></>
+      ) : (
+        <Tree node={{ type: 'Sandbox', props: parameters ?? {} }} incomplete={status !== 'complete'} />
+      ),
   })
   useDefaultRenderTool() // every other tool call: CopilotKit's built-in card
 

@@ -50,7 +50,22 @@ export const userLine = (content: string) => {
  * A stored thread as AG-UI messages: assistant tool calls, then one `tool` message per result.
  * A UI action's user message shows as its one line (the server keeps the whole text).
  */
+/**
+ * Thread ids the page just made up for a new chat: nothing is stored under them yet, so loading one
+ * answers empty without asking (a 404 the browser would log as an error) — until a run on it ends
+ * (`threadStored`).
+ */
+const newThreads = new Set<string>()
+export function markNewThread(threadId: string): string {
+  newThreads.add(threadId)
+  return threadId
+}
+export function threadStored(threadId: string): void {
+  newThreads.delete(threadId)
+}
+
 export async function threadMessages(threadId: string): Promise<AgUiMessage[]> {
+  if (newThreads.has(threadId)) return []
   const response = await csrfFetch(`/agent/threads/${encodeURIComponent(threadId)}`)
   if (response.status === 404) return []
   if (!response.ok) throw new Error(`GET /agent/threads/${threadId}: ${response.status}`)

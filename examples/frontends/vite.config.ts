@@ -3,12 +3,30 @@ import react from '@vitejs/plugin-react'
 import adonisjs from '@adonisjs/vite/client'
 
 export default defineConfig(({ mode }) => {
+  const fileEnv = loadEnv(mode, process.cwd(), '')
+  const read = (name: string) => process.env[name] ?? fileEnv[name] ?? ''
   // `VITE_ALLOWED_HOSTS` (.env): hosts the dev server answers besides localhost, comma-separated —
   // `.ts.net` for a Tailscale tailnet, `true` for any. Vite refuses other Host headers (DNS rebinding).
-  const hosts = (process.env.VITE_ALLOWED_HOSTS ?? loadEnv(mode, process.cwd(), '').VITE_ALLOWED_HOSTS ?? '')
+  const hosts = read('VITE_ALLOWED_HOSTS')
     .split(',')
     .map((host) => host.trim())
     .filter(Boolean)
+  // HMR behind a proxy (.env, all optional). Vite's HMR websocket listens on its own port (24678)
+  // and the page connects to it at the page's host, so a proxy that only forwards the app's port
+  // (`tailscale serve --https=3341 http://127.0.0.1:3340`) leaves the page logging "WebSocket closed
+  // without opened". Forward that port too and tell the client where it is:
+  //   VITE_HMR_PROTOCOL=wss       — `ws` or `wss` (behind an HTTPS proxy: wss)
+  //   VITE_HMR_CLIENT_PORT=24678  — the port the BROWSER connects to (the proxy's)
+  //   VITE_HMR_HOST=…             — the host the browser connects to; default: the page's host.
+  //                                 Vite also listens on it, so leave it unset behind a proxy.
+  //   VITE_HMR_PORT=24678         — the port Vite's HMR server listens on (another free one when
+  //                                 two dev servers share a machine)
+  const hmr = {
+    ...(read('VITE_HMR_PROTOCOL') ? { protocol: read('VITE_HMR_PROTOCOL') } : {}),
+    ...(read('VITE_HMR_CLIENT_PORT') ? { clientPort: Number(read('VITE_HMR_CLIENT_PORT')) } : {}),
+    ...(read('VITE_HMR_HOST') ? { host: read('VITE_HMR_HOST') } : {}),
+    ...(read('VITE_HMR_PORT') ? { port: Number(read('VITE_HMR_PORT')) } : {}),
+  }
   return {
     plugins: [
       react(),
@@ -27,6 +45,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { '#genui': new URL('./app/genui', import.meta.url).pathname },
     },
-    server: hosts.length > 0 ? { allowedHosts: hosts.includes('true') ? true : hosts } : {},
+    server: {
+      ...(hosts.length > 0 ? { allowedHosts: hosts.includes('true') ? true : hosts } : {}),
+      ...(Object.keys(hmr).length > 0 ? { hmr } : {}),
+    },
   }
 })

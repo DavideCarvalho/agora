@@ -16,4 +16,9 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   /** Extra hosts Vite's dev server answers (comma-separated; `.ts.net` = any tailnet name). */
   VITE_ALLOWED_HOSTS: Env.schema.string.optional(),
+  /** Where the browser reaches Vite's HMR websocket behind a proxy (see vite.config.ts). */
+  VITE_HMR_PROTOCOL: Env.schema.enum.optional(['ws', 'wss'] as const),
+  VITE_HMR_CLIENT_PORT: Env.schema.number.optional(),
+  VITE_HMR_HOST: Env.schema.string.optional(),
+  VITE_HMR_PORT: Env.schema.number.optional(),
 })
