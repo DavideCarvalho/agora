@@ -20,20 +20,20 @@ export default defineConfig(({ mode }) => {
   //   VITE_HMR_CLIENT_PORT=24678  — the port the BROWSER connects to (the proxy's)
   //   VITE_HMR_HOST=…             — the host the browser connects to; default: the page's host.
   //                                 Vite also listens on it, so leave it unset behind a proxy.
-  //   VITE_HMR_PORT=24678         — the port Vite's HMR server listens on (another free one when
-  //                                 two dev servers share a machine)
-  //   VITE_HMR_LISTEN_HOST=127.0.0.1 — listen on this address only. Vite otherwise takes the port
-  //                                 on every interface, which steals it from a proxy bound to the
-  //                                 same port on another address (`tailscale serve --https=24678`).
+  //   VITE_HMR_LISTEN_HOST=127.0.0.1 — Vite's HMR server listens there only, on
+  //   VITE_HMR_LISTEN_PORT=24678     (default 24678). Without it `node ace serve` picks a free port
+  //                                 per start (it sets VITE_HMR_PORT itself) on every interface,
+  //                                 which a proxy cannot target and which steals the port from a
+  //                                 proxy bound to it on another address (`tailscale serve`).
   const listenHost = read('VITE_HMR_LISTEN_HOST')
   const hmrServer = listenHost ? createServer() : undefined
-  hmrServer?.listen(Number(read('VITE_HMR_PORT') || 24678), listenHost)
+  hmrServer?.on('error', (error) => console.error(`[vite.config] HMR server: ${error.message}`))
+  hmrServer?.listen(Number(read('VITE_HMR_LISTEN_PORT') || 24678), listenHost)
   const hmr = {
     ...(hmrServer ? { server: hmrServer } : {}),
     ...(read('VITE_HMR_PROTOCOL') ? { protocol: read('VITE_HMR_PROTOCOL') } : {}),
     ...(read('VITE_HMR_CLIENT_PORT') ? { clientPort: Number(read('VITE_HMR_CLIENT_PORT')) } : {}),
     ...(read('VITE_HMR_HOST') ? { host: read('VITE_HMR_HOST') } : {}),
-    ...(read('VITE_HMR_PORT') ? { port: Number(read('VITE_HMR_PORT')) } : {}),
   }
   return {
     plugins: [

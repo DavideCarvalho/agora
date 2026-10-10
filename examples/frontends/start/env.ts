@@ -20,6 +20,6 @@ export default await Env.create(new URL('../', import.meta.url), {
   VITE_HMR_PROTOCOL: Env.schema.enum.optional(['ws', 'wss'] as const),
   VITE_HMR_CLIENT_PORT: Env.schema.number.optional(),
   VITE_HMR_HOST: Env.schema.string.optional(),
-  VITE_HMR_PORT: Env.schema.number.optional(),
   VITE_HMR_LISTEN_HOST: Env.schema.string.optional(),
+  VITE_HMR_LISTEN_PORT: Env.schema.number.optional(),
 })
