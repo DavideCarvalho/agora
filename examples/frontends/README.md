@@ -91,6 +91,9 @@ tailscale serve --bg --https=24678 http://127.0.0.1:24678  # Vite's HMR websocke
 APP_URL=https://my-box.my-tailnet.ts.net:3341
 VITE_HMR_PROTOCOL=wss
 VITE_HMR_CLIENT_PORT=24678
+# Vite takes 24678 on every interface by default, which steals it from `tailscale serve` (the TLS
+# handshake then reaches Vite's plain websocket): listen on loopback only.
+VITE_HMR_LISTEN_HOST=127.0.0.1
 # VITE_HMR_HOST — the host the browser connects to (default: the page's). Vite listens on it too.
 # VITE_HMR_PORT — the port Vite's HMR server listens on (default 24678; another when two dev
 #                 servers share a machine)
