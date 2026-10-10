@@ -2,6 +2,7 @@ import { defineConfig, stores, type PromptContext } from '@adonis-agora/agent'
 import { agUiAdapter } from '@adonis-agora/agent/ag-ui'
 import { a2uiAdapter } from '@adonis-agora/agent/a2ui'
 import { genui } from '@adonis-agora/agent/genui'
+import { chartImages } from '@adonis-agora/agent/genui/chart-image'
 import env from '#start/env'
 import { A2UI_CATALOG_ID, catalog } from '#genui/catalog'
 import { orderListToA2ui, sandboxToA2ui } from '#genui/a2ui'
@@ -104,7 +105,24 @@ export default defineConfig({
   // props. Nested in `ui__render`, a real model (claude-haiku-5.5) left out the `{ type, props }`
   // envelope on 11 of 16 bill-splitter runs (the user saw a refused call before the sandbox); with
   // `ui__sandbox`, on 0 of 16.
-  genui: genui({ catalog, streaming: 'partial', componentTools: ['Sandbox'] }),
+  //
+  // The catalog's sandbox draws in the app's look — its theme (always), Tailwind, and the app's own
+  // components (`defineSandbox({ kit: true, tailwind: true })` in app/genui/catalog.ts; the kit is
+  // what `genuiSandboxKit()` builds in vite.config.ts), which the model writes JSX with (scenario
+  // 9). Found through Vite: the dev server here, the manifest in production.
+  //
+  // `channels`: the web gets trees and the sandbox; WhatsApp (the simulated one on /whatsapp) gets one
+  // tool per component it can draw, each sent as WhatsApp messages — OrderList as a list to pick an
+  // order from (its `channels.whatsapp` conversion), charts as PNG images, the rest as text.
+  genui: genui({
+    catalog,
+    streaming: 'partial',
+    componentTools: ['Sandbox'],
+    channels: {
+      web: { mode: 'tree', streaming: 'partial' },
+      whatsapp: { mode: 'per-component', render: 'native', chartImages: chartImages() },
+    },
+  }),
   adapters: [
     // POST /agent/ag-ui — what the CopilotKit and OpenUI pages talk to. `a2ui`: every UI frame is
     // also an `a2ui-surface` activity (A2UI's AG-UI binding) on A2UI's basic catalog, which

@@ -7,6 +7,10 @@
     <title>{{ title }}</title>
     @viteReactRefresh()
     @vite(['resources/css/app.css', entry])
+    @if(localCss)
+      {{-- SANDBOX_KIT=<name>: a local kit's stylesheet, after the app's, so its theme wins. --}}
+      @vite([localCss])
+    @end
   </head>
   <body>
     <div id="root"></div>

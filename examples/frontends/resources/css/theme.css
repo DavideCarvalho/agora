@@ -1,0 +1,41 @@
+/*
+ * The app's theme as CSS custom properties (shadcn's names), light and dark. Dark mode is the
+ * `data-theme="dark"` attribute on <html> (the shell's toggle). The sandbox inherits these: the
+ * renderer reads them off :root and pushes them into the frame, live, when the theme changes.
+ */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.985 0.002 247);
+  --foreground: oklch(0.21 0.02 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.02 265);
+  --primary: oklch(0.52 0.2 268);
+  --primary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.96 0.006 250);
+  --muted-foreground: oklch(0.52 0.02 260);
+  --accent: oklch(0.95 0.03 268);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.91 0.008 250);
+  --input: oklch(0.88 0.01 250);
+  --ring: oklch(0.6 0.17 268);
+}
+[data-theme='dark'] {
+  --background: oklch(0.17 0.015 265);
+  --foreground: oklch(0.96 0.005 250);
+  --card: oklch(0.22 0.02 265);
+  --card-foreground: oklch(0.96 0.005 250);
+  --primary: oklch(0.7 0.15 268);
+  --primary-foreground: oklch(0.17 0.015 265);
+  --muted: oklch(0.27 0.02 265);
+  --muted-foreground: oklch(0.72 0.02 260);
+  --accent: oklch(0.3 0.04 268);
+  --destructive: oklch(0.65 0.2 27);
+  --border: oklch(0.32 0.02 265);
+  --input: oklch(0.36 0.02 265);
+  --ring: oklch(0.7 0.15 268);
+}
+html[data-theme='dark'] body { background: var(--background); color: var(--foreground); }
+html[data-theme='dark'] .topbar, html[data-theme='dark'] .scenarios, html[data-theme='dark'] .conversation header,
+html[data-theme='dark'] .composer, html[data-theme='dark'] .threads, html[data-theme='dark'] .msg { background: var(--card); color: var(--card-foreground); border-color: var(--border); }
+html[data-theme='dark'] .scenarios button { background: var(--muted); color: var(--foreground); border-color: var(--border); }
+.theme-toggle { margin-left: auto; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--card-foreground); cursor: pointer; font: inherit; }

@@ -8,7 +8,7 @@ import type {
 } from '@adonis-agora/agent'
 import { formatCents, listOrders, revenueByMonth, topOrders, type Order } from '#agent/orders'
 import { OPENUI_PROMPT_MARKER } from '#agent/openui_prompt'
-import { billSplitterTree, readBill, settle } from '#agent/bill_splitter'
+import { billSplitterJsxTree, billSplitterTree, readBill, settle } from '#agent/bill_splitter'
 
 /**
  * A deterministic, offline model that plays the same "orders & analytics assistant" script for
@@ -26,7 +26,13 @@ export class ScriptedOrdersModel implements ModelProvider {
     if (process.env.DEBUG_TOOLS) dumpTools(args)
     const turn = readTurn(args.messages)
     const openui = args.system.includes(OPENUI_PROMPT_MARKER)
-    const plan = openui ? openUiScript(turn) : nativeScript(turn)
+    // What this turn was offered: a web page gets `ui__render` (and a sandbox that takes JSX with
+    // the app's kit); WhatsApp gets one `ui__show_*` tool per component it can draw (config/agent.ts).
+    const offered: Offered = {
+      tools: new Set(args.tools.map((tool) => tool.name)),
+      kit: args.tools.some((tool) => tool.name === 'ui__render' && tool.description.includes('function App()')),
+    }
+    const plan = openui ? openUiScript(turn) : offered.tools.has('ui__render') ? nativeScript(turn, offered) : messagingScript(turn, offered)
     const delay = plan.wordDelayMs ?? 20
 
     if (plan.reasoning) {
@@ -82,6 +88,12 @@ interface Plan {
   lines?: boolean
   /** Stream the `ui__render` arguments in chunks, as a real model's tool input arrives. */
   streamArgs?: boolean | { chunk: number; delayMs: number; slowFirst?: number }
+}
+
+interface Offered {
+  tools: Set<string>
+  /** The sandbox takes JSX with the app's kit. */
+  kit: boolean
 }
 
 interface Turn {
@@ -149,7 +161,7 @@ const SANDBOX_STREAM = { chunk: 48, delayMs: 70, slowFirst: 260 }
 // Native + CopilotKit: tool-pushed components, and `ui__render` for composed layouts.
 // ---------------------------------------------------------------------------------------------
 
-function nativeScript(turn: Turn): Plan {
+function nativeScript(turn: Turn, offered: Offered): Plan {
   const text = turn.userText
 
   // 8. The bill splitter's button: the values came back as this turn.
@@ -170,6 +182,19 @@ function nativeScript(turn: Turn): Plan {
     if (refund.denied || refund.error) return { text: `Order #${orderId} was **not** refunded.` }
     const amount = (refund.output as { amount: string }).amount
     return { text: `Done — order #${orderId} was refunded ${amount}.` }
+  }
+
+  // 9. The same, with the app's kit: JSX with its components, in its theme.
+  if (/app components|kit/.test(text) && offered.kit) {
+    if (!called(turn, 'ui__render').length) {
+      return {
+        reasoning: 'A bill splitter in the Sandbox, written with the app components so it looks like the app.',
+        text: 'Here is a bill splitter, built with the app components.',
+        toolCalls: [{ name: 'ui__render', input: billSplitterJsxTree(readBill(text)) }],
+        streamArgs: SANDBOX_STREAM,
+      }
+    }
+    return { text: 'Move the slider or pick a tip, then press “Ask the assistant to settle it”.' }
   }
 
   // 8. No component fits a bill splitter: the model writes one into the Sandbox.
@@ -240,6 +265,78 @@ function nativeScript(turn: Turn): Plan {
     reasoning: 'A greeting. I should say what I can do.',
     text: 'Hi! I can list your orders, chart revenue, build a dashboard, refund an order (after you approve it) and split a bill.',
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// WhatsApp (and any channel in `per-component` mode): one `ui__show_*` tool per component that
+// channel can draw — no trees, no sandbox. The same prompts, answered with what it can show.
+// ---------------------------------------------------------------------------------------------
+
+function messagingScript(turn: Turn, offered: Offered): Plan {
+  const text = turn.userText
+  const shown = (name: string) => called(turn, name).length > 0
+  // A pick from the orders list (OrderList's WhatsApp conversion): that order, in words.
+  if (turn.action?.name === 'details') {
+    const order = listOrders().find((o) => o.id === turn.action?.context.orderId)
+    return {
+      text: order
+        ? `*Order #${order.id}* — ${order.customer}, ${formatCents(order.totalCents)}, ${order.status}. Say “refund ${order.id}” to refund it.`
+        : 'I could not find that order.',
+    }
+  }
+  if (turn.action && turn.action.name !== 'refund') {
+    return { text: settledBill(turn) ?? `Got it — "${turn.action.name}".` }
+  }
+  if (/refund/.test(text)) {
+    const orderId = orderIdIn(turn)
+    const refund = called(turn, 'refund_order')[0]
+    if (!refund) {
+      return { text: `Refunding order #${orderId}.`, toolCalls: [{ name: 'refund_order', input: { orderId } }] }
+    }
+    if (refund.denied || refund.error) return { text: `Order #${orderId} was *not* refunded.` }
+    return { text: `Done — order #${orderId} was refunded ${(refund.output as { amount: string }).amount}.` }
+  }
+  if (/split|bill/.test(text)) {
+    // No sandbox here: the arithmetic, in words.
+    const bill = readBill(text)
+    const { tipAmount, grand, perPerson } = settle(bill)
+    return {
+      text:
+        `Each of the ${bill.people} people pays *${formatCents(Math.round(perPerson * 100))}* ` +
+        `(${formatCents(Math.round(bill.total * 100))} + ${bill.tip}% tip ${formatCents(Math.round(tipAmount * 100))} = ${formatCents(Math.round(grand * 100))}).`,
+    }
+  }
+  if (/dashboard/.test(text)) {
+    if (!shown('ui__show_kpi_cards') && offered.tools.has('ui__show_kpi_cards')) {
+      const tree = dashboardTree()
+      return {
+        text: 'Here is your dashboard.',
+        toolCalls: tree.children
+          .map((child) => ({ name: `ui__show_${child.type === 'KpiCards' ? 'kpi_cards' : child.type === 'Chart' ? 'chart' : 'data_table'}`, input: child.props }))
+          .filter((call) => offered.tools.has(call.name)),
+      }
+    }
+    return { text: 'Revenue is up 50% since January.' }
+  }
+  if (/pie|status/.test(text)) {
+    if (!shown('ui__show_chart') && offered.tools.has('ui__show_chart')) {
+      return { text: 'Pie charts are not in the catalog — a bar chart instead.', toolCalls: [{ name: 'ui__show_chart', input: statusChart() }] }
+    }
+    return { text: 'Two orders are paid, two shipped.' }
+  }
+  if (/revenue|chart/.test(text)) {
+    if (!called(turn, 'revenue_by_month').length) {
+      return { text: 'Fetching revenue…', toolCalls: [{ name: 'revenue_by_month', input: {} }] }
+    }
+    return { text: 'Revenue grew every month except March.' }
+  }
+  if (/order/.test(text)) {
+    if (!called(turn, 'list_orders').length) {
+      return { text: 'Let me look up your orders.', toolCalls: [{ name: 'list_orders', input: {} }] }
+    }
+    return { text: 'Pick an order to refund it.' }
+  }
+  return { text: 'Hi! I can list your orders, chart revenue, build a dashboard, refund an order and split a bill.' }
 }
 
 function dashboardTree() {
