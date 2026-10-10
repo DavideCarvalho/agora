@@ -1,6 +1,6 @@
 import { defineTool } from '@adonis-agora/agent'
 import { z } from 'zod'
-import { formatCents, listOrders, refundOrder, revenueByMonth } from '#agent/orders'
+import { formatCents, listOrders, type Order, refundOrder, revenueByMonth } from '#agent/orders'
 import { openSlot } from '#agent/ui_slot'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -17,6 +17,20 @@ const showInput = z.object({
 })
 
 /**
+ * What the model reads: each order's money already formatted (`total: "$129.99"`) beside the cents a
+ * component takes. A model handed only `totalCents: 12999` sometimes says "$12,999" — the units fix
+ * belongs in the data, not in a prompt line it may skip.
+ */
+const forModel = (orders: Order[]) =>
+  orders.map(({ id, customer, totalCents, status }) => ({
+    id,
+    customer,
+    total: formatCents(totalCents),
+    totalCents,
+    status,
+  }))
+
+/**
  * 1. A tool-driven component, with its skeleton. The tool knows it will show `OrderList` before it
  * reads, so it pushes the list's loading state at once and the rows under the same `id` when the
  * (deliberately slow) read returns — drawn by a client that declared `OrderList`, sent as its
@@ -27,18 +41,19 @@ export const listOrdersTool = defineTool({
   name: 'list_orders',
   kind: 'read',
   description:
-    'List the customer’s recent orders (totals in cents). Also shows them to the user as a table with a ' +
-    'Refund button per row.',
+    'List the customer’s recent orders: `total` is the formatted amount ("$129.99") — quote it as is; ' +
+    '`totalCents` is the same amount in cents, for components that take cents. Also shows them to the ' +
+    'user as a table with a Refund button per row.',
   input: showInput,
   execute: async ({ show }, ctx) => {
-    if (show === false) return { orders: listOrders() }
+    if (show === false) return { orders: forModel(listOrders()) }
     const slot = await openSlot(ctx, 'OrderList', 'Your orders')
     try {
       await sleep(1500) // a slow query, so the skeleton is visible
       const orders = listOrders()
       if (orders.length === 0) await slot.settle('empty')
       else await slot.show({ orders })
-      return { orders }
+      return { orders: forModel(orders) }
     } catch (error) {
       await slot.settle('error').catch(() => {})
       throw error

@@ -22,7 +22,7 @@ import {
   uiActionSummary,
   type UiAction,
 } from '@adonis-agora/agent/react/genui'
-import type { SandboxProps } from '@adonis-agora/agent/genui'
+import { normalizeTreeInput, type SandboxProps } from '@adonis-agora/agent/genui'
 import { Shell } from '../shared/shell.js'
 import { onScenario } from '../shared/scenarios.js'
 import { csrfFetch } from '../shared/csrf.js'
@@ -67,10 +67,11 @@ const agentFetch: typeof fetch = (input, init = {}) => {
 }
 // ---- end glue
 
-// ---- GLUE (sandbox, 30 lines with its hooks in agentFetch and Bridge): OpenUI Lang has no sandbox.
-// The model writes one with `ui__render` (a tool call), and OpenUI draws a tool call inline with an
-// "artifact renderer" matched by tool name — from the call's arguments while they stream, and from the
-// stored call after a reload. Find the `Sandbox` node in the tree and draw it with the library's
+// ---- GLUE (sandbox, 40 lines with its hooks in agentFetch and Bridge): OpenUI Lang has no sandbox.
+// The model writes one with `ui__sandbox` (or inside a `ui__render` tree) — a tool call — and OpenUI
+// draws a tool call inline with an "artifact renderer" matched by tool name — from the call's
+// arguments while they stream, and from the stored call after a reload. Draw the props (or the
+// `Sandbox` node of the tree) with the library's
 // renderer: `incomplete` while the call streams (the arguments are raw, so the preview runs no code
 // until they are whole). Its `agent.send(...)` goes out as the next turn, the action riding the
 // request as `forwardedProps.uiAction`; the chat shows the action's one line.
@@ -83,22 +84,37 @@ const sendUiAction = (action: UiAction) => {
 type Node = { type?: string; props?: Record<string, unknown>; children?: Node[] }
 const findSandbox = (node: Node | undefined): Node | undefined =>
   node?.type === 'Sandbox' ? node : (node?.children ?? []).map(findSandbox).find(Boolean)
+const drawSandbox = ({ props, streaming }: { props: SandboxProps; streaming: boolean }) => (
+  <div className="openui-sandbox" data-testid="openui-sandbox">
+    <GenuiNodeScope node={{ id: 'root', type: 'Sandbox', incomplete: streaming, held: false }}>
+      <GenuiActionProvider onAction={sendUiAction}>
+        <SandboxView {...props} />
+      </GenuiActionProvider>
+    </GenuiNodeScope>
+  </div>
+)
+const readArgs = (args: unknown) => (typeof args === 'string' ? partialJSONParse(args) : args)
+// `ui__sandbox` (`componentTools: ['Sandbox']` in config/agent.ts): its arguments ARE the props.
 const sandboxRenderer = defineArtifactRenderer<{ props: SandboxProps; streaming: boolean }>({
   type: 'agora_sandbox',
+  toolName: 'ui__sandbox',
+  parser: ({ args }, { isStreaming }) => {
+    const props = readArgs(args) as SandboxProps | undefined
+    return props && typeof props === 'object' ? { props: { props, streaming: isStreaming }, meta: null } : null
+  },
+  preview: drawSandbox,
+  actual: () => null,
+})
+// A Sandbox inside a `ui__render` tree. `normalizeTreeInput` reads the arguments the way the server
+// does (a stringified tree, a dropped `{ type, props }` envelope), so what it accepted is drawn.
+const treeSandboxRenderer = defineArtifactRenderer<{ props: SandboxProps; streaming: boolean }>({
+  type: 'agora_tree_sandbox',
   toolName: 'ui__render',
   parser: ({ args }, { isStreaming }) => {
-    const node = findSandbox((typeof args === 'string' ? partialJSONParse(args) : args) as Node)
+    const node = findSandbox(normalizeTreeInput(catalog, readArgs(args)) as Node)
     return node?.props ? { props: { props: node.props as SandboxProps, streaming: isStreaming }, meta: null } : null
   },
-  preview: ({ props, streaming }) => (
-    <div className="openui-sandbox" data-testid="openui-sandbox">
-      <GenuiNodeScope node={{ id: 'root', type: 'Sandbox', incomplete: streaming, held: false }}>
-        <GenuiActionProvider onAction={sendUiAction}>
-          <SandboxView {...props} />
-        </GenuiActionProvider>
-      </GenuiNodeScope>
-    </div>
-  ),
+  preview: drawSandbox,
   actual: () => null,
 })
 
@@ -181,7 +197,7 @@ function OpenUiPage() {
           llm={llm}
           storage={storage}
           componentLibrary={library}
-          artifactRenderers={[sandboxRenderer]}
+          artifactRenderers={[sandboxRenderer, treeSandboxRenderer]}
           agentName="Orders assistant"
           theme={{ mode: 'light' }}
         >

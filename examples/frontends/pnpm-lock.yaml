@@ -18,8 +18,8 @@ importers:
         specifier: 0.12.0
         version: 0.12.0
       '@adonis-agora/agent':
-        specifier: 0.72.0
-        version: 0.72.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(supports-color@10.2.2))(@ai-sdk/react@4.0.136(react@19.2.8)(zod@4.6.5))(ai@7.0.133(zod@4.6.5))(katex@0.16.47)(playwright-core@1.64.0)(react-dom@19.2.8(react@19.2.8))(react-markdown@10.1.0(@types/react@19.2.18)(react@19.2.8)(supports-color@10.2.2))(react@19.2.8)(rehype-katex@7.0.1)(rehype-sanitize@6.0.0)(remark-gfm@4.0.1(supports-color@10.2.2))(remark-math@6.0.0(supports-color@10.2.2))(supports-color@10.2.2)(unist-util-visit@5.1.0)(zod@4.6.5)
+        specifier: 0.74.0
+        version: 0.74.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(supports-color@10.2.2))(@ai-sdk/react@4.0.136(react@19.2.8)(zod@4.6.5))(ai@7.0.133(zod@4.6.5))(katex@0.16.47)(playwright-core@1.64.0)(react-dom@19.2.8(react@19.2.8))(react-markdown@10.1.0(@types/react@19.2.18)(react@19.2.8)(supports-color@10.2.2))(react@19.2.8)(rehype-katex@7.0.1)(rehype-sanitize@6.0.0)(remark-gfm@4.0.1(supports-color@10.2.2))(remark-math@6.0.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3)(unist-util-visit@5.1.0)(vite@7.3.6(@types/node@25.9.6))(zod@4.6.5)
       '@adonisjs/core':
         specifier: 7.5.0
         version: 7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1)
@@ -156,8 +156,8 @@ packages:
   '@a2ui/web_core@0.12.0':
     resolution: {integrity: sha512-wEg8954eDM4tx70O+qoUQYSCJbCywEIZEiqOpNXrmQUAKGsMNM47uns/7AE0W0nMfFbmJWE/huBwUVFaq+pDCA==}
 
-  '@adonis-agora/agent@0.72.0':
-    resolution: {integrity: sha512-jMlqG0CI3rs9oUwAqPIax+Jax7Gz8A6PjQRlnzTYW9JqhIDhpuUYQ4QZuGSUQOFhWr3HdwNMLHZKRlQx8rOnLw==}
+  '@adonis-agora/agent@0.74.0':
+    resolution: {integrity: sha512-imlp/en3QczYeCiiUKD478Zszps4DKOU2zaMHj0gDq8Vif1UGgrVdLiL2KPcn3k/2FyVkwBRGVj7X3L/TfF9Jw==}
     engines: {node: '>=20.6.0'}
     peerDependencies:
       '@adonis-agora/authz': '>=0.4.2 <1.0.0'
@@ -172,6 +172,7 @@ packages:
       '@ai-sdk/react': ^4.0.0
       '@json-render/react': '>=0.21.0 <1.0.0'
       '@qdrant/js-client-rest': ^1.11.0
+      '@resvg/resvg-js': ^2.6.0
       '@streamdown/code': ^1.1.1
       '@streamdown/math': ^1.0.2
       '@streamdown/mermaid': ^1.0.2
@@ -188,7 +189,9 @@ packages:
       remark-gfm: ^4.0.1
       remark-math: ^6.0.0
       streamdown: ^2.5.0
+      typescript: '>=5'
       unist-util-visit: ^5.1.0
+      vite: '>=5'
       zod: ^4.0.0
     peerDependenciesMeta:
       '@adonis-agora/authz':
@@ -214,6 +217,8 @@ packages:
       '@json-render/react':
         optional: true
       '@qdrant/js-client-rest':
+        optional: true
+      '@resvg/resvg-js':
         optional: true
       '@streamdown/code':
         optional: true
@@ -247,7 +252,11 @@ packages:
         optional: true
       streamdown:
         optional: true
+      typescript:
+        optional: true
       unist-util-visit:
+        optional: true
+      vite:
         optional: true
       zod:
         optional: true
@@ -1982,6 +1991,9 @@ packages:
   '@tabby_ai/hijri-converter@1.0.5':
     resolution: {integrity: sha512-r5bClKrcIusDoo049dSL8CawnHR6mRdDwhlQuIgZRNty68q0x8k3Lf1BtPAMxRf/GgnHBnIO4ujd3+GQdLWzxQ==}
     engines: {node: '>=16.0.0'}
+
+  '@tailwindcss/browser@4.3.3':
+    resolution: {integrity: sha512-fFaqX18SiyiukLoEI7/cVc0B65mkTslDNo2TxazSDZ9rKs5umOEoujmEkpy8z6GrMdoVzBDbWD8j5DTKLyAWWw==}
 
   '@tanstack/devtools-event-client@0.4.4':
     resolution: {integrity: sha512-6T5Yop/793YI+H+5J8Hsyj4kCih9sl4t3ElLgKioW5hk3ocn+ZdSJ94tT7vL7uabxSugWYBZlOTMPzEw2puvQw==}
@@ -4934,10 +4946,11 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
 
-  '@adonis-agora/agent@0.72.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(supports-color@10.2.2))(@ai-sdk/react@4.0.136(react@19.2.8)(zod@4.6.5))(ai@7.0.133(zod@4.6.5))(katex@0.16.47)(playwright-core@1.64.0)(react-dom@19.2.8(react@19.2.8))(react-markdown@10.1.0(@types/react@19.2.18)(react@19.2.8)(supports-color@10.2.2))(react@19.2.8)(rehype-katex@7.0.1)(rehype-sanitize@6.0.0)(remark-gfm@4.0.1(supports-color@10.2.2))(remark-math@6.0.0(supports-color@10.2.2))(supports-color@10.2.2)(unist-util-visit@5.1.0)(zod@4.6.5)':
+  '@adonis-agora/agent@0.74.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@12.11.1)(luxon@3.7.2)(supports-color@10.2.2))(@ai-sdk/react@4.0.136(react@19.2.8)(zod@4.6.5))(ai@7.0.133(zod@4.6.5))(katex@0.16.47)(playwright-core@1.64.0)(react-dom@19.2.8(react@19.2.8))(react-markdown@10.1.0(@types/react@19.2.18)(react@19.2.8)(supports-color@10.2.2))(react@19.2.8)(rehype-katex@7.0.1)(rehype-sanitize@6.0.0)(remark-gfm@4.0.1(supports-color@10.2.2))(remark-math@6.0.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3)(unist-util-visit@5.1.0)(vite@7.3.6(@types/node@25.9.6))(zod@4.6.5)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.31.0(supports-color@10.2.2)(zod@4.6.5)
       '@standard-schema/spec': 1.1.0
+      '@tailwindcss/browser': 4.3.3
     optionalDependencies:
       '@adonisjs/assembler': 8.5.1(typescript@5.9.3)
       '@adonisjs/core': 7.5.0(@adonisjs/assembler@8.5.1(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1)
@@ -4953,7 +4966,9 @@ snapshots:
       rehype-sanitize: 6.0.0
       remark-gfm: 4.0.1(supports-color@10.2.2)
       remark-math: 6.0.0(supports-color@10.2.2)
+      typescript: 5.9.3
       unist-util-visit: 5.1.0
+      vite: 7.3.6(@types/node@25.9.6)
       zod: 4.6.5
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -6737,6 +6752,8 @@ snapshots:
       '@swc/counter': 0.1.3
 
   '@tabby_ai/hijri-converter@1.0.5': {}
+
+  '@tailwindcss/browser@4.3.3': {}
 
   '@tanstack/devtools-event-client@0.4.4': {}
 
