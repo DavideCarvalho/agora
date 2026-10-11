@@ -1,0 +1,31 @@
+/*
+ * Kit (a): shadcn-style components on Tailwind v4. The app's theme variables (theme.css) mapped to
+ * Tailwind's, and dark mode on `data-theme` — what genuiSandboxKit({ styles }) reads: the sandbox
+ * gets this compiled, plus Tailwind's browser runtime with these directives for the classes the
+ * model writes that no app file uses.
+ */
+@import "tailwindcss";
+@import "../theme.css";
+@source "../../js/kit";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}

@@ -1,4 +1,5 @@
 import router from '@adonisjs/core/services/router'
+import { existsSync } from 'node:fs'
 import app from '@adonisjs/core/services/app'
 
 /**
@@ -14,12 +15,50 @@ const pages = {
   '/whatsapp': { entry: 'resources/js/pages/whatsapp.tsx', title: 'The same agent on (simulated) WhatsApp' },
 }
 
-// SANDBOX_KIT=<name>: a local kit's page stylesheet too (vite.config.ts), so the page wears its theme.
-const localCss = process.env.SANDBOX_KIT ? `local-kits/${process.env.SANDBOX_KIT}/page.css` : null
+/** The sandbox kit in use (vite.config.ts keeps it on `globalThis`, which the dev server shares). */
+const kits = globalThis as { __sandboxKit?: string; __sandboxKits?: string[] }
+const currentKit = () => kits.__sandboxKit ?? process.env.SANDBOX_KIT ?? 'shadcn'
 
 for (const [path, page] of Object.entries(pages)) {
-  router.get(path, ({ view }) => view.render('page', { ...page, localCss }))
+  router.get(path, ({ view }) => {
+    // A local kit (local-kits/<name>/page.css, gitignored) dresses the page in its theme too.
+    const name = currentKit()
+    const localCss = existsSync(new URL(`../local-kits/${name}/page.css`, import.meta.url))
+      ? `local-kits/${name}/page.css`
+      : null
+    return view.render('page', { ...page, localCss })
+  })
 }
+
+/**
+ * The kit switcher (`?kit=bootstrap|mui|shadcn|…` on any page): which kit the sandbox draws with.
+ * Process-wide — a demo convenience, so one server shows every variant: the Vite plugin's options
+ * read the current kit (vite.config.ts), and a rebuild is asked for by telling its watcher a style
+ * file changed. Answers once the new kit is built.
+ */
+router.get('/demo/kit', () => ({ kit: currentKit(), kits: kits.__sandboxKits ?? [currentKit()] }))
+router.post('/demo/kit', async ({ request, response }) => {
+  const kit = String(request.input('kit', ''))
+  if (!(kits.__sandboxKits ?? []).includes(kit)) return response.badRequest({ error: `unknown kit "${kit}"` })
+  const vite = (await app.container.make('vite')) as {
+    getDevServer?(): { watcher: { emit(event: string, file: string): void }; config: { plugins: readonly { name: string; api?: unknown }[] } } | undefined
+  }
+  const server = vite.getDevServer?.()
+  if (server === undefined) return response.badRequest({ error: 'the kit switches in development only' })
+  const plugin = server.config.plugins.find((each) => each.name === 'genui-sandbox-kit')?.api as
+    | { descriptor(): { guide?: string } | null }
+    | undefined
+  // A second request for the kit being built (a page's effect running twice) waits for it too.
+  if (kit !== currentKit()) {
+    kits.__sandboxKit = kit
+    server.watcher.emit('change', app.makePath('resources/css/kits/shadcn.css'))
+  }
+  // Built when the descriptor carries the new kit's notes (`stylesDocs` ends with `(kit: <name>)`).
+  const deadline = Date.now() + 120_000
+  while (plugin !== undefined && !plugin.descriptor()?.guide?.includes(`(kit: ${kit})`) && Date.now() < deadline)
+    await new Promise((resolve) => setTimeout(resolve, 200))
+  return { kit }
+})
 
 // Development only: put the demo orders back (tests/e2e/run.mjs calls it before each page).
 if (!app.inProduction) {

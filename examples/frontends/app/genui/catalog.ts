@@ -100,9 +100,10 @@ export const OrderList = createComponent({
  * policy), and `agent.send(values)` as its only way out. Here, not in `genui({ sandbox: true })`, so
  * the browser's renderer reads the same definition (and policy) as the server.
  *
- * `kit` + `tailwind` (scenario 9): it may also be written as JSX with the app's own components (the
- * kit `genuiSandboxKit()` builds in vite.config.ts) and Tailwind classes, in the app's theme. The
- * server finds the kit's docs and assets through Vite; the browser, through `GET /agent/config`.
+ * `kit` (scenario 9): it is drawn in the app's design system — whatever `genuiSandboxKit()` built in
+ * vite.config.ts: its styles (Tailwind, Bootstrap…), its components (the model then writes JSX) and
+ * its wrapper (MUI's theme). The server finds the kit's docs and assets through Vite; the browser,
+ * through `GET /agent/config`.
  */
 export const catalog = defineCatalog([
   OrderList.definition,
@@ -115,7 +116,7 @@ export const catalog = defineCatalog([
   Heading,
   Text,
   Badge,
-  defineSandbox({ kit: true, tailwind: true }),
+  defineSandbox({ kit: true }),
 ])
 
 /**

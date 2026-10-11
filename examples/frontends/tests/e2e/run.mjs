@@ -4,7 +4,8 @@
  *
  *   node ace serve --hmr       # in another terminal (PORT=3333 by default)
  *   pnpm e2e native             # one page at a time: native, copilotkit, openui, a2ui,
- *                               # copilotkit-a2ui, kit, whatsapp, matrix (all of them in one process
+ *                               # copilotkit-a2ui, kit (or kit-shadcn, kit-bootstrap, kit-mui),
+ *                               # whatsapp, matrix (all of them in one process
  *                               # needs a lot of memory)
  *
  * A check that fails is logged as `FAIL: …` and makes the run exit non-zero.
@@ -346,14 +347,31 @@ if (!only || only === 'copilotkit-a2ui') {
 }
 
 /**
- * 9. The sandbox in the app's design system: the model writes the bill splitter as JSX with the
- * app's kit (resources/js/kit, built by `genuiSandboxKit()`), Tailwind classes mapped to the theme.
- * It must stream placeholder → preview → live, draw with the kit's components, follow the host's
- * light/dark `data-theme` without reloading, and hand its values back with `agent.send`.
+ * 9. The sandbox in the app's design system, in each kit (vite.config.ts; `?kit=` switches it):
+ *
+ * - shadcn: JSX with the app's components (resources/js/kit), Tailwind classes from its theme;
+ * - bootstrap: CSS only — HTML with Bootstrap's classes (the kit listed them for the model);
+ * - mui: JSX with MUI's components inside the kit's wrapper (the app's theme, CssBaseline), its Menu
+ *   opening inside the frame.
+ *
+ * Each must stream placeholder → live, draw in the kit's look, follow the host's light/dark
+ * `data-theme` without reloading, and hand its values back with `agent.send`.
  */
-if (!only || only === 'kit') {
-  const h = await open('kit', '/native')
+const KIT_CHECKS = {
+  // `probe`: what changes with dark mode (Bootstrap keeps its primary button; its card turns dark).
+  shadcn: { jsx: true, light: null, probe: '#settle' },
+  bootstrap: { jsx: false, light: 'rgb(109, 40, 217)', probe: '.card' },
+  mui: { jsx: true, light: 'rgb(0, 121, 107)', probe: '#settle' },
+}
+for (const kit of Object.keys(KIT_CHECKS)) {
+  if (only && only !== 'kit' && only !== `kit-${kit}`) continue
+  const want = KIT_CHECKS[kit]
+  const h = await open(`kit-${kit}`, `/native?kit=${kit}`)
   const { page, log, r, check, shot } = h
+  // The page switches the server's kit (a rebuild) and reloads itself: wait for the switcher.
+  await page.waitForSelector(`[data-testid="kit-switch"]`, { timeout: 120000 })
+  r.kit = await page.locator('[data-testid="kit-switch"]').inputValue()
+  check(r.kit === kit, `kit-${kit}: the switcher says ${r.kit}`)
   await page.evaluate(() => {
     window.__phases = []
     new MutationObserver(() => {
@@ -364,43 +382,64 @@ if (!only || only === 'kit') {
     }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-sandbox-phase'] })
   })
   await h.scenario('kit')
-  // The preview: the JSX drawn while the model still writes it — the card before its footer.
-  await page.waitForSelector('iframe[data-sandbox-kit][data-sandbox-phase="preview"]', { timeout: 20000 }).catch(() => log.push('kit preview missed'))
   await page
-    .frameLocator('iframe[data-sandbox-phase="preview"]')
-    .locator('[data-slot="card"]')
-    .waitFor({ timeout: 20000 })
-    .then(async () => {
-      r.previewDrawn = await page.locator('iframe[data-sandbox-phase="preview"]').count()
-      await shot('9-kit-preview')
-    })
-    .catch(() => check(false, 'kit: nothing was drawn while the JSX streamed'))
-  await page.waitForSelector('iframe[data-sandbox-kit][data-sandbox-phase="live"]', { timeout: 60000 }).catch(() => check(false, 'kit: the JSX sandbox never went live'))
+    .waitForSelector('iframe[data-sandbox-phase="preview"]', { timeout: 30000 })
+    .then(() => shot(`9-kit-${kit}-preview`))
+    .catch(() => log.push(`kit-${kit}: preview missed`))
+  const live = want.jsx ? 'iframe[data-sandbox-kit][data-sandbox-phase="live"]' : 'iframe[data-sandbox-phase="live"]'
+  await page.waitForSelector(live, { timeout: 60000 }).catch(() => check(false, `kit-${kit}: the sandbox never went live`))
   const frame = page.frameLocator('iframe[data-sandbox-phase="live"]').last()
-  await frame.locator('[data-testid="kit-bill-splitter"]').waitFor({ timeout: 20000 }).catch(() => check(false, 'kit: the splitter did not render'))
-  await page.waitForTimeout(1000)
+  await frame.locator('[data-testid="kit-bill-splitter"]').waitFor({ timeout: 20000 }).catch(() => check(false, `kit-${kit}: the splitter did not render`))
+  await page.waitForTimeout(1200)
   r.phases = await page.evaluate(() => window.__phases)
-  check(['placeholder', 'live'].every((phase) => r.phases.includes(phase)), `kit: phases ${r.phases}`)
-  // Drawn with the kit's components (their data-slot), styled by Tailwind from the theme.
-  r.slots = await frame.locator('[data-slot]').evaluateAll((els) => [...new Set(els.map((el) => el.getAttribute('data-slot')))])
-  check(['card', 'button', 'input', 'slider'].every((slot) => r.slots.includes(slot)), `kit: components missing (${r.slots})`)
+  check(['placeholder', 'live'].every((phase) => r.phases.includes(phase)), `kit-${kit}: phases ${r.phases}`)
+  if (kit === 'shadcn') {
+    r.slots = await frame.locator('[data-slot]').evaluateAll((els) => [...new Set(els.map((el) => el.getAttribute('data-slot')))])
+    check(['card', 'button', 'input', 'slider'].every((slot) => r.slots.includes(slot)), `kit-shadcn: components missing (${r.slots})`)
+  }
+  if (kit === 'bootstrap') {
+    r.classes = await frame.locator('.card .btn.btn-primary, .form-range, .input-group').count()
+    check(r.classes >= 3, `kit-bootstrap: Bootstrap's classes are not drawn (${r.classes})`)
+  }
+  if (kit === 'mui') {
+    r.emotion = await frame.locator('style[data-emotion]').count()
+    check(r.emotion > 0, 'kit-mui: emotion injected no style into the frame')
+    r.radius = await frame.locator('#settle').evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
+    check(r.radius === '14px', `kit-mui: the theme's shape is not applied (${r.radius})`)
+  }
   r.light = await frame.locator('#settle').evaluate((el) => getComputedStyle(el).backgroundColor)
+  if (want.light) check(r.light === want.light, `kit-${kit}: the primary button is ${r.light}, not ${want.light}`)
   r.each = await frame.locator('#each').innerText()
-  check(r.each === '$24.75', `kit: $90 + 10% between 4 should be $24.75 (${r.each})`)
-  await shot('9-kit-light')
+  check(r.each === '$24.75', `kit-${kit}: $90 + 10% between 4 should be $24.75 (${r.each})`)
+  await shot(`9-kit-${kit}-light`)
+  r.probeLight = await frame.locator(want.probe).first().evaluate((el) => getComputedStyle(el).backgroundColor)
   await page.click('[data-testid="theme-toggle"]')
-  await page.waitForTimeout(1000)
-  r.dark = await frame.locator('#settle').evaluate((el) => getComputedStyle(el).backgroundColor)
+  await page.waitForTimeout(1200)
+  r.dark = await frame.locator(want.probe).first().evaluate((el) => getComputedStyle(el).backgroundColor)
   r.frameTheme = await frame.locator('html').getAttribute('data-theme')
-  check(r.frameTheme === 'dark' && r.dark !== r.light, `kit: the frame did not follow dark mode (${r.light} → ${r.dark})`)
-  await shot('9-kit-dark')
+  check(r.frameTheme === 'dark' && r.dark !== r.probeLight, `kit-${kit}: the frame did not follow dark mode (${r.probeLight} → ${r.dark})`)
+  await shot(`9-kit-${kit}-dark`)
   await frame.locator('[aria-label="People"]').fill('6')
   r.each6 = await frame.locator('#each').innerText()
-  check(r.each6 === '$16.50', `kit: 6 people should pay $16.50 (${r.each6})`)
+  check(r.each6 === '$16.50', `kit-${kit}: 6 people should pay $16.50 (${r.each6})`)
+  if (kit === 'mui') {
+    // A Menu: its portal opens inside the frame (the frame's body), and works.
+    await frame.locator('#round').click()
+    await frame.locator('#round-dollar').waitFor({ timeout: 5000 }).catch(() => check(false, 'kit-mui: the Menu did not open'))
+    r.portal = await frame.locator('#round-dollar').evaluate((el) => !document.getElementById('agora-sandbox-root').contains(el) && document.body.contains(el))
+    check(r.portal === true, 'kit-mui: the Menu is not a portal in the frame body')
+    await shot('9-kit-mui-menu')
+    await frame.locator('#round-dollar').click()
+    r.rounded = await frame.locator('#each').innerText()
+    check(r.rounded === '$17.00', `kit-mui: rounding to the next dollar gives ${r.rounded}`)
+    await frame.locator('#round').click()
+    await frame.locator('#round-cent').click()
+    await page.waitForTimeout(400)
+  }
   await frame.locator('#settle').click()
-  await page.waitForSelector('text=Each of the 6 people pays $16.50', { timeout: 30000 }).catch(() => check(false, 'kit: agent.send did not come back as a turn'))
+  await page.waitForSelector('text=Each of the 6 people pays $16.50', { timeout: 30000 }).catch(() => check(false, `kit-${kit}: agent.send did not come back as a turn`))
   await page.waitForTimeout(800)
-  await shot('9-kit-settled')
+  await shot(`9-kit-${kit}-settled`)
   await page.click('[data-testid="theme-toggle"]')
   await h.context.close()
 }
