@@ -55,24 +55,30 @@ export const OrderList = createComponent({
   props: z.union([placeholderSchema, orderListSchema]),
   // On WhatsApp: the orders as a message with a list to pick one from (reply buttons up to three);
   // a pick comes back as the next turn — a UI action, like a button in the web page's table.
+  // `describe` is what the model is told OrderList is on WhatsApp (its channel prompt), so it does
+  // not talk about the web page's table and Refund buttons there.
   channels: {
-    whatsapp: (props) =>
-      isPlaceholder(props)
-        ? null
-        : {
-            text: `*Your orders*\n${props.orders
-              .map((o) => `#${o.id} ${o.customer} — $${(o.totalCents / 100).toFixed(2)} (${o.status})`)
-              .join('\n')}`,
-            list: {
-              button: 'Order details',
-              items: props.orders.map((o) => ({
-                label: `Order #${o.id}`,
-                description: `${o.customer} — $${(o.totalCents / 100).toFixed(2)}`,
-                action: 'details',
-                value: { orderId: o.id },
-              })),
+    whatsapp: {
+      describe:
+        'a message listing the orders, with a pick-list ("Order details") of them. There is no table and there are no Refund buttons: to refund, the user picks an order from the list or names it in a reply.',
+      convert: (props) =>
+        isPlaceholder(props)
+          ? null
+          : {
+              text: `*Your orders*\n${props.orders
+                .map((o) => `#${o.id} ${o.customer} — $${(o.totalCents / 100).toFixed(2)} (${o.status})`)
+                .join('\n')}`,
+              list: {
+                button: 'Order details',
+                items: props.orders.map((o) => ({
+                  label: `Order #${o.id}`,
+                  description: `${o.customer} — $${(o.totalCents / 100).toFixed(2)}`,
+                  action: 'details',
+                  value: { orderId: o.id },
+                })),
+              },
             },
-          },
+    },
   },
   // A placeholder's text is a sentence, never the JSON of its props.
   fallbackText: (props) =>
