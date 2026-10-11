@@ -6,6 +6,7 @@ import { chartImages } from '@adonis-agora/agent/genui/chart-image'
 import env from '#start/env'
 import { A2UI_CATALOG_ID, catalog } from '#genui/catalog'
 import { orderListToA2ui, sandboxToA2ui } from '#genui/a2ui'
+import { catalogFor, kitOfActor } from '#genui/kits'
 import { listOrdersTool, refundOrderTool, revenueTool } from '#agent/tools'
 import { openUiPrompt } from '#agent/openui_prompt'
 
@@ -114,13 +115,17 @@ export default defineConfig({
   // `genuiSandboxKit()` builds in vite.config.ts (`defineSandbox({ kit: true })` in
   // app/genui/catalog.ts): shadcn + Tailwind (the model writes JSX with the components), Bootstrap
   // (HTML with its classes) or MUI (JSX inside the app's theme) — scenario 9, `?kit=` to switch.
-  // Found through Vite: the dev server here, the manifest in production.
+  // Found through Vite: the dev server here, the manifest in production. Every kit is built side by
+  // side (named kits) and each visitor draws with their own: `resolver` gives each actor the catalog
+  // with its kit's Sandbox (app/genui/kits.ts), so two visitors on two kits never see each other's.
   //
   // `channels`: the web gets trees and the sandbox; WhatsApp (the simulated one on /whatsapp) gets one
   // tool per component it can draw, each sent as WhatsApp messages — OrderList as a list to pick an
   // order from (its `channels.whatsapp` conversion), charts as PNG images, the rest as text.
   genui: genui({
     catalog,
+    // The web draws the Sandbox in the visitor's kit; a text channel has no sandbox to dress.
+    resolver: (scope) => (scope.channel === undefined || scope.channel === 'web' ? catalogFor(kitOfActor(scope.actor.id)) : catalog),
     streaming: 'partial',
     componentTools: ['Sandbox'],
     channels: {

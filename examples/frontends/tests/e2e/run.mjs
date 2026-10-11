@@ -237,7 +237,7 @@ for (const [name, cfg] of Object.entries(pages)) {
 /**
  * The /a2ui page: Google's official A2UI React renderer over `POST /agent/a2ui`. The orders table is
  * the app's `OrderList` mapped onto basic components (its Refund buttons raise the A2UI event
- * `refund`), the approval is a surface with Approve / Reject buttons, the dashboard is the builtins on
+ * `refund`), the approval is a surface with the tool's verb (Refund) and Reject, the dashboard is the builtins on
  * the basic catalog, and the sandbox is a custom component of the page's catalog.
  */
 if (!only || only === 'a2ui') {
@@ -255,13 +255,14 @@ if (!only || only === 'a2ui') {
   r.orders = await text()
   check(!r.orders.includes('loading…') && r.orders.includes('Edsger Dijkstra'), 'a2ui: the skeleton was not replaced by the rows')
 
-  // 4. Refund (an A2UI action) → approval surface → Approve / Reject (A2UI actions too).
+  // 4. Refund (an A2UI action) → approval surface → the tool's own words: its title, its verb as the
+  // button ("Refund") beside Reject (A2UI actions too).
   await refund('1002')
-  await page.waitForSelector('button:has-text("Approve")', { timeout: 15000 }).catch(() => check(false, 'a2ui: approval surface missing'))
+  await page.waitForSelector('text=Refund order #1002?', { timeout: 15000 }).catch(() => check(false, 'a2ui: approval surface missing (or not in the tool\'s words)'))
   await page.waitForTimeout(800)
   await shot('4-approval')
   r.approval = await text()
-  await page.locator('button:has-text("Approve")').last().click()
+  await page.locator('button:has-text("Refund")').last().click()
   await page.waitForSelector('text=refunded $129.99', { timeout: 20000 }).catch(() => check(false, 'a2ui: refund result missing'))
   await page.waitForTimeout(1000)
   await shot('4-approved')
@@ -402,6 +403,9 @@ for (const kit of Object.keys(KIT_CHECKS)) {
     check(r.classes >= 3, `kit-bootstrap: Bootstrap's classes are not drawn (${r.classes})`)
   }
   if (kit === 'mui') {
+    // CssBaseline paints the body; the frame's page stays see-through (no grey beside the card).
+    r.bodyBg = await frame.locator('body').evaluate((el) => getComputedStyle(el).backgroundColor)
+    check(r.bodyBg === 'rgba(0, 0, 0, 0)', `kit-mui: the frame's body is painted (${r.bodyBg})`)
     r.emotion = await frame.locator('style[data-emotion]').count()
     check(r.emotion > 0, 'kit-mui: emotion injected no style into the frame')
     r.radius = await frame.locator('#settle').evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
@@ -442,6 +446,39 @@ for (const kit of Object.keys(KIT_CHECKS)) {
   await shot(`9-kit-${kit}-settled`)
   await page.click('[data-testid="theme-toggle"]')
   await h.context.close()
+}
+
+/**
+ * The kit is per visitor: two visitors on two kits at once each keep their own — the switch is a
+ * cookie, every kit is built, and the agent resolves each visitor's catalog with their kit.
+ */
+if (!only || only === 'kit' || only === 'kit-visitors') {
+  const a = await open('kit-visitors-a', '/native?kit=bootstrap')
+  const b = await open('kit-visitors-b', '/native?kit=mui')
+  await a.page.waitForSelector('[data-testid="kit-switch"]', { timeout: 60000 })
+  await b.page.waitForSelector('[data-testid="kit-switch"]', { timeout: 60000 })
+  await a.page.reload()
+  await a.page.waitForSelector('[data-testid="kit-switch"]', { timeout: 60000 })
+  const kitOf = (h) => h.page.evaluate(async () => (await (await fetch('/demo/kit/config')).json()).name)
+  a.r.kit = await a.page.locator('[data-testid="kit-switch"]').inputValue()
+  b.r.kit = await b.page.locator('[data-testid="kit-switch"]').inputValue()
+  a.r.config = await kitOf(a)
+  b.r.config = await kitOf(b)
+  a.check(a.r.kit === 'bootstrap' && a.r.config === 'bootstrap', `kit-visitors: A was moved off bootstrap (${a.r.kit}, ${a.r.config})`)
+  b.check(b.r.kit === 'mui' && b.r.config === 'mui', `kit-visitors: B was moved off mui (${b.r.kit}, ${b.r.config})`)
+  // What the model is offered follows each visitor too: A's sandbox is HTML with Bootstrap's classes.
+  await a.scenario('kit')
+  await a.page.waitForSelector('iframe[data-sandbox-phase="live"]', { timeout: 60000 }).catch(() => a.check(false, 'kit-visitors: A never drew'))
+  const aFrame = a.page.frameLocator('iframe[data-sandbox-phase="live"]').last()
+  await aFrame.locator('[data-testid="kit-bill-splitter"]').waitFor({ timeout: 20000 }).catch(() => a.check(false, 'kit-visitors: A\'s splitter did not render'))
+  // The view is redrawn when the model finishes: read it once it is the final one.
+  await a.page.waitForSelector('text=ui__render — output-available', { timeout: 30000 }).catch(() => {})
+  await aFrame.locator('.card .btn.btn-primary').first().waitFor({ timeout: 20000 }).catch(() => {})
+  a.r.classes = await aFrame.locator('.card .btn.btn-primary').count()
+  a.check(a.r.classes >= 1, 'kit-visitors: A drew without Bootstrap')
+  await a.shot('9-kit-visitor-bootstrap')
+  await a.context.close()
+  await b.context.close()
 }
 
 /**

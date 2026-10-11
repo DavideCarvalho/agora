@@ -15,9 +15,10 @@ import { genuiSandboxKit, type GenuiSandboxKitOptions } from '@adonis-agora/agen
  *   mui        MUI with a customized theme and two styled components; `wrapper` gives the model's
  *              App the ThemeProvider + CssBaseline.
  *
- * `SANDBOX_KIT=<name>` picks the one the server starts with (default `shadcn`); the page's kit
- * switcher (`?kit=<name>`) changes it while it runs — a demo convenience (POST /demo/kit in
- * start/routes.ts): the options below read the current kit, and a rebuild picks it up.
+ * All of them are built side by side, each a named kit (`genuiSandboxKit({ name })`, served under
+ * `/@genui-sandbox-kit/<name>/`), and each visitor draws with their own: `?kit=<name>` or the page's
+ * switcher (a cookie, start/routes.ts; app/genui/kits.ts). `SANDBOX_KIT=<name>` is the kit a new
+ * visitor starts with (default `shadcn`).
  *
  * A local kit in `local-kits/<name>/vite.config.ts` (gitignored: for trying a private design system
  * on the demo) joins the list. That file exports `{ kit, css?, alias?, plugins? }`.
@@ -28,23 +29,25 @@ interface LocalKit {
   alias?: Record<string, string>
   plugins?: PluginOption[]
 }
-// `stylesDocs`: the app's own notes for the model — each ends with `(kit: <name>)`, which is also how
-// the kit switcher (start/routes.ts) knows the new kit is the one built.
+// `stylesDocs`: the app's own notes for the model about each kit.
 const KITS: Record<string, GenuiSandboxKitOptions> = {
   shadcn: {
     styles: 'resources/css/kits/shadcn.css',
     components: 'resources/js/kit',
     plugins: [tailwindcss()],
-    stylesDocs: 'Surfaces are a Card; the main action is the default Button, the others variant="outline". (kit: shadcn)',
+    stylesDocs: 'Surfaces are a Card; the main action is the default Button, the others variant="outline".',
   },
   bootstrap: {
     styles: 'resources/css/kits/bootstrap.scss',
-    stylesDocs: 'Wrap the view in a .card with a .card-body; .btn-primary for the main action, .btn-outline-primary for choices; Bootstrap spacing utilities (mb-3, gap-2) for layout. (kit: bootstrap)',
+    stylesDocs: 'Wrap the view in a .card with a .card-body; .btn-primary for the main action, .btn-outline-primary for choices; Bootstrap spacing utilities (mb-3, gap-2) for layout.',
   },
   mui: {
+    // No stylesheet: MUI's styles are emotion's, injected by the components (without `styles` the
+    // plugin would take the app's own entrypoint stylesheets).
+    styles: [],
     components: 'resources/js/kits/mui/components.tsx',
     wrapper: 'resources/js/kits/mui/wrapper.tsx',
-    stylesDocs: 'A Card with a CardHeader; Stack for layout; the main action is a contained Button; PriceTag for an amount. Use sx for one-off spacing, never CSS. (kit: mui)',
+    stylesDocs: 'A Card with a CardHeader; Stack for layout; the main action is a contained Button; PriceTag for an amount. Use sx for one-off spacing, never CSS.',
   },
 }
 const LOCAL_KITS = ['lastro']
@@ -54,23 +57,11 @@ for (const name of new Set([...LOCAL_KITS, process.env.SANDBOX_KIT ?? ''])) {
   if (name === '' || !existsSync(path)) continue
   locals[name] = ((await import(/* @vite-ignore */ path.href)) as { default: LocalKit }).default
   const kit = locals[name].kit
-  KITS[name] = { ...kit, stylesDocs: `${kit.stylesDocs ?? 'A local design system.'} (kit: ${name})` }
+  KITS[name] = { ...kit, stylesDocs: kit.stylesDocs ?? 'A local design system.' }
 }
 
-/** The kit in use: the server process's (start/routes.ts switches it), else SANDBOX_KIT, else shadcn. */
-const state = globalThis as { __sandboxKit?: string; __sandboxKits?: string[] }
-state.__sandboxKits = Object.keys(KITS)
-state.__sandboxKit ??= KITS[process.env.SANDBOX_KIT ?? ''] ? (process.env.SANDBOX_KIT as string) : 'shadcn'
-const current = () => KITS[state.__sandboxKit ?? 'shadcn'] ?? KITS.shadcn
-/** Options that read the current kit each time the plugin builds. */
-const kitOptions = {
-  get styles() { return current().styles },
-  get components() { return current().components },
-  get wrapper() { return current().wrapper },
-  get stylesDocs() { return current().stylesDocs },
-  get tsconfig() { return current().tsconfig },
-  get plugins() { return current().plugins },
-} as GenuiSandboxKitOptions
+/** The kits, for the server (start/routes.ts, app/genui/kits.ts): the dev server shares `globalThis`. */
+;(globalThis as { __sandboxKits?: string[] }).__sandboxKits = Object.keys(KITS)
 
 export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, process.cwd(), '')
@@ -120,10 +111,11 @@ export default defineConfig(({ mode }) => {
         ],
         reload: ['resources/views/**/*.edge'],
       }),
-      // The app's design system in the sandbox: compiles its styles, bundles its components and
-      // wrapper (served in dev, hashed assets in the build), writes their docs, and reloads open
-      // sandboxes when one changes. app/genui/catalog.ts turns it on: defineSandbox({ kit: true }).
-      genuiSandboxKit(kitOptions),
+      // The app's design system in the sandbox, one named kit per variant: compiles its styles
+      // (purged to what the frame can use), bundles its components and wrapper (served in dev,
+      // hashed assets in the build), writes their docs, and reloads open sandboxes when one changes.
+      // app/genui/catalog.ts turns it on (defineSandbox({ kit: true })), app/genui/kits.ts picks one.
+      ...Object.entries(KITS).map(([name, kit]) => genuiSandboxKit({ ...kit, name })),
       ...Object.values(locals).flatMap((local) => local.plugins ?? []),
     ],
     resolve: {

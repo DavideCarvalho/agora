@@ -18,12 +18,12 @@ import '@openuidev/react-ui/styles/index.css'
 import {
   GenuiActionProvider,
   GenuiNodeScope,
-  SandboxView,
   uiActionSummary,
   type UiAction,
 } from '@adonis-agora/agent/react/genui'
 import { normalizeTreeInput, type SandboxProps } from '@adonis-agora/agent/genui'
 import { Shell } from '../shared/shell.js'
+import { Sandbox } from '../shared/renderers.js'
 import { onScenario } from '../shared/scenarios.js'
 import { csrfFetch } from '../shared/csrf.js'
 import { listThreads, threadMessages } from '../shared/agora_rest.js'
@@ -88,7 +88,7 @@ const drawSandbox = ({ props, streaming }: { props: SandboxProps; streaming: boo
   <div className="openui-sandbox" data-testid="openui-sandbox">
     <GenuiNodeScope node={{ id: 'root', type: 'Sandbox', incomplete: streaming, held: false }}>
       <GenuiActionProvider onAction={sendUiAction}>
-        <SandboxView {...props} />
+        <Sandbox {...props} />
       </GenuiActionProvider>
     </GenuiNodeScope>
   </div>

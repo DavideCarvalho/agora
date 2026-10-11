@@ -159,9 +159,14 @@ library's `Sandbox`):
    model writes, the view is drawn each time what has arrived parses (`pnpm e2e kit`, or
    `kit-shadcn`, `kit-bootstrap`, `kit-mui`).
 
-   The switch is process-wide, a demo convenience: `POST /demo/kit` in
-   [`start/routes.ts`](start/routes.ts). The plugin's options read the current kit, and a rebuild
-   picks it up. An app has one kit.
+   The switch is **per visitor**. Every kit is built side by side as a named kit
+   (`genuiSandboxKit({ name })` in [`vite.config.ts`](vite.config.ts)). `?kit=` or the switcher sets
+   a `sandbox_kit` cookie (`POST /demo/kit` in [`start/routes.ts`](start/routes.ts)). The agent
+   resolves each visitor's catalog with their kit's `Sandbox` (`genui({ resolver })`,
+   [`app/genui/kits.ts`](app/genui/kits.ts)), and the page's renderers read that kit's assets from
+   `/demo/kit/config`. Two visitors on two kits never see each other's (`pnpm e2e kit-visitors`).
+   Each kit's compiled styles are purged to what the frame can use, and a page fetches each asset
+   once for all its sandboxes.
 
 **The same prompts on WhatsApp** — [`/whatsapp`](resources/js/pages/whatsapp.tsx) is a simulated
 WhatsApp: the real channel handler (`channels.handle`) over an adapter that records what it would
