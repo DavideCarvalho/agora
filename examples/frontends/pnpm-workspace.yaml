@@ -12,7 +12,7 @@ allowBuilds:
   '@openuidev/lang-core': false
   '@scarf/scarf': false
 minimumReleaseAgeExclude:
-  - '@adonis-agora/agent@0.72.0 || 0.74.0 || 0.74.1 || 0.75.0 || 0.76.1 || 0.76.2 || 0.76.3'
+  - '@adonis-agora/agent@0.72.0 || 0.74.0 || 0.74.1 || 0.75.0 || 0.76.1 || 0.76.2 || 0.76.3 || 0.79.0'
   - '@ai-sdk/gateway@4.0.108'
   - '@ai-sdk/mcp@2.0.71'
   - '@ai-sdk/openai@4.0.89'

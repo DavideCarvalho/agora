@@ -49,7 +49,7 @@ export const rows: Row[] = [
     native: { status: 'built-in', note: 'Renderers are your React components; a 3-line context reaches `chat.sendMessage`. The approval card comes from the transcript (`call.approve.run()`).' },
     copilotkit: { status: 'built-in', note: '`agent.addMessage` + `copilotkit.runAgent` (4 lines). `useInterrupt` answers the AG-UI interrupt with `resume`. Its default card shows “Done” for a rejected call.' },
     openui: { status: 'glue', note: 'Clicks are built in (`Action([@ToAssistant(...)])`, `useTriggerAction`). Approvals: 46 lines — OpenUI ignores interrupts; the reply is sent as a synthetic “Approved.” message carrying `resume`.' },
-    a2ui: { status: 'built-in', note: 'A `Button` action event (`refund` + `{ orderId }`) comes back from the processor’s action handler and is posted as `{ action }`; the approval is a surface with Approve / Reject buttons (`agora.approve` / `agora.reject`). The page’s whole action path is ~10 lines.' },
+    a2ui: { status: 'built-in', note: 'A `Button` action event (`refund` + `{ orderId }`) comes back from the processor’s action handler and is posted as `{ action }`; the approval is a surface in the tool’s own words — “Refund order #1002?”, a Refund / Reject pair of buttons (`agora.approve` / `agora.reject`). The page’s whole action path is ~10 lines.' },
   },
   {
     id: '5',

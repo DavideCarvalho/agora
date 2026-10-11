@@ -12,7 +12,6 @@ import { Catalog, MessageProcessor, type ActionPayload, type ComponentContext } 
 import {
   GenuiActionProvider,
   GenuiNodeScope,
-  SandboxView,
   uiActionSummary,
   type UiAction,
   type UiActionMessage,
@@ -21,6 +20,7 @@ import type { SandboxProps } from '@adonis-agora/agent/genui'
 import { z } from 'zod'
 import { A2UI_CATALOG_ID, catalog } from '#genui/catalog'
 import { Shell } from '../shared/shell.js'
+import { Sandbox as SandboxView } from '../shared/renderers.js'
 import { onScenario } from '../shared/scenarios.js'
 import { csrfFetch } from '../shared/csrf.js'
 import { listThreads, type ThreadSummary } from '../shared/agora_rest.js'

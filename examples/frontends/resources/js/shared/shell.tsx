@@ -31,7 +31,7 @@ const KIT_LABELS: Record<string, string> = {
   mui: 'MUI (theme + wrapper)',
 }
 
-/** Make `kit` the sandbox's kit (the server rebuilds it), then reload with `?kit=` in the url. */
+/** Make `kit` this visitor's sandbox kit (a cookie; every kit is built already), then reload with `?kit=`. */
 async function switchKit(kit: string) {
   await csrfFetch('/demo/kit', {
     method: 'POST',
@@ -45,7 +45,7 @@ async function switchKit(kit: string) {
 
 /**
  * Which design system the sandbox draws with (scenario 9): `?kit=shadcn|bootstrap|mui` on any page,
- * or this switcher. Switching rebuilds the kit on the server, then reloads the page.
+ * or this switcher. Per visitor: it changes your kit only, then reloads the page.
  */
 function KitSwitch() {
   const [state, setState] = useState<{ kit: string; kits: string[] } | null>(null)

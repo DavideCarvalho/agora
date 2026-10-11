@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react'
-import { SandboxView, useGenuiNode, type GenuiNodeState } from '@adonis-agora/agent/react/genui'
+import { createSandboxRenderer, useGenuiNode, type GenuiNodeState } from '@adonis-agora/agent/react/genui'
 
 /**
  * The React renderers of every catalog component (app/genui/catalog.ts): the app's `OrderList` and
@@ -222,8 +222,15 @@ export const Text = ({ text = '', muted }: { text?: string; muted?: boolean }) =
 export const Badge = ({ text = '', tone = 'neutral' }: { text?: string; tone?: string }) => <span className={`status status-${tone}`}>{text}</span>
 
 /**
+ * The library's sandbox renderer, drawing with this visitor's kit: `/demo/kit/config` says where its
+ * assets are (start/routes.ts) — the agent's own `/config` would name one kit for everyone. The page
+ * fetches each asset once and hands it to every sandbox frame on it (the default `assets: 'shared'`).
+ */
+export const Sandbox = createSandboxRenderer({ config: '/demo/kit/config' })
+
+/**
  * Keys are the catalog's component names. `Sandbox` is the library's renderer: the model's HTML, CSS
  * and JS in an isolated iframe (placeholder → preview → live), whose `agent.send(...)` reaches the
  * enclosing `GenuiActionProvider` — each page wires that to its own "send the next turn".
  */
-export const registry = { OrderList, DataTable, Chart, KpiCards, Callout, Stack, Card, Heading, Text, Badge, Sandbox: SandboxView }
+export const registry = { OrderList, DataTable, Chart, KpiCards, Callout, Stack, Card, Heading, Text, Badge, Sandbox }
