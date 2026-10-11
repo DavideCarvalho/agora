@@ -132,15 +132,36 @@ library's `Sandbox`):
    people: 4, tip: 15, +1" — and the assistant answers "Each of the 4 people pays $34.50 …".
 
 9. **The sandbox in the app's design system** — "Split a $90 dinner between 4 friends with a 10%
-   tip, using the app components": the same splitter, written as **JSX** with the app's own
-   `Button`, `Card`, `Input` and `Slider` ([`resources/js/kit`](resources/js/kit), a shadcn-style kit)
-   and Tailwind classes. `genuiSandboxKit()` in [`vite.config.ts`](vite.config.ts) bundles the kit,
-   serves it and the Tailwind runtime, and writes its docs (props read from the components' types —
-   what the model is told); `defineSandbox({ kit: true, tailwind: true })` in the catalog turns it on.
-   The frame inherits the page's theme (the CSS variables in
-   [`resources/css/theme.css`](resources/css/theme.css)) and follows **Light / dark** (the
-   `data-theme` attribute on `<html>`) without reloading. While the model writes the JSX, the view
-   is drawn each time what has arrived parses (`pnpm e2e kit`).
+   tip, using the app components": the same splitter, in whichever design system the app has.
+   `genuiSandboxKit()` in [`vite.config.ts`](vite.config.ts) takes the same three options for all
+   of them: `styles` (the app's stylesheets, compiled and inlined), `components` (React components
+   the model writes JSX with) and `wrapper` (providers around the model's App).
+   `defineSandbox({ kit: true })` in the catalog turns it on, and the model is told only what the
+   kit has. Pick the kit with the switcher at the top of any page, or `?kit=`:
+
+   - `?kit=shadcn` (default): **Tailwind v4 + shadcn-style components**
+     ([`resources/css/kits/shadcn.css`](resources/css/kits/shadcn.css),
+     [`resources/js/kit`](resources/js/kit)). The model writes JSX with the app's `Button`, `Card`,
+     `Input` and `Slider`. The frame runs Tailwind with the app's theme, so classes no app file uses
+     work too.
+   - `?kit=bootstrap`: **Bootstrap 5, CSS only**, through a `.scss` with a couple of overrides
+     ([`resources/css/kits/bootstrap.scss`](resources/css/kits/bootstrap.scss)). There are no
+     components, so the model writes HTML with Bootstrap's classes: the kit lists them for it
+     (`.btn-primary`, `.card-body`, `.form-range`…).
+   - `?kit=mui`: **MUI with a customized theme** (palette, shape, typography —
+     [`resources/js/kits/mui`](resources/js/kits/mui)), a curated set of its components and two
+     styled ones. `wrapper` gives the model's App the `ThemeProvider` + `CssBaseline`. Emotion
+     injects into the frame, and the Menu opens inside it.
+
+   Each kit carries a `stylesDocs` note for the model. The frame inherits the page's theme (the CSS
+   variables in [`resources/css/theme.css`](resources/css/theme.css)) and follows **Light / dark**
+   (the `data-theme` attribute on `<html>`, which the frame mirrors) without reloading. While the
+   model writes, the view is drawn each time what has arrived parses (`pnpm e2e kit`, or
+   `kit-shadcn`, `kit-bootstrap`, `kit-mui`).
+
+   The switch is process-wide, a demo convenience: `POST /demo/kit` in
+   [`start/routes.ts`](start/routes.ts). The plugin's options read the current kit, and a rebuild
+   picks it up. An app has one kit.
 
 **The same prompts on WhatsApp** — [`/whatsapp`](resources/js/pages/whatsapp.tsx) is a simulated
 WhatsApp: the real channel handler (`channels.handle`) over an adapter that records what it would
@@ -150,10 +171,11 @@ WhatsApp can draw: the orders arrive as a list message (`OrderList`'s `channels.
 conversion — picking an order is the next turn, as a UI action), charts as PNG images, tables and
 KPIs as text, and the bill splitter as words (no sandbox there) (`pnpm e2e whatsapp`).
 
-**A private design system, locally.** `SANDBOX_KIT=<name> node ace serve --hmr` swaps the kit for
-`local-kits/<name>/vite.config.ts` (gitignored) exporting `{ kit, css?, alias?, plugins? }` — e.g.
-an entry re-exporting another repo's `components/ui`, its globals stylesheet as `css` (the whole
-page then wears it), and `tailwindCss` with its custom variants. Nothing of it is committed.
+**A private design system, locally.** `local-kits/<name>/vite.config.ts` (gitignored) exporting
+`{ kit, css?, alias?, plugins? }` joins the kit list (`?kit=<name>`, or `SANDBOX_KIT=<name>` to
+start with it). `kit` holds the same options: for example `components` re-exporting another repo's
+`components/ui`, and `styles` its globals stylesheet (Tailwind detected, its fonts inlined). `css`
+is a page stylesheet, so the whole page wears that theme too. Nothing of it is committed.
 
 **What differs per frontend, by design.** Native and CopilotKit get their UI from components the
 tools push and from `ui__render` (the catalog in tree mode, the default). OpenUI does generative UI
@@ -250,9 +272,11 @@ CopilotKit with its own A2UI renderer (`/copilotkit?renderer=a2ui`, `pnpm e2e co
 [approved](docs/screenshots/copilotkit-a2ui-4-approved.png),
 [the sandbox as text](docs/screenshots/copilotkit-a2ui-8-sandbox.png).
 
-The app kit (scenario 9, `pnpm e2e kit`): [preview](docs/screenshots/kit-9-kit-preview.png),
-[light](docs/screenshots/kit-9-kit-light.png), [dark](docs/screenshots/kit-9-kit-dark.png),
-[settled](docs/screenshots/kit-9-kit-settled.png). WhatsApp (`pnpm e2e whatsapp`):
+The app kit (scenario 9, `pnpm e2e kit`):
+
+- shadcn + Tailwind: [light](docs/screenshots/kit-shadcn-9-kit-shadcn-light.png), [dark](docs/screenshots/kit-shadcn-9-kit-shadcn-dark.png), [settled](docs/screenshots/kit-shadcn-9-kit-shadcn-settled.png);
+- Bootstrap: [light](docs/screenshots/kit-bootstrap-9-kit-bootstrap-light.png), [dark](docs/screenshots/kit-bootstrap-9-kit-bootstrap-dark.png), [settled](docs/screenshots/kit-bootstrap-9-kit-bootstrap-settled.png);
+- MUI: [light](docs/screenshots/kit-mui-9-kit-mui-light.png), [dark](docs/screenshots/kit-mui-9-kit-mui-dark.png), [menu](docs/screenshots/kit-mui-9-kit-mui-menu.png), [settled](docs/screenshots/kit-mui-9-kit-mui-settled.png). WhatsApp (`pnpm e2e whatsapp`):
 [the orders list](docs/screenshots/whatsapp-wa-orders-list.png),
 [every scenario](docs/screenshots/whatsapp-wa-all.png).
 

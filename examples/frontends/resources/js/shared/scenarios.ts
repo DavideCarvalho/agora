@@ -15,7 +15,7 @@ export const scenarios = [
   },
   {
     id: 'kit',
-    label: '9. Bill splitter with the app kit (JSX + Tailwind)',
+    label: '9. Bill splitter in the app’s design system (kit)',
     prompt: 'Split a $90 dinner between 4 friends with a 10% tip, using the app components',
   },
 ] as const

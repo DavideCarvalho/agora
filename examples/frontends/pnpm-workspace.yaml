@@ -2,6 +2,8 @@
 # workspace — its own dependency tree and lockfile.
 
 allowBuilds:
+  # sass (the Bootstrap kit) pulls @parcel/watcher's optional native build for `sass --watch`.
+  '@parcel/watcher': false
   better-sqlite3: true
   esbuild: true
   '@swc/core': true
@@ -10,7 +12,7 @@ allowBuilds:
   '@openuidev/lang-core': false
   '@scarf/scarf': false
 minimumReleaseAgeExclude:
-  - '@adonis-agora/agent@0.72.0 || 0.74.0 || 0.74.1'
+  - '@adonis-agora/agent@0.72.0 || 0.74.0 || 0.74.1 || 0.75.0 || 0.76.1 || 0.76.2'
   - '@ai-sdk/gateway@4.0.108'
   - '@ai-sdk/mcp@2.0.71'
   - '@ai-sdk/openai@4.0.89'

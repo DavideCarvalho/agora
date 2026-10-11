@@ -118,7 +118,7 @@ export function billSplitterTree(bill: Bill) {
 
 /**
  * Scenario 9: the same splitter as a model writes it with the app's kit (`genuiSandboxKit()` in
- * vite.config.ts, `sandbox: { kit: true, tailwind: true }` in config/agent.ts): JSX using the app's
+ * vite.config.ts, `defineSandbox({ kit: true })` in app/genui/catalog.ts): JSX using the app's
  * own Button, Card, Input and Slider, Tailwind classes mapped to the app's theme — so it is drawn
  * in the app's look, light and dark. Streamed as JSX: it draws as soon as what has arrived parses.
  */
@@ -178,6 +178,137 @@ export function billSplitterJsxTree(bill: Bill) {
       title: 'Bill splitter',
       summary: `Splits a $${bill.total} bill with a ${bill.tip}% tip between ${bill.people} people.`,
       jsx: jsx(bill),
+    },
+  }
+}
+
+/**
+ * Scenario 9 with the Bootstrap kit (CSS only, no components): HTML with Bootstrap's classes, the
+ * ones the kit listed for the model — no CSS of its own. The same arithmetic as the others.
+ */
+export function billSplitterBootstrapTree(bill: Bill) {
+  return {
+    type: 'Sandbox',
+    props: {
+      initialHeight: 360,
+      placeholderMessages: ['Setting up the bill splitter…', 'Using the app’s Bootstrap classes…'],
+      title: 'Bill splitter',
+      summary: `Splits a $${bill.total} bill with a ${bill.tip}% tip between ${bill.people} people.`,
+      html: `
+<div class="card shadow-sm" data-testid="kit-bill-splitter" style="max-width:28rem">
+  <div class="card-body">
+    <h5 class="card-title mb-1">Split the bill</h5>
+    <p class="card-subtitle text-body-secondary small mb-3">Drawn with the app’s Bootstrap theme.</p>
+    <div class="input-group mb-3"><span class="input-group-text">$</span><input id="total" type="number" class="form-control" value="${bill.total}" aria-label="Bill total"></div>
+    <label for="people" class="form-label d-flex justify-content-between mb-1"><span>People</span><strong id="people-count">${bill.people}</strong></label>
+    <input id="people" type="range" class="form-range mb-3" min="1" max="12" value="${bill.people}" aria-label="People">
+    <div class="btn-group mb-3" role="group" aria-label="Tip">
+      ${[0, 10, 15, 20].map((p) => `<button type="button" class="btn ${p === bill.tip ? 'btn-primary' : 'btn-outline-primary'}" data-tip="${p}">${p}%</button>`).join('')}
+    </div>
+    <div class="alert alert-light border mb-3"><div class="small text-body-secondary">Each person pays</div><div id="each" class="fs-3 fw-semibold text-primary">—</div></div>
+    <button id="settle" type="button" class="btn btn-primary w-100">Ask the assistant to settle it</button>
+  </div>
+</div>`.trim(),
+      jsFunctions: `
+var tip = ${bill.tip}
+function money(n) { return '$' + n.toFixed(2) }
+function each() {
+  var total = Number(document.getElementById('total').value)
+  var people = Number(document.getElementById('people').value)
+  if (!(total > 0) || !(people >= 1)) return null
+  var tipAmount = Math.round(total * tip) / 100
+  return { total: total, people: people, tip: tip, perPerson: Math.ceil(((total + tipAmount) / people) * 100) / 100 }
+}
+function update() {
+  var v = each()
+  document.getElementById('people-count').textContent = document.getElementById('people').value
+  document.getElementById('each').textContent = v ? money(v.perPerson) : '—'
+  document.getElementById('settle').disabled = !v
+}
+function pickTip(button) {
+  tip = Number(button.getAttribute('data-tip'))
+  document.querySelectorAll('[data-tip]').forEach(function (b) { b.className = 'btn ' + (b === button ? 'btn-primary' : 'btn-outline-primary') })
+  update()
+}
+function settleIt() {
+  var v = each()
+  if (!v) return
+  agent.send({ text: 'Settle the bill: ' + money(v.total) + ' with a ' + v.tip + '% tip, split ' + v.people + ' ways.', total: v.total, people: v.people, tip: v.tip, perPerson: v.perPerson })
+  var button = document.getElementById('settle')
+  button.disabled = true
+  button.textContent = 'Sent to the assistant'
+}`.trim(),
+      jsExpressions: [
+        "['total', 'people'].forEach(function (id) { document.getElementById(id).addEventListener('input', update) })",
+        "document.querySelectorAll('[data-tip]').forEach(function (b) { b.addEventListener('click', function () { pickTip(b) }) })",
+        "document.getElementById('settle').addEventListener('click', settleIt)",
+        'update()',
+      ],
+    },
+  }
+}
+
+/**
+ * Scenario 9 with the MUI kit: JSX with MUI's components and the app's own styled ones, inside the
+ * kit's wrapper (the app's theme + CssBaseline) — a Menu included, whose portal opens in the frame.
+ */
+const muiJsx = (bill: Bill) =>
+  `
+function App() {
+  const [total, setTotal] = useState(${bill.total})
+  const [people, setPeople] = useState(${bill.people})
+  const [tip, setTip] = useState(${bill.tip})
+  const [round, setRound] = useState('cent')
+  const [menu, setMenu] = useState(null)
+  const [sent, setSent] = useState(false)
+  const valid = total > 0 && people >= 1
+  const raw = valid ? (total + Math.round(total * tip) / 100) / people : 0
+  const each = round === 'dollar' ? Math.ceil(raw) : Math.ceil(raw * 100) / 100
+  const money = (n) => '$' + n.toFixed(2)
+  return (
+    <Card data-testid="kit-bill-splitter" sx={{ maxWidth: 440 }}>
+      <CardHeader title="Split the bill" subheader="Drawn with the app's MUI theme" />
+      <CardContent>
+        <Stack spacing={2}>
+          <TextField label="Bill total" type="number" size="small" value={total} onChange={(e) => setTotal(Number(e.target.value))}
+            slotProps={{ input: { startAdornment: <InputAdornment position="start">$</InputAdornment> }, htmlInput: { 'aria-label': 'Bill total' } }} />
+          <TextField label="People" type="number" size="small" value={people} onChange={(e) => setPeople(Number(e.target.value))} slotProps={{ htmlInput: { 'aria-label': 'People', min: 1 } }} />
+          <ToggleButtonGroup exclusive size="small" color="primary" value={tip} onChange={(e, v) => v !== null && setTip(v)} aria-label="Tip">
+            {[0, 10, 15, 20].map((p) => <ToggleButton key={p} value={p}>{p}%</ToggleButton>)}
+          </ToggleButtonGroup>
+          <Panel>
+            <Typography variant="body2" color="text.secondary">Each person pays</Typography>
+            <PriceTag id="each">{valid ? money(each) : '—'}</PriceTag>
+          </Panel>
+          <Stack direction="row" spacing={1}>
+            <Button id="round" variant="outlined" onClick={(e) => setMenu(e.currentTarget)}>Round to the {round}</Button>
+            <Menu anchorEl={menu} open={menu !== null} onClose={() => setMenu(null)}>
+              <MenuItem id="round-cent" onClick={() => { setRound('cent'); setMenu(null) }}>Nearest cent</MenuItem>
+              <MenuItem id="round-dollar" onClick={() => { setRound('dollar'); setMenu(null) }}>Next dollar</MenuItem>
+            </Menu>
+          </Stack>
+        </Stack>
+      </CardContent>
+      <CardActions sx={{ px: 2, pb: 2 }}>
+        <Button id="settle" variant="contained" fullWidth disabled={!valid || sent} onClick={() => { setSent(true); agent.send({ text: 'Settle the bill: ' + money(total) + ' with a ' + tip + '% tip, split ' + people + ' ways.', total, people, tip, perPerson: each }) }}>
+          {sent ? 'Sent to the assistant' : 'Ask the assistant to settle it'}
+        </Button>
+      </CardActions>
+    </Card>
+  )
+}
+`.trim()
+
+/** The `ui__render` input for scenario 9 with the MUI kit. */
+export function billSplitterMuiTree(bill: Bill) {
+  return {
+    type: 'Sandbox',
+    props: {
+      initialHeight: 440,
+      placeholderMessages: ['Setting up the bill splitter…', 'Using the app’s MUI theme…'],
+      title: 'Bill splitter',
+      summary: `Splits a $${bill.total} bill with a ${bill.tip}% tip between ${bill.people} people.`,
+      jsx: muiJsx(bill),
     },
   }
 }

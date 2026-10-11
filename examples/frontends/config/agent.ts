@@ -82,7 +82,11 @@ export default defineConfig({
             })
           : createOpenAI({ apiKey: env.get('OPENAI_API_KEY') })
       // OpenRouter speaks Chat Completions, not the Responses API `openai(id)` defaults to.
-      return aiSdkModel(provider === 'openrouter' ? openai.chat(id) : openai(id))
+      const maxOutputTokens = env.get('AGENT_MAX_TOKENS')
+      return aiSdkModel(
+        provider === 'openrouter' ? openai.chat(id) : openai(id),
+        maxOutputTokens !== undefined ? { maxOutputTokens } : {}
+      )
     }
     const { ScriptedOrdersModel } = await import('#agent/scripted_model')
     return new ScriptedOrdersModel()
@@ -106,10 +110,11 @@ export default defineConfig({
   // envelope on 11 of 16 bill-splitter runs (the user saw a refused call before the sandbox); with
   // `ui__sandbox`, on 0 of 16.
   //
-  // The catalog's sandbox draws in the app's look — its theme (always), Tailwind, and the app's own
-  // components (`defineSandbox({ kit: true, tailwind: true })` in app/genui/catalog.ts; the kit is
-  // what `genuiSandboxKit()` builds in vite.config.ts), which the model writes JSX with (scenario
-  // 9). Found through Vite: the dev server here, the manifest in production.
+  // The catalog's sandbox draws in the app's design system — its theme (always) and whatever
+  // `genuiSandboxKit()` builds in vite.config.ts (`defineSandbox({ kit: true })` in
+  // app/genui/catalog.ts): shadcn + Tailwind (the model writes JSX with the components), Bootstrap
+  // (HTML with its classes) or MUI (JSX inside the app's theme) — scenario 9, `?kit=` to switch.
+  // Found through Vite: the dev server here, the manifest in production.
   //
   // `channels`: the web gets trees and the sandbox; WhatsApp (the simulated one on /whatsapp) gets one
   // tool per component it can draw, each sent as WhatsApp messages — OrderList as a list to pick an

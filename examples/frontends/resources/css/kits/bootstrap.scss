@@ -1,0 +1,13 @@
+// Kit (b): Bootstrap 5 through Sass, CSS only (no components): the model writes HTML with
+// Bootstrap's classes, which genuiSandboxKit({ styles }) lists for it. A couple of overrides.
+$primary: #6d28d9;
+$border-radius: 0.65rem;
+$font-family-sans-serif: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+@import 'bootstrap/scss/bootstrap';
+
+// The page switches dark mode with `data-theme` on <html> (the frame mirrors it): Bootstrap's own
+// dark mode is `data-bs-theme`, so the same rules apply to both.
+[data-theme='dark'] {
+  @extend [data-bs-theme='dark'];
+}

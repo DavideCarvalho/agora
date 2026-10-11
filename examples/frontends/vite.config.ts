@@ -1,13 +1,26 @@
+import { existsSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import adonisjs from '@adonisjs/vite/client'
+import tailwindcss from '@tailwindcss/vite'
 import { genuiSandboxKit, type GenuiSandboxKitOptions } from '@adonis-agora/agent/vite'
 
 /**
- * `SANDBOX_KIT=<name>` swaps the committed kit (resources/js/kit — a generic shadcn-style
- * Button/Card/Input/Slider) for a local one in `local-kits/<name>/vite.config.ts` (gitignored: for
- * trying a private design system on the demo). That file exports `{ kit, css?, alias?, plugins? }`.
+ * The sandbox kit: the same bill splitter in three design systems, one generic option shape —
+ *
+ *   shadcn     Tailwind v4 + shadcn-style components (resources/js/kit); the model writes JSX.
+ *   bootstrap  Bootstrap 5 through a .scss with overrides, CSS only; the model writes HTML with
+ *              Bootstrap's classes (the kit tells it which exist).
+ *   mui        MUI with a customized theme and two styled components; `wrapper` gives the model's
+ *              App the ThemeProvider + CssBaseline.
+ *
+ * `SANDBOX_KIT=<name>` picks the one the server starts with (default `shadcn`); the page's kit
+ * switcher (`?kit=<name>`) changes it while it runs — a demo convenience (POST /demo/kit in
+ * start/routes.ts): the options below read the current kit, and a rebuild picks it up.
+ *
+ * A local kit in `local-kits/<name>/vite.config.ts` (gitignored: for trying a private design system
+ * on the demo) joins the list. That file exports `{ kit, css?, alias?, plugins? }`.
  */
 interface LocalKit {
   kit: GenuiSandboxKitOptions
@@ -15,12 +28,49 @@ interface LocalKit {
   alias?: Record<string, string>
   plugins?: PluginOption[]
 }
-const localPath = process.env.SANDBOX_KIT
-  ? new URL(`./local-kits/${process.env.SANDBOX_KIT}/vite.config.ts`, import.meta.url).href
-  : undefined
-const local: LocalKit | undefined = localPath
-  ? ((await import(/* @vite-ignore */ localPath)) as { default: LocalKit }).default
-  : undefined
+// `stylesDocs`: the app's own notes for the model — each ends with `(kit: <name>)`, which is also how
+// the kit switcher (start/routes.ts) knows the new kit is the one built.
+const KITS: Record<string, GenuiSandboxKitOptions> = {
+  shadcn: {
+    styles: 'resources/css/kits/shadcn.css',
+    components: 'resources/js/kit',
+    plugins: [tailwindcss()],
+    stylesDocs: 'Surfaces are a Card; the main action is the default Button, the others variant="outline". (kit: shadcn)',
+  },
+  bootstrap: {
+    styles: 'resources/css/kits/bootstrap.scss',
+    stylesDocs: 'Wrap the view in a .card with a .card-body; .btn-primary for the main action, .btn-outline-primary for choices; Bootstrap spacing utilities (mb-3, gap-2) for layout. (kit: bootstrap)',
+  },
+  mui: {
+    components: 'resources/js/kits/mui/components.tsx',
+    wrapper: 'resources/js/kits/mui/wrapper.tsx',
+    stylesDocs: 'A Card with a CardHeader; Stack for layout; the main action is a contained Button; PriceTag for an amount. Use sx for one-off spacing, never CSS. (kit: mui)',
+  },
+}
+const LOCAL_KITS = ['lastro']
+const locals: Record<string, LocalKit> = {}
+for (const name of new Set([...LOCAL_KITS, process.env.SANDBOX_KIT ?? ''])) {
+  const path = new URL(`./local-kits/${name}/vite.config.ts`, import.meta.url)
+  if (name === '' || !existsSync(path)) continue
+  locals[name] = ((await import(/* @vite-ignore */ path.href)) as { default: LocalKit }).default
+  const kit = locals[name].kit
+  KITS[name] = { ...kit, stylesDocs: `${kit.stylesDocs ?? 'A local design system.'} (kit: ${name})` }
+}
+
+/** The kit in use: the server process's (start/routes.ts switches it), else SANDBOX_KIT, else shadcn. */
+const state = globalThis as { __sandboxKit?: string; __sandboxKits?: string[] }
+state.__sandboxKits = Object.keys(KITS)
+state.__sandboxKit ??= KITS[process.env.SANDBOX_KIT ?? ''] ? (process.env.SANDBOX_KIT as string) : 'shadcn'
+const current = () => KITS[state.__sandboxKit ?? 'shadcn'] ?? KITS.shadcn
+/** Options that read the current kit each time the plugin builds. */
+const kitOptions = {
+  get styles() { return current().styles },
+  get components() { return current().components },
+  get wrapper() { return current().wrapper },
+  get stylesDocs() { return current().stylesDocs },
+  get tsconfig() { return current().tsconfig },
+  get plugins() { return current().plugins },
+} as GenuiSandboxKitOptions
 
 export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, process.cwd(), '')
@@ -66,18 +116,21 @@ export default defineConfig(({ mode }) => {
           'resources/js/pages/openui.tsx',
           'resources/js/pages/a2ui.tsx',
           'resources/js/pages/whatsapp.tsx',
-          ...(local?.css ? [local.css] : []),
+          ...Object.values(locals).flatMap((local) => (local.css ? [local.css] : [])),
         ],
         reload: ['resources/views/**/*.edge'],
       }),
-      // The app's design system in the sandbox: bundles the kit (served in dev, hashed assets in the
-      // build), writes its docs from the components' types, serves the Tailwind runtime, and reloads
-      // open sandboxes when a component changes. app/genui/catalog.ts turns it on: defineSandbox({ kit: true }).
-      genuiSandboxKit(local?.kit ?? { include: 'resources/js/kit/*.tsx' }),
-      ...(local?.plugins ?? []),
+      // The app's design system in the sandbox: compiles its styles, bundles its components and
+      // wrapper (served in dev, hashed assets in the build), writes their docs, and reloads open
+      // sandboxes when one changes. app/genui/catalog.ts turns it on: defineSandbox({ kit: true }).
+      genuiSandboxKit(kitOptions),
+      ...Object.values(locals).flatMap((local) => local.plugins ?? []),
     ],
     resolve: {
-      alias: { '#genui': new URL('./app/genui', import.meta.url).pathname, ...local?.alias },
+      alias: {
+        '#genui': new URL('./app/genui', import.meta.url).pathname,
+        ...Object.assign({}, ...Object.values(locals).map((local) => local.alias ?? {})),
+      },
     },
     server: {
       ...(hosts.length > 0 ? { allowedHosts: hosts.includes('true') ? true : hosts } : {}),

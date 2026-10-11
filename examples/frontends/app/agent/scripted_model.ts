@@ -8,7 +8,14 @@ import type {
 } from '@adonis-agora/agent'
 import { formatCents, listOrders, revenueByMonth, topOrders, type Order } from '#agent/orders'
 import { OPENUI_PROMPT_MARKER } from '#agent/openui_prompt'
-import { billSplitterJsxTree, billSplitterTree, readBill, settle } from '#agent/bill_splitter'
+import {
+  billSplitterBootstrapTree,
+  billSplitterJsxTree,
+  billSplitterMuiTree,
+  billSplitterTree,
+  readBill,
+  settle,
+} from '#agent/bill_splitter'
 
 /**
  * A deterministic, offline model that plays the same "orders & analytics assistant" script for
@@ -30,7 +37,7 @@ export class ScriptedOrdersModel implements ModelProvider {
     // the app's kit); WhatsApp gets one `ui__show_*` tool per component it can draw (config/agent.ts).
     const offered: Offered = {
       tools: new Set(args.tools.map((tool) => tool.name)),
-      kit: args.tools.some((tool) => tool.name === 'ui__render' && tool.description.includes('function App()')),
+      kit: kitOf(args.tools.find((tool) => tool.name === 'ui__render')?.description ?? ''),
     }
     const plan = openui ? openUiScript(turn) : offered.tools.has('ui__render') ? nativeScript(turn, offered) : messagingScript(turn, offered)
     const delay = plan.wordDelayMs ?? 20
@@ -92,8 +99,19 @@ interface Plan {
 
 interface Offered {
   tools: Set<string>
-  /** The sandbox takes JSX with the app's kit. */
-  kit: boolean
+  /**
+   * What the sandbox's description says the app's kit is (as a model would read it): JSX with its
+   * components (`jsx`; MUI's when it lists `<TextField>`), or HTML with its stylesheet's classes.
+   */
+  kit: 'jsx' | 'mui' | 'classes' | null
+}
+
+function kitOf(description: string): Offered['kit'] {
+  // The sandbox says which: "no component kit here … never jsx" (a stylesheet only), or the JSX
+  // rules ("Write the view as JSX in `jsx`") with the kit's components listed.
+  if (description.includes('never jsx')) return 'classes'
+  if (description.includes('Write the view as JSX')) return description.includes('<TextField>') ? 'mui' : 'jsx'
+  return null
 }
 
 interface Turn {
@@ -185,12 +203,15 @@ function nativeScript(turn: Turn, offered: Offered): Plan {
   }
 
   // 9. The same, with the app's kit: JSX with its components, in its theme.
-  if (/app components|kit/.test(text) && offered.kit) {
+  if (/app components|kit/.test(text) && offered.kit !== null) {
     if (!called(turn, 'ui__render').length) {
+      const bill = readBill(text)
+      const input =
+        offered.kit === 'mui' ? billSplitterMuiTree(bill) : offered.kit === 'classes' ? billSplitterBootstrapTree(bill) : billSplitterJsxTree(bill)
       return {
-        reasoning: 'A bill splitter in the Sandbox, written with the app components so it looks like the app.',
+        reasoning: 'A bill splitter in the Sandbox, in the app’s own design system so it looks like the app.',
         text: 'Here is a bill splitter, built with the app components.',
-        toolCalls: [{ name: 'ui__render', input: billSplitterJsxTree(readBill(text)) }],
+        toolCalls: [{ name: 'ui__render', input }],
         streamArgs: SANDBOX_STREAM,
       }
     }
