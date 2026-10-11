@@ -82,7 +82,11 @@ export default defineConfig({
             })
           : createOpenAI({ apiKey: env.get('OPENAI_API_KEY') })
       // OpenRouter speaks Chat Completions, not the Responses API `openai(id)` defaults to.
-      return aiSdkModel(provider === 'openrouter' ? openai.chat(id) : openai(id))
+      const maxOutputTokens = env.get('AGENT_MAX_TOKENS')
+      return aiSdkModel(
+        provider === 'openrouter' ? openai.chat(id) : openai(id),
+        maxOutputTokens !== undefined ? { maxOutputTokens } : {}
+      )
     }
     const { ScriptedOrdersModel } = await import('#agent/scripted_model')
     return new ScriptedOrdersModel()

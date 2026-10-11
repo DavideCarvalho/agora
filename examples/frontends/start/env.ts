@@ -11,6 +11,8 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   /** `scripted` (default, offline), `openai:<model id>` or `openrouter:<model id>`. */
   AGENT_MODEL: Env.schema.string.optional(),
+  // Cap on each model call's output tokens (a real model only), e.g. 2000 for a cheap test run.
+  AGENT_MAX_TOKENS: Env.schema.number.optional(),
   OPENAI_API_KEY: Env.schema.string.optional(),
   OPENROUTER_API_KEY: Env.schema.string.optional(),
 
