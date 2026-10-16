@@ -1,6 +1,7 @@
 import { ArrowRight, Plug, Settings2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { AgoraMark, GitHubMark } from '@/components/logo';
+import { adopters, adoptersIssue } from '@/lib/adopters';
 import { libs, stageLabel, totalPackages } from '@/lib/libs';
 import { gitConfig, npmScope } from '@/lib/shared';
 
@@ -144,6 +145,9 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ---------------------------------------------------------- Used by */}
+        <UsedBy />
+
         {/* ----------------------------------------------------------- Footer */}
         <footer className="border-t border-fd-border py-10">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
@@ -163,6 +167,69 @@ export default function HomePage() {
         </footer>
       </div>
     </main>
+  );
+}
+
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
+/** Who runs Agora — only those who agreed to be listed (see lib/adopters.ts). */
+function UsedBy() {
+  const invite = (
+    <a
+      href={adoptersIssue}
+      className="inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
+      style={{ color: 'var(--agora-primary)' }}
+      target="_blank"
+      rel="noreferrer"
+    >
+      Tell us about it
+      <ArrowRight className="size-3.5" />
+    </a>
+  );
+
+  // Nobody listed yet: just the invitation, no empty showcase.
+  if (adopters.length === 0) {
+    return (
+      <section className="pb-16 text-center text-sm text-fd-muted-foreground">
+        Running Agora in production? {invite}
+      </section>
+    );
+  }
+
+  return (
+    <section className="pb-20 text-center">
+      <p className="agora-kicker">Used by</p>
+      <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
+        {adopters.map((adopter) => (
+          <li key={adopter.name}>
+            <a
+              href={adopter.url}
+              target="_blank"
+              rel="noreferrer"
+              title={adopter.name}
+              className="block opacity-70 transition-opacity hover:opacity-100"
+            >
+              {adopter.logo ? (
+                // biome-ignore lint/performance/noImgElement: static export (GitHub Pages) has no image optimizer, and logos come in arbitrary sizes
+                <img
+                  src={`${basePath}${adopter.logo}`}
+                  alt={adopter.name}
+                  className="h-8 w-auto"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="font-display text-lg text-fd-foreground">
+                  {adopter.name}
+                </span>
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-8 text-sm text-fd-muted-foreground">
+        Running Agora in production? {invite}
+      </p>
+    </section>
   );
 }
 
