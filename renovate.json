@@ -13,8 +13,8 @@
       "enabled": false
     },
     {
-      "description": "Patch, minor and pin bumps merge on their own once CI is green. These are the ones `release.yml` turns into an automatic patch release. `pin` is its own update type in Renovate rather than a flavour of patch, so it has to be named here or the initial pinning PR sits open forever.",
-      "matchDepTypes": ["dependencies", "devDependencies"],
+      "description": "Patch, minor and pin bumps merge on their own once CI is green. These are the ones `release.yml` turns into an automatic patch release. `pin` is its own update type in Renovate rather than a flavour of patch, so it has to be named here or the initial pinning PR sits open forever. Same for `packageManager`, the pnpm version in package.json: it is neither a dependency nor a devDependency, so every pnpm bump used to wait for a person.",
+      "matchDepTypes": ["dependencies", "devDependencies", "packageManager"],
       "matchUpdateTypes": ["patch", "minor", "pin"],
       "automerge": true,
       "automergeStrategy": "squash"
@@ -54,6 +54,11 @@
       "matchDepTypes": ["peerDependencies"],
       "rangeStrategy": "widen",
       "automerge": false
+    },
+    {
+      "description": "Lockfile maintenance refreshes the whole tree at once, so Renovate has no single release to age: its `renovate/stability-days` check stays pending forever and the automerge below never fires. pnpm already enforces the minimum release age itself when it resolves the refreshed lockfile, so the check adds nothing here.",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "minimumReleaseAge": null
     }
   ],
   "lockFileMaintenance": {
