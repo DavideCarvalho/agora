@@ -99,7 +99,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       adonisjs({
-        entrypoints: [
+        entryPoints: [
           'resources/css/app.css',
           'resources/js/pages/home.tsx',
           'resources/js/pages/native.tsx',
