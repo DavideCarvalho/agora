@@ -14,16 +14,20 @@ on:
   # to rebuild immediately on a docs change.
   repository_dispatch:
     types: [lib-docs-updated]
+  # Build-only on a PR: its other checks only cover examples/, so a dependency bump that broke the
+  # site itself (the lockfile refresh in #48) went in green and every deploy after it failed.
+  pull_request:
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow one concurrent deployment; let in-progress runs finish.
+# Allow one concurrent deployment; let in-progress runs finish. A PR build has its own group per
+# branch, so it never queues behind a deployment, and a newer push to the PR replaces it.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('pages-pr-{0}', github.ref) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -55,11 +59,13 @@ jobs:
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
 
-      - uses: actions/upload-pages-artifact@v5.0.0
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: out
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:
