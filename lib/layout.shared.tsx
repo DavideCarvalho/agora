@@ -17,6 +17,11 @@ export function baseOptions(): BaseLayoutProps {
         // library dropdown, so don't duplicate it there.
         on: 'nav',
       },
+      {
+        text: 'Partners',
+        url: '/partners',
+        on: 'nav',
+      },
     ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
