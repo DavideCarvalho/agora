@@ -23,7 +23,7 @@
     "#channels/*": "./app/channels/*.js"
   },
   "devDependencies": {
-    "@adonisjs/assembler": "8.5.1",
+    "@adonisjs/assembler": "8.5.2",
     "@adonisjs/tsconfig": "2.0.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
