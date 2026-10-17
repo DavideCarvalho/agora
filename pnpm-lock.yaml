@@ -167,14 +167,14 @@ importers:
   .:
     dependencies:
       fumadocs-core:
-        specifier: 16.15.8
-        version: 16.15.8(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7)
+        specifier: 16.17.2
+        version: 16.17.2(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7)
       fumadocs-mdx:
         specifier: 15.4.0
-        version: 15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.18)(fumadocs-core@16.15.8(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)
+        version: 15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.18)(fumadocs-core@16.17.2(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)
       fumadocs-ui:
-        specifier: 16.15.8
-        version: 16.15.8(@types/mdx@2.0.14)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(fumadocs-core@16.15.8(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3)
+        specifier: 16.17.2
+        version: 16.17.2(@types/mdx@2.0.14)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(fumadocs-core@16.17.2(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(tailwindcss@4.3.3)
       lucide-react:
         specifier: 1.44.0
         version: 1.44.0(react@19.2.8)
@@ -469,8 +469,8 @@ packages:
       '@types/react':
         optional: true
 
-  '@fumadocs/tailwind@0.1.1':
-    resolution: {integrity: sha512-BnPe52UxSaG8yKlHMKBxXw8h6GpK5qO55ci6+Qd5JnquTvIw6SpfbC1P+qAi82PuPWv1KZAWY8bxRk4+x9ctXw==}
+  '@fumadocs/tailwind@0.1.3':
+    resolution: {integrity: sha512-gDgLbTnY5b+nogCg2y/pP7GsaQS4Zt/0vftJAu07Wy7Wsb3/lwd9GwoGqccCnPElTFwMG+pPwrmHXBPexEfE8A==}
     peerDependencies:
       tailwindcss: ^4.0.0
     peerDependenciesMeta:
@@ -1574,8 +1574,8 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
-  cn@0.2.6:
-    resolution: {integrity: sha512-+i4L0zUGgRcEnhsxueVrP7iBGxBx5iD0WOTYg1MwFEu2ZyCmH5Ov2V1cul2Ht5UchRQQgftCf4be/RxspuW6QQ==}
+  cn@0.4.0:
+    resolution: {integrity: sha512-qOAeUhPwPzBxx6jaeQdo646XIKliKHc2j1ZF7Ngb1o0pJZKH5gq8FkA0aVdUdPFUDXNXyUCXpCtoJISo6dhizg==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -1668,10 +1668,6 @@ packages:
     resolution: {integrity: sha512-9vhedylFonb2YGogzUKX6+Ja72gOJbN1QHAqdrvqLwhdl/QWbKopzoUC9EbQNVsAns/bx/4uyqalrQAoy1IByw==}
     engines: {node: '>=10.13.0'}
 
-  entities@6.0.1:
-    resolution: {integrity: sha512-aN97NXWF6AWBTahfVOIrB/NShkzi5H7F9r1s9mD3cDj4Ko5f2qhhVoYMibXF7GlLveb/D2ioWay8lxI97Ven3g==}
-    engines: {node: '>=0.12'}
-
   esast-util-from-estree@2.0.0:
     resolution: {integrity: sha512-4CyanoAudUSBAn5K13H4JhsMH6L9ZP7XbLVe/dKybkxMO7eDyLsT8UHl9TRNrU2Gr9nz+FovfSIjuXWJ81uVwQ==}
 
@@ -1733,8 +1729,8 @@ packages:
       picomatch:
         optional: true
 
-  framer-motion@13.5.1:
-    resolution: {integrity: sha512-HeWOaeHD3kyTSIEMT6+nw7fBn4saIfxxabZyAITbycAl4xr1kzGJKIvGt/OWghSlvIA9qTnZ1zTGelHAe6S8DA==}
+  framer-motion@14.3.0:
+    resolution: {integrity: sha512-d8WCrU0ZQn7ukKMykCsDyIOwb/taZeDqqrDBK0du5GO0AO/ynz8fdR/LIIz9Pyy3n3tGwrneR+n0egyrrLa3fw==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -1744,11 +1740,12 @@ packages:
       react-dom:
         optional: true
 
-  fumadocs-core@16.15.8:
-    resolution: {integrity: sha512-becV45sD2Mki57WgICAocwp0ufvydy3nj+AWIBnik7Im00MrAx81DW9a6lIa94NDSHGLZFNfDMdaNeHuUuya/A==}
+  fumadocs-core@16.17.2:
+    resolution: {integrity: sha512-1jzT37bDsGfEgUiorZfzGfVhLJjeXZ531BEg4ZRLBvHzfuSOaXAf5nFbz/wUQbL7iL6akDiwOTzRLXATM1/M8g==}
     peerDependencies:
       '@mdx-js/mdx': '*'
       '@mixedbread/sdk': 0.x.x
+      '@modelcontextprotocol/server': 2.x.x
       '@orama/core': 1.x.x
       '@oramacloud/client': 2.x.x
       '@tanstack/react-router': 1.x.x
@@ -1759,6 +1756,7 @@ packages:
       algoliasearch: 5.x.x
       flexsearch: '*'
       lucide-react: '*'
+      meilisearch: '>=0.50.0 <1.0.0'
       next: 16.x.x
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -1769,6 +1767,8 @@ packages:
       '@mdx-js/mdx':
         optional: true
       '@mixedbread/sdk':
+        optional: true
+      '@modelcontextprotocol/server':
         optional: true
       '@orama/core':
         optional: true
@@ -1789,6 +1789,8 @@ packages:
       flexsearch:
         optional: true
       lucide-react:
+        optional: true
+      meilisearch:
         optional: true
       next:
         optional: true
@@ -1840,12 +1842,12 @@ packages:
       vite:
         optional: true
 
-  fumadocs-ui@16.15.8:
-    resolution: {integrity: sha512-uo5rdp5Gyi/9RzrRWMXkKqqBUfK6cwKhkCjtR4QnhOfQHsZgSoll+Aozi8Hn7Leihkhcfhgjrm/yo40UsXTKkA==}
+  fumadocs-ui@16.17.2:
+    resolution: {integrity: sha512-Oa8L4IdPh8dMWGmR1tSPD5xJTc71HNEaTtKctiQbOT2/Bn+PF3faXX7d0cJYI9t8qBRGZeJaxPAut0HyhlGmNg==}
     peerDependencies:
       '@types/mdx': '*'
       '@types/react': '*'
-      fumadocs-core: 16.15.8
+      fumadocs-core: 16.17.2
       next: 16.x.x
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -1878,14 +1880,11 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
-  hast-util-from-parse5@8.0.3:
-    resolution: {integrity: sha512-3kxEVkEKt0zvcZ3hCRYI8rqrgwtlIOFMWkbclACvjlDw8Li9S2hk/d51OI0nr/gIpdMHNepwgOKqZ/sy0Clpyg==}
+  hast-util-from-dom@5.0.1:
+    resolution: {integrity: sha512-N+LqofjR2zuzTjCPzyDUdSshy4Ma6li7p/c3pA78uTwzFgENbgbUrm2ugwsOdcjI1muO+o6Dgzp9p8WHtn/39Q==}
 
   hast-util-parse-selector@4.0.0:
     resolution: {integrity: sha512-wkQCkSYoOGCRKERFWcxMVMOcYE2K1AaNLU8DXS9arxnLOUEWbOXKXiJUNzEpqZ3JOKpnha3jkFrumEjVliDe7A==}
-
-  hast-util-raw@9.1.0:
-    resolution: {integrity: sha512-Y8/SBAHkZGoNkpzqqfCldijcuUKh7/su31kEBp67cFY09Wy0mTRgtsLYsiIxMJxlu0f6AA5SUTbDR8K0rxnbUw==}
 
   hast-util-to-estree@3.1.3:
     resolution: {integrity: sha512-48+B/rJWAp0jamNbAAf9M7Uf//UVqAoMmgXhBdxTDJLGKY+LRnZ99qcG+Qjl5HfMpYNzS5v4EAwVEF34LeAj7w==}
@@ -1895,9 +1894,6 @@ packages:
 
   hast-util-to-jsx-runtime@2.3.6:
     resolution: {integrity: sha512-zl6s8LwNyo1P9uw+XJGvZtdFF1GdAkOg8ujOw+4Pyb76874fLps4ueHXDhXWdk6YHQ6OgUtinliG7RsYvCbbBg==}
-
-  hast-util-to-parse5@8.0.1:
-    resolution: {integrity: sha512-MlWT6Pjt4CG9lFCjiz4BH7l9wmrMkfkJYCxFwKQic8+RTZgWPuWxwAfjJElsXkex7DJjfSJsQIt931ilUgmwdA==}
 
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
@@ -2046,6 +2042,15 @@ packages:
     resolution: {integrity: sha512-2egNApH4hX4j/qdCgRublh88+9u3mEhz9iSlW5ckm4kaQEqZbXbMr0l5u5JZLy8nmWRx2dbHGQkEDYz6C9aCgw==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  lucide-react@1.57.0:
+    resolution: {integrity: sha512-bXFZEucYhAzLD62Jse76AbTR6LiSLTn3Tqir2f1n8rZrWAdLodYy7jnRZSPIT89dRLk/IseMOUWG82wJtTyTTw==}
+    peerDependencies:
+      '@types/react': '*'
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
@@ -2241,14 +2246,14 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
-  motion-dom@13.5.1:
-    resolution: {integrity: sha512-/7CVCD20Mz1KobktorpdgvowV0V41J7UxqE+qWS3GkSJqrRr5ft+2RloOYtEKv+wvBp3JaSFBclhxt4ja8ovHg==}
+  motion-dom@14.3.0:
+    resolution: {integrity: sha512-rcKO4aEJzAqDEsrH6qFzhLZxs7bNqZpiUEuEATz9LaRwt6dG7hZEbcFUSHNR8NECaKYM0Iuw6Iv6NpWEGXDI+w==}
 
-  motion-utils@13.5.0:
-    resolution: {integrity: sha512-Hqe/sqjIKliPZg8sVjWAkdySDPJNIeKH+euVkDOG8ri3DUUU7ZjndmHsGqEPz2iHpiyVaV5I22iguCMHU2he+Q==}
+  motion-utils@14.1.1:
+    resolution: {integrity: sha512-3VvN5Uvf8B6qG+OfOui6Nht5EWp+vLuU3IqcAj7ItZGKqtmTjCebl5sGZF7/08gEHRnEl1AP/fIwbcEyVrcQGQ==}
 
-  motion@13.5.1:
-    resolution: {integrity: sha512-eV9SUem6KnzEa9+eT+dVBeDlhy5TTdn09YWR1WhUsKoZCJPw/n4TcYhjbxq2Gy5PTwDr//4H3r5vxkcZnNnO1w==}
+  motion@14.3.0:
+    resolution: {integrity: sha512-yh/nHYjikl68+FTxAMywFYzzj21/oGY7RGCfkqN5zpuT1rk3rp0lKfVU8EUq0A64qQeGnxuKUJWP85MipqdLBw==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -2324,9 +2329,6 @@ packages:
 
   parse-entities@4.0.2:
     resolution: {integrity: sha512-GG2AQYWoLgL877gQIKeRPGO1xF9+eG1ujIb5soS5gPvLQ1y2o8FL90w2QWNdf9I361Mpp7726c+lj3U0qK1uGw==}
-
-  parse5@7.3.0:
-    resolution: {integrity: sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==}
 
   path-is-inside@1.0.2:
     resolution: {integrity: sha512-DUWJr3+ULp4zXmol/SZkFf3JGsS9/SIv+Y3Rt93/UjPpDpklB5f1er4O3POIbUuUJ3FXgqte2Q7SrU6zAqwk8w==}
@@ -2436,9 +2438,6 @@ packages:
   registry-url@3.1.0:
     resolution: {integrity: sha512-ZbgR5aZEdf4UKZVBPYIgaglBmSF2Hi94s2PcIHhRGFjKYu+chjJdYfHn4rt3hB6eCKLJ8giVIIfgMa1ehDfZKA==}
     engines: {node: '>=0.10.0'}
-
-  rehype-raw@7.0.0:
-    resolution: {integrity: sha512-/aE8hCfKlQeA8LmyeyQvQF3eBiLRGNlfBJEvWH7ivp9sBqs7TNqBL5X3v157rM4IFETqDnIOO+z5M/biZbo9Ww==}
 
   rehype-recma@1.0.0:
     resolution: {integrity: sha512-lqA4rGUf1JmacCNWWZx0Wv1dHqMwxzsDWYMTowuplHF3xH0N/MmrZ/G3BDZnzAkRmxDadujCjaKM2hqYdCBOGw==}
@@ -2662,9 +2661,6 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  vfile-location@5.0.3:
-    resolution: {integrity: sha512-5yXvWDEgqeiYiBe1lbxYF7UMAIm/IcopxMHrMQDq3nvKcjPKIhZklUKL+AE7J7uApI4kwe2snsK+eI6UTj9EHg==}
-
   vfile-message@4.0.3:
     resolution: {integrity: sha512-QTHzsGd1EhbZs4AsQ20JX1rC3cOlt/IWJruk893DfLRr57lcnOeMaWG4K0JrRta4mIJZKth2Au3mM3u03/JWKw==}
 
@@ -2854,7 +2850,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.18
 
-  '@fumadocs/tailwind@0.1.1(tailwindcss@4.3.3)':
+  '@fumadocs/tailwind@0.1.3(tailwindcss@4.3.3)':
     optionalDependencies:
       tailwindcss: 4.3.3
 
@@ -3761,7 +3757,7 @@ snapshots:
 
   clsx@2.1.1: {}
 
-  cn@0.2.6: {}
+  cn@0.4.0: {}
 
   collapse-white-space@2.1.0: {}
 
@@ -3841,8 +3837,6 @@ snapshots:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
-
-  entities@6.0.1: {}
 
   esast-util-from-estree@2.0.0:
     dependencies:
@@ -3948,24 +3942,26 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  framer-motion@13.5.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  framer-motion@14.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
-      motion-dom: 13.5.1
-      motion-utils: 13.5.0
+      motion-dom: 14.3.0
+      motion-utils: 14.1.1
       tslib: 2.8.1
     optionalDependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  fumadocs-core@16.15.8(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7):
+  fumadocs-core@16.17.2(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7):
     dependencies:
       '@fumari/image-size': 0.1.1
       estree-util-value-to-estree: 3.5.0
       github-slugger: 2.0.0
+      hast-util-from-dom: 5.0.1
       hast-util-to-estree: 3.1.3(supports-color@7.2.0)
       hast-util-to-jsx-runtime: 2.3.6(supports-color@7.2.0)
       mdast-util-mdx: 3.0.0(supports-color@7.2.0)
-      mdast-util-to-markdown: 2.2.0
+      micromark: 4.0.3(supports-color@7.2.0)
+      micromark-extension-gfm-table: 2.1.2
       npm-to-yarn: 3.2.0
       remark: 15.0.1(supports-color@7.2.0)
       remark-gfm: 4.0.1(supports-color@7.2.0)
@@ -3974,7 +3970,6 @@ snapshots:
       shiki: 4.5.0
       tinyglobby: 0.2.17
       unified: 11.0.5
-      unist-util-visit: 5.1.0
       vfile: 6.0.3
       yaml: 2.9.1
       zbsearch: 4.0.1
@@ -3992,14 +3987,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fumadocs-mdx@15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.18)(fumadocs-core@16.15.8(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(supports-color@7.2.0):
+  fumadocs-mdx@15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.18)(fumadocs-core@16.17.2(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(supports-color@7.2.0):
     dependencies:
       '@mdx-js/mdx': 3.1.1(supports-color@7.2.0)
       '@standard-schema/spec': 1.1.0
       chokidar: 5.0.0
       esbuild: 0.28.2
       estree-util-value-to-estree: 3.5.0
-      fumadocs-core: 16.15.8(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7)
+      fumadocs-core: 16.17.2(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7)
       github-slugger: 2.0.0
       magic-string: 1.4.3
       mdast-util-mdx: 3.0.0(supports-color@7.2.0)
@@ -4023,10 +4018,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fumadocs-ui@16.15.8(@types/mdx@2.0.14)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(fumadocs-core@16.15.8(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwindcss@4.3.3):
+  fumadocs-ui@16.17.2(@types/mdx@2.0.14)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(fumadocs-core@16.17.2(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(tailwindcss@4.3.3):
     dependencies:
       '@fuma-translate/react': 1.0.2(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@fumadocs/tailwind': 0.1.1(tailwindcss@4.3.3)
+      '@fumadocs/tailwind': 0.1.3(tailwindcss@4.3.3)
       '@radix-ui/react-accordion': 1.3.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@radix-ui/react-collapsible': 1.2.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@radix-ui/react-dialog': 1.3.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -4038,24 +4033,24 @@ snapshots:
       '@radix-ui/react-slot': 1.5.0(@types/react@19.2.18)(react@19.2.8)
       '@radix-ui/react-tabs': 1.2.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       class-variance-authority: 0.7.1
-      cn: 0.2.6
-      fumadocs-core: 16.15.8(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7)
-      lucide-react: 1.44.0(react@19.2.8)
-      motion: 13.5.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      cn: 0.4.0
+      fumadocs-core: 16.17.2(@mdx-js/mdx@3.1.1(supports-color@7.2.0))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.18)(lucide-react@1.44.0(react@19.2.8))(next@16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@7.2.0)(zod@4.6.7)
+      hast-util-to-jsx-runtime: 2.3.6(supports-color@7.2.0)
+      lucide-react: 1.57.0(@types/react@19.2.18)(react@19.2.8)
+      motion: 14.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       next-themes: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
       react-remove-scroll: 2.7.2(@types/react@19.2.18)(react@19.2.8)
-      rehype-raw: 7.0.0
       scroll-into-view-if-needed: 3.1.0
       shiki: 4.5.0
-      unist-util-visit: 5.1.0
     optionalDependencies:
       '@types/mdx': 2.0.14
       '@types/react': 19.2.18
       next: 16.3.4(@types/node@26.5.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
     transitivePeerDependencies:
       - '@types/react-dom'
+      - supports-color
       - tailwindcss
 
   get-nonce@1.0.1: {}
@@ -4068,36 +4063,15 @@ snapshots:
 
   has-flag@4.0.0: {}
 
-  hast-util-from-parse5@8.0.3:
+  hast-util-from-dom@5.0.1:
     dependencies:
       '@types/hast': 3.0.5
-      '@types/unist': 3.0.3
-      devlop: 1.1.0
       hastscript: 9.0.1
-      property-information: 7.2.0
-      vfile: 6.0.3
-      vfile-location: 5.0.3
       web-namespaces: 2.0.1
 
   hast-util-parse-selector@4.0.0:
     dependencies:
       '@types/hast': 3.0.5
-
-  hast-util-raw@9.1.0:
-    dependencies:
-      '@types/hast': 3.0.5
-      '@types/unist': 3.0.3
-      '@ungap/structured-clone': 1.4.0
-      hast-util-from-parse5: 8.0.3
-      hast-util-to-parse5: 8.0.1
-      html-void-elements: 3.0.0
-      mdast-util-to-hast: 13.2.1
-      parse5: 7.3.0
-      unist-util-position: 5.0.0
-      unist-util-visit: 5.1.0
-      vfile: 6.0.3
-      web-namespaces: 2.0.1
-      zwitch: 2.0.4
 
   hast-util-to-estree@3.1.3(supports-color@7.2.0):
     dependencies:
@@ -4153,16 +4127,6 @@ snapshots:
       vfile-message: 4.0.3
     transitivePeerDependencies:
       - supports-color
-
-  hast-util-to-parse5@8.0.1:
-    dependencies:
-      '@types/hast': 3.0.5
-      comma-separated-tokens: 2.0.3
-      devlop: 1.1.0
-      property-information: 7.2.0
-      space-separated-tokens: 2.0.2
-      web-namespaces: 2.0.1
-      zwitch: 2.0.4
 
   hast-util-whitespace@3.0.0:
     dependencies:
@@ -4269,6 +4233,12 @@ snapshots:
   lucide-react@1.44.0(react@19.2.8):
     dependencies:
       react: 19.2.8
+
+  lucide-react@1.57.0(@types/react@19.2.18)(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+    optionalDependencies:
+      '@types/react': 19.2.18
 
   magic-string@0.30.21:
     dependencies:
@@ -4735,15 +4705,15 @@ snapshots:
 
   minimist@1.2.8: {}
 
-  motion-dom@13.5.1:
+  motion-dom@14.3.0:
     dependencies:
-      motion-utils: 13.5.0
+      motion-utils: 14.1.1
 
-  motion-utils@13.5.0: {}
+  motion-utils@14.1.1: {}
 
-  motion@13.5.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  motion@14.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
-      framer-motion: 13.5.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      framer-motion: 14.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tslib: 2.8.1
     optionalDependencies:
       react: 19.2.8
@@ -4816,10 +4786,6 @@ snapshots:
       is-alphanumerical: 2.0.1
       is-decimal: 2.0.1
       is-hexadecimal: 2.0.1
-
-  parse5@7.3.0:
-    dependencies:
-      entities: 6.0.1
 
   path-is-inside@1.0.2: {}
 
@@ -4937,12 +4903,6 @@ snapshots:
   registry-url@3.1.0:
     dependencies:
       rc: 1.2.8
-
-  rehype-raw@7.0.0:
-    dependencies:
-      '@types/hast': 3.0.5
-      hast-util-raw: 9.1.0
-      vfile: 6.0.3
 
   rehype-recma@1.0.0(supports-color@7.2.0):
     dependencies:
@@ -5255,11 +5215,6 @@ snapshots:
       '@types/react': 19.2.18
 
   vary@1.1.2: {}
-
-  vfile-location@5.0.3:
-    dependencies:
-      '@types/unist': 3.0.3
-      vfile: 6.0.3
 
   vfile-message@4.0.3:
     dependencies:
