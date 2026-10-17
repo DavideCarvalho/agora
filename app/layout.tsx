@@ -30,6 +30,8 @@ const siteUrl = `https://${gitConfig.user}.github.io${process.env.NEXT_PUBLIC_BA
 const description =
   'Agora is where the AdonisJS ecosystem gathers — plug-n-play, fully-configurable libraries published under @adonis-agora. One docs site for all of them: bring one to your app, or convene them all.';
 
+const ogImageAlt = 'Agora — where the AdonisJS ecosystem gathers';
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -54,9 +56,8 @@ export const metadata: Metadata = {
     'libraries',
   ],
   // Link previews: Open Graph drives WhatsApp / Facebook / Discord / LinkedIn /
-  // Slack; the Twitter card drives X. The preview image comes from the
-  // file-based `app/opengraph-image.tsx` (+ `twitter-image.tsx`), which Next
-  // injects with absolute URLs derived from `metadataBase`.
+  // Slack; the Twitter card drives X. Both use `/og.png` from
+  // `app/og.png/route.tsx`, made absolute against `metadataBase`.
   openGraph: {
     type: 'website',
     siteName: appName,
@@ -64,9 +65,11 @@ export const metadata: Metadata = {
     title: `${appName} — ${appTagline}`,
     description,
     locale: 'en_US',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: ogImageAlt }],
   },
   twitter: {
     card: 'summary_large_image',
+    images: [{ url: '/og.png', alt: ogImageAlt }],
     title: `${appName} — ${appTagline}`,
     description,
   },

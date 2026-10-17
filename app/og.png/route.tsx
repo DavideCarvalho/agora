@@ -1,16 +1,16 @@
 import { ImageResponse } from 'next/og';
 import { libs, totalPackages } from '@/lib/libs';
 
-export const alt = 'Agora — where the AdonisJS ecosystem gathers';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
-// Required so the image is prerendered to a static file under `output: export`.
+// Served as a real `/og.png` file, not via the file-based
+// `opengraph-image.tsx` convention: under `output: export` that convention
+// writes an extensionless `opengraph-image` file, which GitHub Pages serves as
+// `application/octet-stream`, and X then drops the card image.
 export const dynamic = 'force-static';
 
 // Social link preview card. Kept to satori-safe inline styles (every element
 // with multiple children declares display:flex). No custom font fetch so it
 // stays reliable under static export.
-export default function OpengraphImage() {
+export function GET() {
   return new ImageResponse(
     <div
       style={{
@@ -103,6 +103,6 @@ export default function OpengraphImage() {
         </div>
       </div>
     </div>,
-    { ...size },
+    { width: 1200, height: 630 },
   );
 }
