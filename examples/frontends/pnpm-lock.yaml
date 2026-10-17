@@ -167,8 +167,8 @@ importers:
   .:
     dependencies:
       '@a2ui/markdown-it':
-        specifier: 0.2.0
-        version: 0.2.0(@a2ui/web_core@0.12.0)
+        specifier: 0.2.1
+        version: 0.2.1(@a2ui/web_core@0.12.0)
       '@a2ui/react':
         specifier: 0.12.0
         version: 0.12.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5)
@@ -319,10 +319,10 @@ packages:
       graphql:
         optional: true
 
-  '@a2ui/markdown-it@0.2.0':
-    resolution: {integrity: sha512-B1nO5Nh2Vw+P0W1DdwYypIayOoAxj3/Fzohxy/q+0TGDG7t4rD+2roUpOnIWW67L7wvGgNclJ8gLzJTkmTcq/A==}
+  '@a2ui/markdown-it@0.2.1':
+    resolution: {integrity: sha512-5a84+BICiX/knoXw99cM/J618pgz+W1Vwd92F7LL7ISlbUpa2VCB1u8wkDE62tyBgTQGT28JNJ5aK078e4V/FA==}
     peerDependencies:
-      '@a2ui/web_core': ^0.12.0
+      '@a2ui/web_core': ^0.13.0
 
   '@a2ui/react@0.12.0':
     resolution: {integrity: sha512-zGI6kNjus8m0OM4V/A0S3g3YDFodtd82C+f91CECmt9WQniJtFvlSLZqOu6xBz2R3uUh7aviOOZUhTCVft85Ng==}
@@ -5581,7 +5581,7 @@ snapshots:
     optionalDependencies:
       graphql: 16.14.2
 
-  '@a2ui/markdown-it@0.2.0(@a2ui/web_core@0.12.0)':
+  '@a2ui/markdown-it@0.2.1(@a2ui/web_core@0.12.0)':
     dependencies:
       '@a2ui/web_core': 0.12.0
       dompurify: 3.4.11
@@ -5589,7 +5589,7 @@ snapshots:
 
   '@a2ui/react@0.12.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5)':
     dependencies:
-      '@a2ui/markdown-it': 0.2.0(@a2ui/web_core@0.12.0)
+      '@a2ui/markdown-it': 0.2.1(@a2ui/web_core@0.12.0)
       '@a2ui/web_core': 0.12.0
       clsx: 2.1.1
       markdown-it: 14.3.2
