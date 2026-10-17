@@ -229,10 +229,10 @@ importers:
         version: 8.5.2(typescript@5.9.3)
       '@adonisjs/eslint-config':
         specifier: 3.1.0
-        version: 3.1.0(eslint@10.10.0(supports-color@10.2.2))(prettier@3.9.6)(supports-color@10.2.2)(typescript@5.9.3)
+        version: 3.1.0(eslint@10.10.0(supports-color@10.2.2))(prettier@3.9.10)(supports-color@10.2.2)(typescript@5.9.3)
       '@adonisjs/prettier-config':
         specifier: 1.5.0
-        version: 1.5.0(prettier@3.9.6)
+        version: 1.5.0(prettier@3.9.10)
       '@adonisjs/tsconfig':
         specifier: 2.0.0
         version: 2.0.0
@@ -273,8 +273,8 @@ importers:
         specifier: 13.1.3
         version: 13.1.3
       prettier:
-        specifier: 3.9.6
-        version: 3.9.6
+        specifier: 3.9.10
+        version: 3.9.10
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -2847,8 +2847,8 @@ packages:
     resolution: {integrity: sha512-SxToR7P8Y2lWmv/kTzVLC1t/GDI2WGjMwNhLLE9qtH8Q13C+aEmuRlzDst4Up4s0Wc8sF2M+J57iB3cMLqftfg==}
     engines: {node: '>=6.0.0'}
 
-  prettier@3.9.6:
-    resolution: {integrity: sha512-OpN0zzVdiaiAhxpuuj5efpIS4sY9j7bY6uR5mnj5yPzGkdkjNKSJeUThPb60Jw29QuAZgA4o+/iB49kFiaBX6g==}
+  prettier@3.9.10:
+    resolution: {integrity: sha512-skGHTH1Yb9QvaTC4hWnRTzEYtCpApF0UMBPz+t/0ZPzP8ihefo/btKd+QA7pUE0fEwA1SbS/NmhyEcstdXOIdA==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -3631,15 +3631,15 @@ snapshots:
       '@poppinss/validator-lite': 2.1.2
       split-lines: 3.0.0
 
-  '@adonisjs/eslint-config@3.1.0(eslint@10.10.0(supports-color@10.2.2))(prettier@3.9.6)(supports-color@10.2.2)(typescript@5.9.3)':
+  '@adonisjs/eslint-config@3.1.0(eslint@10.10.0(supports-color@10.2.2))(prettier@3.9.10)(supports-color@10.2.2)(typescript@5.9.3)':
     dependencies:
       '@adonisjs/eslint-plugin': 2.2.2(eslint@10.10.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3)
       '@stylistic/eslint-plugin': 5.10.0(eslint@10.10.0(supports-color@10.2.2))
       eslint: 10.10.0(supports-color@10.2.2)
       eslint-config-prettier: 10.1.8(eslint@10.10.0(supports-color@10.2.2))
-      eslint-plugin-prettier: 5.5.7(eslint-config-prettier@10.1.8(eslint@10.10.0(supports-color@10.2.2)))(eslint@10.10.0(supports-color@10.2.2))(prettier@3.9.6)
+      eslint-plugin-prettier: 5.5.7(eslint-config-prettier@10.1.8(eslint@10.10.0(supports-color@10.2.2)))(eslint@10.10.0(supports-color@10.2.2))(prettier@3.9.10)
       eslint-plugin-unicorn: 64.0.0(eslint@10.10.0(supports-color@10.2.2))
-      prettier: 3.9.6
+      prettier: 3.9.10
       typescript-eslint: 8.71.2(eslint@10.10.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3)
     transitivePeerDependencies:
       - '@types/eslint'
@@ -3763,9 +3763,9 @@ snapshots:
     optionalDependencies:
       '@adonisjs/assembler': 8.5.2(typescript@5.9.3)
 
-  '@adonisjs/prettier-config@1.5.0(prettier@3.9.6)':
+  '@adonisjs/prettier-config@1.5.0(prettier@3.9.10)':
     dependencies:
-      prettier-edge: 1.0.0(prettier@3.9.6)
+      prettier-edge: 1.0.0(prettier@3.9.10)
     transitivePeerDependencies:
       - prettier
 
@@ -5005,10 +5005,10 @@ snapshots:
     dependencies:
       eslint: 10.10.0(supports-color@10.2.2)
 
-  eslint-plugin-prettier@5.5.7(eslint-config-prettier@10.1.8(eslint@10.10.0(supports-color@10.2.2)))(eslint@10.10.0(supports-color@10.2.2))(prettier@3.9.6):
+  eslint-plugin-prettier@5.5.7(eslint-config-prettier@10.1.8(eslint@10.10.0(supports-color@10.2.2)))(eslint@10.10.0(supports-color@10.2.2))(prettier@3.9.10):
     dependencies:
       eslint: 10.10.0(supports-color@10.2.2)
-      prettier: 3.9.6
+      prettier: 3.9.10
       prettier-linter-helpers: 1.0.1
       synckit: 0.12.3
     optionalDependencies:
@@ -5811,17 +5811,17 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier-edge@1.0.0(prettier@3.9.6):
+  prettier-edge@1.0.0(prettier@3.9.10):
     dependencies:
       angular-html-parser: 10.13.0
       edge-lexer: 6.0.5
-      prettier: 3.9.6
+      prettier: 3.9.10
 
   prettier-linter-helpers@1.0.1:
     dependencies:
       fast-diff: 1.3.0
 
-  prettier@3.9.6: {}
+  prettier@3.9.10: {}
 
   pretty-format@30.5.1:
     dependencies:
