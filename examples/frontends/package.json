@@ -30,7 +30,7 @@
     "@mui/material": "7.3.11",
     "@poppinss/ts-exec": "1.4.4",
     "@tailwindcss/vite": "4.3.3",
-    "@types/node": "25.9.6",
+    "@types/node": "25.9.9",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
     "@vitejs/plugin-react": "5.2.0",
