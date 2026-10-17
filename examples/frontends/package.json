@@ -44,7 +44,7 @@
     "vite": "8.3.4"
   },
   "dependencies": {
-    "@a2ui/markdown-it": "0.2.0",
+    "@a2ui/markdown-it": "0.2.1",
     "@a2ui/react": "0.12.0",
     "@a2ui/web_core": "0.12.0",
     "@adonis-agora/agent": "0.79.0",
