@@ -177,7 +177,7 @@ importers:
         version: 0.12.0
       '@adonis-agora/agent':
         specifier: 0.79.0
-        version: 0.79.0(108934334de7e7b953607adefd4ecb56)
+        version: 0.79.0(d2752b40e895f703d4efb96277fa2304)
       '@adonisjs/core':
         specifier: 7.5.0
         version: 7.5.0(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1)
@@ -195,7 +195,7 @@ importers:
         version: 2.0.1(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(supports-color@10.2.2)
       '@adonisjs/vite':
         specifier: 6.0.3
-        version: 6.0.3(bc2f3d58a500f0556f9f6bd9356e7fbc)
+        version: 6.0.3(852794216eb3ad7d6d74ee55bf2175e7)
       '@ai-sdk/openai':
         specifier: 4.0.95
         version: 4.0.95(zod@4.6.5)
@@ -271,7 +271,7 @@ importers:
         version: 1.4.4
       '@tailwindcss/vite':
         specifier: 4.3.3
-        version: 4.3.3(vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1))
+        version: 4.3.3(vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2))
       '@types/node':
         specifier: 25.9.9
         version: 25.9.9
@@ -283,7 +283,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: 5.2.0
-        version: 5.2.0(supports-color@10.2.2)(vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1))
+        version: 5.2.0(supports-color@10.2.2)(vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2))
       bootstrap:
         specifier: 5.3.8
         version: 5.3.8(@popperjs/core@2.11.8)
@@ -297,8 +297,8 @@ importers:
         specifier: 1.64.1
         version: 1.64.1
       sass:
-        specifier: 1.105.1
-        version: 1.105.1
+        specifier: 1.105.2
+        version: 1.105.2
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
@@ -307,7 +307,7 @@ importers:
         version: 7.0.2
       vite:
         specifier: 8.3.4
-        version: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1)
+        version: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2)
 
 packages:
 
@@ -4986,8 +4986,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  sass@1.105.1:
-    resolution: {integrity: sha512-1CnAWPyrrnVQzXGB/DUep1vYCKCm1CIBr+YxjjiW6wk9qtzemnGP4qicH56T2F9S4Hjtv/Ne3jDz8JqfdDU4oA==}
+  sass@1.105.2:
+    resolution: {integrity: sha512-KxW6ZKZiBKWK3ziQ4YZ3cpqo8/1TlHXE8t9nBNvGDZFoBFbk2MD7RacxYFs8zy8hzeFwpFYkVyAhboi47uYPEQ==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
@@ -5613,7 +5613,7 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
 
-  '@adonis-agora/agent@0.79.0(108934334de7e7b953607adefd4ecb56)':
+  '@adonis-agora/agent@0.79.0(d2752b40e895f703d4efb96277fa2304)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.31.0(supports-color@10.2.2)(zod@4.6.5)
       '@standard-schema/spec': 1.1.0
@@ -5637,7 +5637,7 @@ snapshots:
       remark-math: 6.0.0(supports-color@10.2.2)
       typescript: 7.0.2
       unist-util-visit: 5.1.0
-      vite: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1)
+      vite: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2)
       zod: 4.6.5
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -5897,13 +5897,13 @@ snapshots:
 
   '@adonisjs/tsconfig@2.0.0': {}
 
-  '@adonisjs/vite@6.0.3(bc2f3d58a500f0556f9f6bd9356e7fbc)':
+  '@adonisjs/vite@6.0.3(852794216eb3ad7d6d74ee55bf2175e7)':
     dependencies:
       '@adonisjs/core': 7.5.0(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1)
       '@poppinss/utils': 7.1.2
       edge-error: 4.0.2
       picomatch: 4.0.7
-      vite: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1)
+      vite: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2)
     optionalDependencies:
       '@adonisjs/assembler': 8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2)
       '@adonisjs/shield': 9.0.0(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/session@8.1.0(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.5.2(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@13.0.3)(luxon@3.7.2)(supports-color@10.2.2))(edge.js@6.5.1))(edge.js@6.5.1)
@@ -7639,12 +7639,12 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.3
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.3
 
-  '@tailwindcss/vite@4.3.3(vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1))':
+  '@tailwindcss/vite@4.3.3(vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2))':
     dependencies:
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3
       tailwindcss: 4.3.3
-      vite: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1)
+      vite: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2)
 
   '@tanstack/devtools-event-client@0.4.4': {}
 
@@ -7985,7 +7985,7 @@ snapshots:
       normalize-url: 8.1.1
       validator: 13.15.35
 
-  '@vitejs/plugin-react@5.2.0(supports-color@10.2.2)(vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1))':
+  '@vitejs/plugin-react@5.2.0(supports-color@10.2.2)(vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2))':
     dependencies:
       '@babel/core': 7.29.7(supports-color@10.2.2)
       '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7(supports-color@10.2.2))
@@ -7993,7 +7993,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-rc.3
       '@types/babel__core': 7.20.5
       react-refresh: 0.18.0
-      vite: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1)
+      vite: 8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -10609,7 +10609,7 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sass@1.105.1:
+  sass@1.105.2:
     dependencies:
       chokidar: 5.0.0
       immutable: 5.1.9
@@ -11127,7 +11127,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.1):
+  vite@8.3.4(@types/node@25.9.9)(jiti@2.7.0)(sass@1.105.2):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -11138,7 +11138,7 @@ snapshots:
       '@types/node': 25.9.9
       fsevents: 2.3.3
       jiti: 2.7.0
-      sass: 1.105.1
+      sass: 1.105.2
 
   web-namespaces@2.0.1: {}
 
