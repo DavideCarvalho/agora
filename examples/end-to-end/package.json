@@ -42,7 +42,7 @@
     "@japa/assert": "4.2.0",
     "@japa/plugin-adonisjs": "5.2.0",
     "@japa/runner": "5.4.0",
-    "@poppinss/ts-exec": "1.4.4",
+    "@poppinss/ts-exec": "1.5.0",
     "@types/alpinejs": "3.17.0",
     "@types/luxon": "3.7.6",
     "@types/node": "25.9.9",
