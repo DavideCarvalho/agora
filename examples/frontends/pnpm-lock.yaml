@@ -170,8 +170,8 @@ importers:
         specifier: 0.2.2
         version: 0.2.2(@a2ui/web_core@0.12.0)
       '@a2ui/react':
-        specifier: 0.12.0
-        version: 0.12.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
+        specifier: 0.14.0
+        version: 0.14.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@a2ui/web_core':
         specifier: 0.12.0
         version: 0.12.0
@@ -324,8 +324,8 @@ packages:
     peerDependencies:
       '@a2ui/web_core': ^0.14.0
 
-  '@a2ui/react@0.12.0':
-    resolution: {integrity: sha512-zGI6kNjus8m0OM4V/A0S3g3YDFodtd82C+f91CECmt9WQniJtFvlSLZqOu6xBz2R3uUh7aviOOZUhTCVft85Ng==}
+  '@a2ui/react@0.14.0':
+    resolution: {integrity: sha512-kew3gVx4/U4qZ41FwyanDndCuBsx3s+5kPzjBt5N9w8E6UKSfwJpOmWD3Vy5WN5bxuiQKmorN+Ozh59ZLrwkMA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -337,6 +337,9 @@ packages:
 
   '@a2ui/web_core@0.12.0':
     resolution: {integrity: sha512-wEg8954eDM4tx70O+qoUQYSCJbCywEIZEiqOpNXrmQUAKGsMNM47uns/7AE0W0nMfFbmJWE/huBwUVFaq+pDCA==}
+
+  '@a2ui/web_core@0.14.0':
+    resolution: {integrity: sha512-OEJOgcfRMW0lwActVl1NKToxE2Ff5G3mIBHDB6gKm0elGZSwAhB7bj+Ef2a/h2nrL+57VPnSR67YSNz9JVV4yw==}
 
   '@adonis-agora/agent@0.79.0':
     resolution: {integrity: sha512-K5R4rw1zAu0w/3uB5XQRUSfE1NH9K/Rs5h6CKr0UXD99nfP1sq2Gf44+r1maQOwAsh8I5rd1e5ZB8+2RjtRn9Q==}
@@ -4838,6 +4841,11 @@ packages:
     resolution: {integrity: sha512-/vxpCXddiX8NGfGO/mTafwjq4aFa/71pvamip0++IQk3zG8cbCj0fifNPrjjF1XMXUne91jL9OoxmdykoEtifQ==}
     engines: {node: '>= 10.13.0'}
 
+  redos-detector@6.1.4:
+    resolution: {integrity: sha512-lPlka1rEH6kK42gtgokvvxMmpAvyc28DcRjQbGxeP5RJsJWgAduBOdGedVCDPdSyCr4ay/JDxq3nGYsJZyt8tA==}
+    engines: {node: '>=16.0.0'}
+    hasBin: true
+
   reflect-metadata@0.2.2:
     resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
 
@@ -4852,6 +4860,10 @@ packages:
 
   regex@6.1.0:
     resolution: {integrity: sha512-6VwtthbV4o/7+OaAF9I5L5V3llLEsoPyq9P1JVXkedTP33c7MfCG0/5NOPcSJn0TzXcG9YUrR0gQSWioew3LDg==}
+
+  regjsparser@0.13.0:
+    resolution: {integrity: sha512-NZQZdC5wOE/H3UT28fVGL+ikOZcEzfMGk/c3iN9UGxzWHMa1op7274oyiUVrAG4B2EuFhus8SvkaYnhvW92p9Q==}
+    hasBin: true
 
   rehype-harden@1.1.8:
     resolution: {integrity: sha512-Qn7vR1xrf6fZCrkm9TDWi/AB4ylrHy+jqsNm1EHOAmbARYA6gsnVJBq/sdBh6kmT4NEZxH5vgIjrscefJAOXcw==}
@@ -5593,10 +5605,16 @@ snapshots:
       dompurify: 3.4.11
       markdown-it: 14.3.2
 
-  '@a2ui/react@0.12.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
+  '@a2ui/markdown-it@0.2.2(@a2ui/web_core@0.14.0)':
     dependencies:
-      '@a2ui/markdown-it': 0.2.2(@a2ui/web_core@0.12.0)
-      '@a2ui/web_core': 0.12.0
+      '@a2ui/web_core': 0.14.0
+      dompurify: 3.4.11
+      markdown-it: 14.3.2
+
+  '@a2ui/react@0.14.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
+    dependencies:
+      '@a2ui/markdown-it': 0.2.2(@a2ui/web_core@0.14.0)
+      '@a2ui/web_core': 0.14.0
       clsx: 2.1.1
       markdown-it: 14.3.2
       react: 19.3.1
@@ -5615,6 +5633,16 @@ snapshots:
       '@lit/context': 1.1.6
       '@preact/signals-core': 1.14.4
       lit: 3.3.3
+      validate-color: 2.2.4
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+
+  '@a2ui/web_core@0.14.0':
+    dependencies:
+      '@lit/context': 1.1.6
+      '@preact/signals-core': 1.14.4
+      lit: 3.3.3
+      redos-detector: 6.1.4
       validate-color: 2.2.4
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
@@ -10393,6 +10421,10 @@ snapshots:
     dependencies:
       resolve: 1.22.13
 
+  redos-detector@6.1.4:
+    dependencies:
+      regjsparser: 0.13.0
+
   reflect-metadata@0.2.2: {}
 
   refractor@5.0.0:
@@ -10411,6 +10443,10 @@ snapshots:
   regex@6.1.0:
     dependencies:
       regex-utilities: 2.3.0
+
+  regjsparser@0.13.0:
+    dependencies:
+      jsesc: 3.1.0
 
   rehype-harden@1.1.8:
     dependencies:
