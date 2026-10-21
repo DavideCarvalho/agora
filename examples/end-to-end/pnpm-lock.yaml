@@ -249,8 +249,8 @@ importers:
         specifier: 5.4.0
         version: 5.4.0
       '@poppinss/ts-exec':
-        specifier: 1.5.0
-        version: 1.5.0
+        specifier: 1.5.1
+        version: 1.5.1
       '@types/alpinejs':
         specifier: 3.17.0
         version: 3.17.0
@@ -1160,8 +1160,8 @@ packages:
   '@poppinss/string@1.7.2':
     resolution: {integrity: sha512-A182GLDfi36iDCbhDrHB0xzrPM1fO3GHnhCDIdadf8C6eycgct4m7zusbLwEh6GPaj2Pz5BVos7XK16w7tZ7wQ==}
 
-  '@poppinss/ts-exec@1.5.0':
-    resolution: {integrity: sha512-zkIE28rgHt2VFEN+A1QnHS7y7CQiM8kRSfvAAE1N8eZW8ghlju6uYZu3oIbISM0I0qs9E+KZLZAVY1djdTBoYg==}
+  '@poppinss/ts-exec@1.5.1':
+    resolution: {integrity: sha512-ZEABqzg0fRQ3JXyyRySWi+Q0pO5DaUigMca0pE5ttUVyK9iDWmO55ZThM5XNG4QnF+LF1rxz2o22UiJ+gUYVWQ==}
     engines: {node: '>=24.0.0'}
 
   '@poppinss/types@1.2.1':
@@ -4419,7 +4419,7 @@ snapshots:
       pluralize: 8.0.0
       slugify: 1.6.9
 
-  '@poppinss/ts-exec@1.5.0':
+  '@poppinss/ts-exec@1.5.1':
     dependencies:
       '@swc/core': 1.16.18
       get-tsconfig: 4.14.3
