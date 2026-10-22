@@ -176,8 +176,8 @@ importers:
         specifier: 0.14.0
         version: 0.14.0
       '@adonis-agora/agent':
-        specifier: 0.79.0
-        version: 0.79.0(fc4c353c91b04282e5ce915810e38364)
+        specifier: 0.81.1
+        version: 0.81.1(fc4c353c91b04282e5ce915810e38364)
       '@adonisjs/core':
         specifier: 7.5.0
         version: 7.5.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
@@ -338,9 +338,9 @@ packages:
   '@a2ui/web_core@0.14.0':
     resolution: {integrity: sha512-OEJOgcfRMW0lwActVl1NKToxE2Ff5G3mIBHDB6gKm0elGZSwAhB7bj+Ef2a/h2nrL+57VPnSR67YSNz9JVV4yw==}
 
-  '@adonis-agora/agent@0.79.0':
-    resolution: {integrity: sha512-K5R4rw1zAu0w/3uB5XQRUSfE1NH9K/Rs5h6CKr0UXD99nfP1sq2Gf44+r1maQOwAsh8I5rd1e5ZB8+2RjtRn9Q==}
-    engines: {node: '>=20.6.0'}
+  '@adonis-agora/agent@0.81.1':
+    resolution: {integrity: sha512-utUnCUUYcEwq5rgNeE+tEB5yaGbayHB8Cik9y+5SQFyGrbwmDjWZVff8VACNzvIeMo+K+v9cuEojDewRI8xLiw==}
+    engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
       '@adonis-agora/authz': '>=0.4.2 <1.0.0'
@@ -360,7 +360,7 @@ packages:
       '@streamdown/math': ^1.0.2
       '@streamdown/mermaid': ^1.0.2
       ai: ^7.0.0
-      katex: ^0.16.45
+      katex: ^0.16.45 || ^0.19.0
       node-sql-parser: ^5.3.0
       playwright-core: '>=1.48 <2'
       prism-react-renderer: ^2.4.1
@@ -2748,6 +2748,16 @@ packages:
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
     engines: {node: '>= 0.6'}
+
+  acorn-jsx@5.3.2:
+    resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
+    peerDependencies:
+      acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
+
+  acorn@8.17.0:
+    resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
 
   acorn@8.19.0:
     resolution: {integrity: sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw==}
@@ -5629,11 +5639,13 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
 
-  '@adonis-agora/agent@0.79.0(fc4c353c91b04282e5ce915810e38364)':
+  '@adonis-agora/agent@0.81.1(fc4c353c91b04282e5ce915810e38364)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.31.0(supports-color@10.2.2)(zod@4.6.7)
       '@standard-schema/spec': 1.1.0
       '@tailwindcss/browser': 4.3.3
+      acorn: 8.17.0
+      acorn-jsx: 5.3.2(acorn@8.17.0)
       jose: 6.2.12
     optionalDependencies:
       '@adonisjs/assembler': 8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)
@@ -8021,6 +8033,12 @@ snapshots:
     dependencies:
       mime-types: 3.0.2
       negotiator: 1.1.0
+
+  acorn-jsx@5.3.2(acorn@8.17.0):
+    dependencies:
+      acorn: 8.17.0
+
+  acorn@8.17.0: {}
 
   acorn@8.19.0: {}
 
