@@ -46,7 +46,7 @@
   "dependencies": {
     "@a2ui/markdown-it": "0.2.2",
     "@a2ui/react": "0.14.0",
-    "@a2ui/web_core": "0.12.0",
+    "@a2ui/web_core": "0.14.0",
     "@adonis-agora/agent": "0.79.0",
     "@adonisjs/core": "7.5.0",
     "@adonisjs/lucid": "22.4.2",
