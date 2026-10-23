@@ -261,8 +261,8 @@ importers:
         specifier: 25.9.9
         version: 25.9.9
       alpinejs:
-        specifier: 3.17.4
-        version: 3.17.4
+        specifier: 3.17.5
+        version: 3.17.5
       eslint:
         specifier: 10.13.0
         version: 10.13.0(supports-color@10.2.2)
@@ -1676,8 +1676,8 @@ packages:
   ajv@6.15.0:
     resolution: {integrity: sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==}
 
-  alpinejs@3.17.4:
-    resolution: {integrity: sha512-N2gsr+58XVUt7OAPKnUGiKPDtkd+xbSGTae8C8IJxeRdkkhBJPIautkJ+qcwb7lcjJ/QK3/CPVIbN20JPvtK7A==}
+  alpinejs@3.17.5:
+    resolution: {integrity: sha512-XewMqRC6zjy8iaUPn86dxjvooAsNai3hUtQbdn0A5H2w7Jt10xHGZ1SczN5+Dvp3UKkuSEt9moy/UaUWOwKdnQ==}
 
   angular-html-parser@10.13.0:
     resolution: {integrity: sha512-7s1jbhRE+I4POZHNiIRtm3FhDsfiH2dtPqdNBW2Y7vYvqcuRN1lGxPJucfLouRjiEYSvJbMg0XfOh88QTBm3Lw==}
@@ -4838,7 +4838,7 @@ snapshots:
       json-schema-traverse: 0.4.1
       uri-js: 4.4.1
 
-  alpinejs@3.17.4:
+  alpinejs@3.17.5:
     dependencies:
       '@vue/reactivity': 3.5.44
 
