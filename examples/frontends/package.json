@@ -41,7 +41,7 @@
     "sass": "1.105.2",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
-    "vite": "8.3.4"
+    "vite": "8.3.5"
   },
   "dependencies": {
     "@a2ui/markdown-it": "0.2.2",
