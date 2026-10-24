@@ -194,8 +194,8 @@ importers:
         specifier: 2.0.1
         version: 2.0.1(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(supports-color@10.2.2)
       '@adonisjs/vite':
-        specifier: 6.0.3
-        version: 6.0.3(a4482538334eca9a71dcbd2ddc229f79)
+        specifier: 6.0.4
+        version: 6.0.4(a4482538334eca9a71dcbd2ddc229f79)
       '@ai-sdk/openai':
         specifier: 4.0.99
         version: 4.0.99(zod@4.6.7)
@@ -671,8 +671,8 @@ packages:
   '@adonisjs/tsconfig@2.0.0':
     resolution: {integrity: sha512-Uz8qvB6KR9otCh9zei2VEj7tPwdsrT7R+voYoN4tUfEijWRdTNgJ8d1CtyLKHaggCCOwZIwZLVklV/h2FDHgNw==}
 
-  '@adonisjs/vite@6.0.3':
-    resolution: {integrity: sha512-LmY5Zqj1hPZTaqFrLzTSDyCe+15j+9zz4o3Bh+gCnmZAHJyIhDmyyDnBsNzcQ4qgXMAQDhLLKmteXTpFjFloOg==}
+  '@adonisjs/vite@6.0.4':
+    resolution: {integrity: sha512-GhH5lWKKNNwkpYIXafn49NOLakP8SOzf3SRbUPNYKFM/kDKSA5HQI3Jjtczd5q22G/1LOAj8OrAvoEsHbDEObw==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
       '@adonisjs/assembler': ^8.0.0-next.10 || ^8.0.0
@@ -5925,7 +5925,7 @@ snapshots:
 
   '@adonisjs/tsconfig@2.0.0': {}
 
-  '@adonisjs/vite@6.0.3(a4482538334eca9a71dcbd2ddc229f79)':
+  '@adonisjs/vite@6.0.4(a4482538334eca9a71dcbd2ddc229f79)':
     dependencies:
       '@adonisjs/core': 7.5.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
       '@poppinss/utils': 7.1.2
