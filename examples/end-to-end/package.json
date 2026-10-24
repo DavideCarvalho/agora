@@ -61,7 +61,7 @@
     "@adonis-agora/authz": "0.15.0",
     "@adonis-agora/context": "0.6.2",
     "@adonis-agora/media": "0.18.1",
-    "@adonis-agora/telescope": "0.21.1",
+    "@adonis-agora/telescope": "0.23.0",
     "@adonis-agora/telescope-ui": "1.5.2",
     "@adonisjs/core": "7.5.0",
     "@adonisjs/drive": "4.0.0",
