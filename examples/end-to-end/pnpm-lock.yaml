@@ -167,8 +167,8 @@ importers:
   .:
     dependencies:
       '@adonis-agora/authkit-client':
-        specifier: 0.20.0
-        version: 0.20.0(a3573d5ee5ca231e2202353cf86dc135)
+        specifier: 0.20.1
+        version: 0.20.1(a3573d5ee5ca231e2202353cf86dc135)
       '@adonis-agora/authkit-server':
         specifier: 0.81.1
         version: 0.81.1(6c48ee4a57f9aa6928b92b715597f283)
@@ -287,8 +287,8 @@ importers:
 
 packages:
 
-  '@adonis-agora/authkit-client@0.20.0':
-    resolution: {integrity: sha512-oOhvwe3bihBqcBBI6QMbuiqeYpMxqWDMz0JgzeRJ11kJtqwofJnDKhGfDm5aNT0+N4ybjS4mPcTSK41cUSABCw==}
+  '@adonis-agora/authkit-client@0.20.1':
+    resolution: {integrity: sha512-lknp1/qP0CkMCIba/33eFuB0+ZbZDfHbB1pe0gXiJJwqaTnQ/oj40pVhwxiH3THSYbbhaDJ9qMqXhyqUlR2FtA==}
     engines: {node: '>=24'}
     peerDependencies:
       '@adonis-agora/resilience': '>=0.1.0 <1.0.0'
@@ -2539,6 +2539,9 @@ packages:
   jose@6.2.12:
     resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
+  jose@6.2.13:
+    resolution: {integrity: sha512-7TIg10ZE1x82YediN+lcrPNvGMKge9yFHQD+Qho/b8y2adfugU3AsvvHfxV0fzyFllT6l9xCjf4RWY9g/Z9PJQ==}
+
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
@@ -3562,12 +3565,12 @@ packages:
 
 snapshots:
 
-  '@adonis-agora/authkit-client@0.20.0(a3573d5ee5ca231e2202353cf86dc135)':
+  '@adonis-agora/authkit-client@0.20.1(a3573d5ee5ca231e2202353cf86dc135)':
     dependencies:
       '@adonis-agora/authkit-core': 0.10.0
       '@adonisjs/core': 7.5.0(@adonisjs/assembler@8.6.0(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
       '@adonisjs/session': 8.1.0(@adonisjs/assembler@8.6.0(typescript@7.0.2))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.6.0(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.6.0(typescript@7.0.2))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.6.0(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@13.0.3)(luxon@3.7.2)(supports-color@10.2.2))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.4.0))(@japa/runner@5.4.0)(supports-color@10.2.2))(@japa/plugin-adonisjs@5.2.0(@adonisjs/core@7.5.0(@adonisjs/assembler@8.6.0(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.4.0))(@japa/runner@5.4.0)(supports-color@10.2.2))(@japa/runner@5.4.0))(edge.js@6.5.1)
-      jose: 6.2.12
+      jose: 6.2.13
     optionalDependencies:
       '@adonisjs/lucid': 22.4.2(@adonisjs/assembler@8.6.0(typescript@7.0.2))(@adonisjs/core@7.5.0(@adonisjs/assembler@8.6.0(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@13.0.3)(luxon@3.7.2)(supports-color@10.2.2)
 
@@ -5607,6 +5610,8 @@ snapshots:
       pretty-format: 30.5.1
 
   jose@6.2.12: {}
+
+  jose@6.2.13: {}
 
   joycon@3.1.1: {}
 
