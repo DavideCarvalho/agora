@@ -176,8 +176,8 @@ importers:
         specifier: 0.14.0
         version: 0.14.0
       '@adonis-agora/agent':
-        specifier: 0.84.0
-        version: 0.84.0(4d3ec517bd8b26fcc68e06e8fae5a352)
+        specifier: 0.89.2
+        version: 0.89.2(4d3ec517bd8b26fcc68e06e8fae5a352)
       '@adonisjs/core':
         specifier: 7.5.0
         version: 7.5.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
@@ -338,8 +338,8 @@ packages:
   '@a2ui/web_core@0.14.0':
     resolution: {integrity: sha512-OEJOgcfRMW0lwActVl1NKToxE2Ff5G3mIBHDB6gKm0elGZSwAhB7bj+Ef2a/h2nrL+57VPnSR67YSNz9JVV4yw==}
 
-  '@adonis-agora/agent@0.84.0':
-    resolution: {integrity: sha512-2PP31WsEbufcFvhVYDXMDhG/dhtCYlLkS2+yrup9so9VASgoCo5VRK9HfQNy34o9wg8ec90l9cNyg9EHZpQE4g==}
+  '@adonis-agora/agent@0.89.2':
+    resolution: {integrity: sha512-YBUhSHMFMEu5EEZZltbufdlpUqqRHgWwxTlVzn2YzzC8eel8LidqLmm/BBqPgSpuq4niAq413keVmIU6hy6s2g==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
@@ -3863,6 +3863,9 @@ packages:
   jose@6.2.12:
     resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
+  jose@6.2.13:
+    resolution: {integrity: sha512-7TIg10ZE1x82YediN+lcrPNvGMKge9yFHQD+Qho/b8y2adfugU3AsvvHfxV0fzyFllT6l9xCjf4RWY9g/Z9PJQ==}
+
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
@@ -5644,14 +5647,14 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
 
-  '@adonis-agora/agent@0.84.0(4d3ec517bd8b26fcc68e06e8fae5a352)':
+  '@adonis-agora/agent@0.89.2(4d3ec517bd8b26fcc68e06e8fae5a352)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.31.0(supports-color@10.2.2)(zod@4.6.7)
       '@standard-schema/spec': 1.1.0
       '@tailwindcss/browser': 4.3.3
       acorn: 8.17.0
       acorn-jsx: 5.3.2(acorn@8.17.0)
-      jose: 6.2.12
+      jose: 6.2.13
     optionalDependencies:
       '@adonisjs/assembler': 8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)
       '@adonisjs/core': 7.5.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
@@ -6528,7 +6531,7 @@ snapshots:
       express: 5.3.0(supports-color@10.2.2)
       express-rate-limit: 8.7.1(express@5.3.0(supports-color@10.2.2))(supports-color@10.2.2)
       hono: 4.13.13
-      jose: 6.2.12
+      jose: 6.2.13
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -9140,6 +9143,8 @@ snapshots:
   jose@5.10.0: {}
 
   jose@6.2.12: {}
+
+  jose@6.2.13: {}
 
   joycon@3.1.1: {}
 
