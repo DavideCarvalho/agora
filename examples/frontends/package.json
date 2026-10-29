@@ -57,7 +57,7 @@
     "@ai-sdk/openai": "4.0.102",
     "@ai-sdk/react": "4.0.157",
     "@copilotkit/react-core": "1.80.0",
-    "@openuidev/react-headless": "0.17.0",
+    "@openuidev/react-headless": "0.18.1",
     "@openuidev/react-lang": "0.3.1",
     "@openuidev/react-ui": "0.17.0",
     "@resvg/resvg-js": "2.6.2",
