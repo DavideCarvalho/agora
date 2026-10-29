@@ -50,7 +50,7 @@
     "@adonis-agora/agent": "0.89.2",
     "@adonisjs/core": "7.6.0",
     "@adonisjs/lucid": "22.4.2",
-    "@adonisjs/session": "8.1.0",
+    "@adonisjs/session": "8.3.0",
     "@adonisjs/shield": "9.0.0",
     "@adonisjs/static": "2.0.1",
     "@adonisjs/vite": "6.0.4",
