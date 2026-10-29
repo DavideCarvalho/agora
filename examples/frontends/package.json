@@ -27,7 +27,7 @@
     "@adonisjs/tsconfig": "2.0.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@mui/material": "7.3.11",
+    "@mui/material": "9.5.0",
     "@poppinss/ts-exec": "1.5.1",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "25.9.9",
