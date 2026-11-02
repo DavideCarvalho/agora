@@ -176,8 +176,8 @@ importers:
         specifier: 0.14.0
         version: 0.14.0
       '@adonis-agora/agent':
-        specifier: 0.91.3
-        version: 0.91.3(8b1b03d27e52aa7ae6a165b48be032f4)
+        specifier: 0.94.0
+        version: 0.94.0(8b1b03d27e52aa7ae6a165b48be032f4)
       '@adonisjs/core':
         specifier: 7.6.0
         version: 7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
@@ -338,8 +338,8 @@ packages:
   '@a2ui/web_core@0.14.0':
     resolution: {integrity: sha512-OEJOgcfRMW0lwActVl1NKToxE2Ff5G3mIBHDB6gKm0elGZSwAhB7bj+Ef2a/h2nrL+57VPnSR67YSNz9JVV4yw==}
 
-  '@adonis-agora/agent@0.91.3':
-    resolution: {integrity: sha512-Mx8kjChqzwFiTKPgdv607kJLlPIyMP5xF7w4bJeyuyZovIjRZUXbESrQD69RbmIG9IThxvgssgvRZRCnB5Zivw==}
+  '@adonis-agora/agent@0.94.0':
+    resolution: {integrity: sha512-/Ew4ouYC8ENv54M1aT8ejv+VmjMBzazq6sKTDl/NHA+06TMjdsK4v5kNtcb3hsyLM+269bJ79x34hVtUAif0rw==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
@@ -1132,8 +1132,8 @@ packages:
       react-dom:
         optional: true
 
-  '@modelcontextprotocol/sdk@1.31.0':
-    resolution: {integrity: sha512-UvTMgnNlnIBO/22ob2RcVGDlcvOslQs8T59+FTGdA0L27a39fdGF/EDETNtDVK4DZGpwomlsYpRdA8UXcVL/pw==}
+  '@modelcontextprotocol/sdk@1.32.1':
+    resolution: {integrity: sha512-2DdE+SJDtzLEEWzY1ZjY7Q+VcPhcV1KisD3zI4u0XZyktsjHum1mwbMI+JaulUBi2OZk+KJAi2uPXzxichPkdw==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -1142,8 +1142,8 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
-  '@modelcontextprotocol/sdk@1.32.1':
-    resolution: {integrity: sha512-2DdE+SJDtzLEEWzY1ZjY7Q+VcPhcV1KisD3zI4u0XZyktsjHum1mwbMI+JaulUBi2OZk+KJAi2uPXzxichPkdw==}
+  '@modelcontextprotocol/sdk@1.32.2':
+    resolution: {integrity: sha512-SWsVtH/0vULSQStoZ6xxH2K09Li8fXYTMC64ZeogCdpZ3XSi1eCPOByV1OpuJxuI3OcmHhosDWYyii07tpPsLw==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -2771,11 +2771,6 @@ packages:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
       acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
-
-  acorn@8.17.0:
-    resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
-    engines: {node: '>=0.4.0'}
-    hasBin: true
 
   acorn@8.19.0:
     resolution: {integrity: sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw==}
@@ -5639,13 +5634,13 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
 
-  '@adonis-agora/agent@0.91.3(8b1b03d27e52aa7ae6a165b48be032f4)':
+  '@adonis-agora/agent@0.94.0(8b1b03d27e52aa7ae6a165b48be032f4)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.31.0(supports-color@10.2.2)(zod@4.6.7)
+      '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.7)
       '@standard-schema/spec': 1.1.0
       '@tailwindcss/browser': 4.3.3
-      acorn: 8.17.0
-      acorn-jsx: 5.3.2(acorn@8.17.0)
+      acorn: 8.19.0
+      acorn-jsx: 5.3.2(acorn@8.19.0)
       jose: 6.2.13
     optionalDependencies:
       '@adonisjs/assembler': 8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)
@@ -6514,7 +6509,7 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@modelcontextprotocol/sdk@1.31.0(supports-color@10.2.2)(zod@4.6.7)':
+  '@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7)':
     dependencies:
       '@hono/node-server': 2.1.5(hono@4.13.13)
       ajv: 8.20.0
@@ -6536,7 +6531,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7)':
+  '@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.7)':
     dependencies:
       '@hono/node-server': 2.1.5(hono@4.13.13)
       ajv: 8.20.0
@@ -8062,11 +8057,9 @@ snapshots:
       mime-types: 3.0.2
       negotiator: 1.1.0
 
-  acorn-jsx@5.3.2(acorn@8.17.0):
+  acorn-jsx@5.3.2(acorn@8.19.0):
     dependencies:
-      acorn: 8.17.0
-
-  acorn@8.17.0: {}
+      acorn: 8.19.0
 
   acorn@8.19.0: {}
 
