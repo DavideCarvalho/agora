@@ -33,7 +33,7 @@
     "@types/node": "25.9.9",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitejs/plugin-react": "5.2.0",
+    "@vitejs/plugin-react": "6.1.2",
     "bootstrap": "5.3.8",
     "hot-hook": "1.0.0",
     "pino-pretty": "13.2.0",
