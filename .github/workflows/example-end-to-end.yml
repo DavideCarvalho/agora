@@ -29,7 +29,7 @@ jobs:
 
       # Reads the pnpm version from examples/end-to-end/package.json's own
       # `packageManager` field (its own project, own version pin).
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: pnpm/action-setup@v6.1.1
         with:
           package_json_file: examples/end-to-end/package.json
 
