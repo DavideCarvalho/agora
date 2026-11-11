@@ -15,6 +15,7 @@
     "authkit",
     "collaboration",
     "payments",
+    "flags",
     "sail"
   ]
 }
