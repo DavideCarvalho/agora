@@ -217,4 +217,19 @@ export const sources = [
       { id: 'v0', label: '0.x', ref: '@adonis-agora/payments@0.26.1' },
     ],
   },
+  {
+    slug: 'flags',
+    name: 'Flags',
+    description:
+      'Feature flags, A/B experiments and their analysis — typed flags, targeting in your database, CUPED and sequential tests, Parquet/DuckDB and ClickHouse, a central flags server and OpenFeature.',
+    icon: 'Flag',
+    repo: 'DavideCarvalho/adonis-agora-flags',
+    ref: 'master',
+    path: 'docs',
+    repoDir: 'adonis-flags',
+    migrated: true,
+    // Pre-1.0: one line of docs, no version dropdown yet.
+    latestLabel: '0.x',
+    versions: [],
+  },
 ];
