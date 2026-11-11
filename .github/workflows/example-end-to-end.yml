@@ -9,12 +9,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'examples/end-to-end/**'
-      - '.github/workflows/example-end-to-end.yml'
+      - "examples/end-to-end/**"
+      - ".github/workflows/example-end-to-end.yml"
   pull_request:
     paths:
-      - 'examples/end-to-end/**'
-      - '.github/workflows/example-end-to-end.yml'
+      - "examples/end-to-end/**"
+      - ".github/workflows/example-end-to-end.yml"
   workflow_dispatch:
 
 defaults:
