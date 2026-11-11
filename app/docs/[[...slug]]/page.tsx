@@ -7,12 +7,46 @@ import {
   ViewOptionsPopover,
 } from 'fumadocs-ui/layouts/docs/page';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
+import { History } from 'lucide-react';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DocsPartners } from '@/components/docs-partners';
 import { getMDXComponents } from '@/components/mdx';
 import { gitConfig } from '@/lib/shared';
-import { getPageImage, getPageMarkdownUrl, source } from '@/lib/source';
+import {
+  getPageImage,
+  getPageMarkdownUrl,
+  getPageVersion,
+  source,
+} from '@/lib/source';
+import { projectUrl } from '@/lib/versions';
+
+/** The "you're on an older major" notice, linking to this page in the latest docs. */
+function OlderVersionBanner({ page }: { page: (typeof source)['$inferPage'] }) {
+  const versioned = getPageVersion(page);
+  if (!versioned || versioned.version.latest) return null;
+  const { lib, version } = versioned;
+  const latest = lib.versions[0];
+  return (
+    <div
+      role="note"
+      className="not-prose mb-2 flex items-start gap-2.5 rounded-xl border border-fd-primary/30 bg-fd-primary/5 p-3 text-sm"
+    >
+      <History className="mt-0.5 size-4 shrink-0 text-fd-primary" />
+      <p>
+        You&apos;re viewing the docs for {lib.name} {version.label}. The latest
+        is {latest.label}.{' '}
+        <Link
+          href={projectUrl(page.url, version, latest)}
+          className="font-medium text-fd-primary underline underline-offset-4"
+        >
+          Go to the {latest.label} docs
+        </Link>
+      </p>
+    </div>
+  );
+}
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -28,6 +62,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       full={page.data.full}
       tableOfContent={{ footer: <DocsPartners slug={params.slug?.[0]} /> }}
     >
+      <OlderVersionBanner page={page} />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">
         {page.data.description}
@@ -62,7 +97,12 @@ export async function generateMetadata(
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  const title = `${page.data.title} · Agora`;
+  const versioned = getPageVersion(page);
+  const older =
+    versioned && !versioned.version.latest
+      ? ` (${versioned.lib.name} ${versioned.version.label})`
+      : '';
+  const title = `${page.data.title}${older} · Agora`;
   // `?v=` busts the social proxies' image cache (Discord/Facebook cache the
   // image by URL); bump it whenever the OG card design changes. width/height
   // make scrapers render the full 1200×630 landscape card instead of cropping
@@ -75,7 +115,7 @@ export async function generateMetadata(
   };
 
   return {
-    title: page.data.title,
+    title: `${page.data.title}${older}`,
     description: page.data.description,
     // Per-page Open Graph (WhatsApp / Discord / Facebook / LinkedIn / Telegram /
     // Slack) and Twitter card, so every platform shows this page's own title,

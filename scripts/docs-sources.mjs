@@ -8,6 +8,17 @@
 //
 // `path` is the docs directory *inside* the library repo. `repoDir` is the sibling
 // folder name used by the optional local mode (AGORA_DOCS_LOCAL=1).
+//
+// Versions (TanStack-style, one dropdown per library):
+// - `ref` is always the latest major; it is served at /docs/<slug>/... and labelled
+//   `latestLabel` in the version dropdown.
+// - `versions` lists the OLDER majors, newest first. Each entry is
+//   `{ id, label, ref, path? }`: `id` is the URL segment (/docs/<slug>/<id>/...),
+//   `label` is what the dropdown shows, `ref` is a git tag (the last release of that
+//   major, e.g. `@adonis-agora/durable@0.60.0`), and `path` overrides the docs dir
+//   when it moved between majors (defaults to the source's `path`).
+// When a library ships a new major, prepend one entry for the previous major (its last
+// tag) and bump `latestLabel` — see the README.
 
 export const sources = [
   {
@@ -25,6 +36,10 @@ export const sources = [
     path: 'apps/docs/content/docs',
     repoDir: 'adonis-authkit',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/authkit-server@0.90.2' },
+    ],
   },
   {
     slug: 'context',
@@ -37,6 +52,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-context',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/context@0.7.1' }],
   },
   {
     slug: 'diagnostics',
@@ -49,6 +66,10 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-diagnostics',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/diagnostics@0.3.2' },
+    ],
   },
   {
     slug: 'resilience',
@@ -61,6 +82,10 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-resilience',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/resilience@0.4.3' },
+    ],
   },
   {
     slug: 'durable',
@@ -73,6 +98,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-durable',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/durable@0.60.0' }],
   },
   {
     slug: 'telescope',
@@ -85,6 +112,10 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-telescope',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/telescope@0.27.1' },
+    ],
   },
   {
     slug: 'authz',
@@ -97,6 +128,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-authz',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/authz@0.20.2' }],
   },
   {
     slug: 'media',
@@ -109,6 +142,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-media',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/media@0.30.0' }],
   },
   {
     slug: 'filter',
@@ -121,6 +156,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-filter',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/filter@0.11.3' }],
   },
   {
     slug: 'sail',
@@ -133,6 +170,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-sail',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/sail@0.6.1' }],
   },
   {
     slug: 'agent',
@@ -145,6 +184,8 @@ export const sources = [
     path: 'packages/adonis/docs',
     repoDir: 'adonis-agent',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/agent@0.97.7' }],
   },
   {
     slug: 'collaboration',
@@ -157,6 +198,10 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-collaboration',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/collaboration@0.20.2' },
+    ],
   },
   {
     slug: 'payments',
@@ -167,8 +212,9 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-payments',
     migrated: true,
+    latestLabel: '1.x',
+    versions: [
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/payments@0.26.1' },
+    ],
   },
-  // NOTE: authkit is NOT synced here — its docs (apps/docs/content/docs) are a
-  // coupled Fumadocs app with live React demos + app path-aliases, not portable.
-  // The /docs/authkit page is hand-authored in content/docs/authkit/ instead.
 ];

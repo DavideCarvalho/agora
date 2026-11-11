@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { ImageResponse } from 'next/og';
 import { getEmblem } from '@/lib/emblems';
-import { getPageImage, source } from '@/lib/source';
+import { getPageImage, getPageVersion, source } from '@/lib/source';
 
 export const revalidate = false;
 
@@ -25,8 +25,13 @@ export async function GET(
   const emblem = getEmblem(libSlug);
   const title = page.data.title;
   const description = clamp(page.data.description ?? '', emblem ? 130 : 150);
+  const versioned = getPageVersion(page);
+  const older =
+    versioned && !versioned.version.latest
+      ? ` · ${versioned.version.label}`
+      : '';
   const kicker = emblem
-    ? `@adonis-agora/${libSlug}`
+    ? `@adonis-agora/${libSlug}${older}`
     : '@adonis-agora · for AdonisJS';
 
   return new ImageResponse(
