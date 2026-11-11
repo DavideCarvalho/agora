@@ -4,6 +4,7 @@ import {
   PaymentsProviderScope,
   ProviderSelect,
 } from '@/components/payments-provider';
+import { VersionSelect } from '@/components/version-select';
 import { baseOptions } from '@/lib/layout.shared';
 import { libs } from '@/lib/libs';
 import { getPaymentsProviders, source } from '@/lib/source';
@@ -25,11 +26,19 @@ export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
     <PaymentsProviderScope providers={getPaymentsProviders()}>
       {/* The payments docs' gateway selection: state up here so it survives navigating between
-          pages; the selector sits in the sidebar banner and renders only under /docs/payments. */}
+          pages; the selector sits in the sidebar banner and renders only under /docs/payments.
+          The version dropdown sits above it and renders only for a library with older majors. */}
       <DocsLayout
         tree={source.getPageTree()}
         tabs={tabs}
-        sidebar={{ banner: <ProviderSelect /> }}
+        sidebar={{
+          banner: (
+            <>
+              <VersionSelect />
+              <ProviderSelect />
+            </>
+          ),
+        }}
         {...baseOptions()}
       >
         {children}

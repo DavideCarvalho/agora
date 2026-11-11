@@ -68,7 +68,10 @@ if (badFrontmatter.length > 0) {
 
 /** The URL fumadocs will serve a content file at. */
 function pageUrl(file) {
-  const parts = relative(DOCS_DIR, file).split(sep);
+  // Folder groups — `(latest)` — are not part of the URL.
+  const parts = relative(DOCS_DIR, file)
+    .split(sep)
+    .filter((part) => !/^\(.+\)$/.test(part));
   const last = parts.pop().replace(/\.mdx?$/, '');
   if (last !== 'index') parts.push(last);
   return `/docs${parts.length ? `/${parts.join('/')}` : ''}`;

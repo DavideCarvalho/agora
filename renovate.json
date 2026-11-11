@@ -65,5 +65,10 @@
     "enabled": true,
     "automerge": true
   },
-  "ignorePaths": ["**/dist/**", "**/node_modules/**", "**/.next/**", "**/build/**"]
+  "ignorePaths": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/build/**"
+  ]
 }

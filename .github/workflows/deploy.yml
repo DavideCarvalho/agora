@@ -9,7 +9,7 @@ on:
   # Periodic re-sync: rebuilds and redeploys so docs edited in the library repos
   # (which live in their own repos) show up without anyone touching Agora.
   schedule:
-    - cron: '17 */3 * * *' # every 3 hours
+    - cron: "17 */3 * * *" # every 3 hours
   # Instant trigger: a library repo can POST a repository_dispatch of this type
   # to rebuild immediately on a docs change.
   repository_dispatch:
