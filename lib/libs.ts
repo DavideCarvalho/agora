@@ -4,6 +4,7 @@ import {
   Boxes,
   CreditCard,
   Filter,
+  Flag,
   Image,
   KeyRound,
   type LucideIcon,
@@ -180,6 +181,18 @@ export const libs: AgoraLib[] = [
     iconName: 'KeyRound',
     packages: 9,
     stage: 'beta',
+  },
+  {
+    slug: 'flags',
+    pkg: 'flags',
+    name: 'Flags',
+    blurb:
+      'Feature flags and A/B experiments for AdonisJS — typed flags, targeting stored in your database, a console with approvals, CUPED and sequential analysis, React and Inertia hooks, and an optional central flags server.',
+    role: 'Release',
+    icon: Flag,
+    iconName: 'Flag',
+    packages: 4,
+    stage: 'alpha',
   },
   {
     slug: 'sail',
