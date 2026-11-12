@@ -177,7 +177,7 @@ importers:
         version: 0.14.0
       '@adonis-agora/agent':
         specifier: 0.95.0
-        version: 0.95.0(23cb68ecd6ec0245d5dddd2c286ae4b1)
+        version: 0.95.0(0102a0ad32bbcc7acbd773f204a5fe57)
       '@adonisjs/core':
         specifier: 7.6.0
         version: 7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
@@ -200,20 +200,20 @@ importers:
         specifier: 4.0.111
         version: 4.0.111(zod@4.6.7)
       '@ai-sdk/react':
-        specifier: 4.0.169
-        version: 4.0.169(react@19.3.1)(zod@4.6.7)
+        specifier: 4.0.170
+        version: 4.0.170(react@19.3.1)(zod@4.6.7)
       '@copilotkit/react-core':
         specifier: 1.80.0
         version: 1.80.0(@types/mdast@4.0.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(micromark-util-types@2.0.3)(micromark@4.0.3(supports-color@10.2.2))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)
       '@openuidev/react-headless':
         specifier: 0.18.5
-        version: 0.18.5(ai@7.0.165(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
+        version: 0.18.5(ai@7.0.166(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
       '@openuidev/react-lang':
         specifier: 0.4.1
         version: 0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@openuidev/react-ui':
         specifier: 0.18.5
-        version: 0.18.5(@openuidev/react-headless@0.18.5(ai@7.0.165(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1)))(@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
+        version: 0.18.5(@openuidev/react-headless@0.18.5(ai@7.0.166(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1)))(@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
@@ -221,8 +221,8 @@ importers:
         specifier: 4.4.0
         version: 4.4.0
       ai:
-        specifier: 7.0.165
-        version: 7.0.165(zod@4.6.7)
+        specifier: 7.0.166
+        version: 7.0.166(zod@4.6.7)
       better-sqlite3:
         specifier: 13.0.3
         version: 13.0.3
@@ -717,8 +717,8 @@ packages:
   '@ag-ui/proto@1.0.2':
     resolution: {integrity: sha512-uIp6TkQdos03Bkjl01Z46cK/D7QAKNO26RYIIX1WfxNy4penVatU0b/TFTjVrOtwSnp5mtl8Rpzkiiu9cZHwlg==}
 
-  '@ai-sdk/gateway@4.0.138':
-    resolution: {integrity: sha512-7a/LGqioUyU2CmjRjMwnX4WR5V4vP3+YdPZEAbh7CH9OXf1GcPSsiySsHxNbqiDlDnL+KdqPvWeipIR7u/VFHA==}
+  '@ai-sdk/gateway@4.0.139':
+    resolution: {integrity: sha512-2YEIPm4n59nm4PBhMGjFWH0g+ztPgfybqoeMIjfJYNiB8zLHftUrONgb8P3Ho3Yy5cdoLCjiDE/Hv2Crol0JBw==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -745,8 +745,8 @@ packages:
     resolution: {integrity: sha512-4uPgZ3qiX/JaQFr0dQoibUzHImZit9u05ro2BxGUnJwU4fV28BOAbKUa2OjQvqtM1tMac3bTKkaXdyzGovQXqg==}
     engines: {node: '>=22'}
 
-  '@ai-sdk/react@4.0.169':
-    resolution: {integrity: sha512-RAJImk2l6BCMI4MOVEvNLCVi2o2adJBiXhqCpZ50TOc7YL9sk+RB6U9uYYGpsJ9Ap00S36Uz2GbjPYArWJFmUw==}
+  '@ai-sdk/react@4.0.170':
+    resolution: {integrity: sha512-ghHQDIUVMqVKdfRjejfRl5PJqcCa4z9nm61jZSQuQ3HsQfP3tRONcj5Dbd5RZPWPdv5DQ+OxU+7aNqrDsdjEXg==}
     engines: {node: '>=22'}
     peerDependencies:
       react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
@@ -2776,8 +2776,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ai@7.0.165:
-    resolution: {integrity: sha512-cEeORsLF+9+fNzvo4nQo9hxgQoEfupjc9Xmq6OM2NGUwQQQdkHxByBdFoqnNfBE0H+qwhGQaZejvbCFFD84tBA==}
+  ai@7.0.166:
+    resolution: {integrity: sha512-bijt5WsdpQXQLB0SHYEoSuvpZ8KdUxl3Iz843uvHFcGpEBSrxlgwXXadR7EBVOHoByEf2PwgOxutWU5dcdjs9Q==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5564,7 +5564,7 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
 
-  '@adonis-agora/agent@0.95.0(23cb68ecd6ec0245d5dddd2c286ae4b1)':
+  '@adonis-agora/agent@0.95.0(0102a0ad32bbcc7acbd773f204a5fe57)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.7)
       '@standard-schema/spec': 1.1.0
@@ -5576,9 +5576,9 @@ snapshots:
       '@adonisjs/assembler': 8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)
       '@adonisjs/core': 7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
       '@adonisjs/lucid': 22.4.2(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@13.0.3)(luxon@3.7.2)(supports-color@10.2.2)
-      '@ai-sdk/react': 4.0.169(react@19.3.1)(zod@4.6.7)
+      '@ai-sdk/react': 4.0.170(react@19.3.1)(zod@4.6.7)
       '@resvg/resvg-js': 2.6.2
-      ai: 7.0.165(zod@4.6.7)
+      ai: 7.0.166(zod@4.6.7)
       katex: 0.16.47
       playwright-core: 1.65.0
       react: 19.3.1
@@ -5910,7 +5910,7 @@ snapshots:
       '@protobuf-ts/protoc': 2.11.1
       zod: 3.25.76
 
-  '@ai-sdk/gateway@4.0.138(zod@4.6.7)':
+  '@ai-sdk/gateway@4.0.139(zod@4.6.7)':
     dependencies:
       '@ai-sdk/provider': 4.0.37
       '@ai-sdk/provider-utils': 5.0.76(zod@4.6.7)
@@ -5944,12 +5944,12 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@4.0.169(react@19.3.1)(zod@4.6.7)':
+  '@ai-sdk/react@4.0.170(react@19.3.1)(zod@4.6.7)':
     dependencies:
       '@ai-sdk/mcp': 2.0.93(zod@4.6.7)
       '@ai-sdk/provider': 4.0.37
       '@ai-sdk/provider-utils': 5.0.76(zod@4.6.7)
-      ai: 7.0.165(zod@4.6.7)
+      ai: 7.0.166(zod@4.6.7)
       react: 19.3.1
       swr: 2.5.1(react@19.3.1)
       throttleit: 2.1.0
@@ -6592,14 +6592,14 @@ snapshots:
 
   '@openuidev/observability@0.0.4': {}
 
-  '@openuidev/react-headless@0.18.5(ai@7.0.165(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))':
+  '@openuidev/react-headless@0.18.5(ai@7.0.166(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))':
     dependencies:
       '@ag-ui/core': 0.0.53
       '@openuidev/observability': 0.0.4
       react: 19.3.1
       zustand: 4.5.7(@types/react@19.3.0)(react@19.3.1)
     optionalDependencies:
-      ai: 7.0.165(zod@4.6.7)
+      ai: 7.0.166(zod@4.6.7)
 
   '@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
     dependencies:
@@ -6612,10 +6612,10 @@ snapshots:
       '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.7)
       react-dom: 19.3.1(react@19.3.1)
 
-  '@openuidev/react-ui@0.18.5(@openuidev/react-headless@0.18.5(ai@7.0.165(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1)))(@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))':
+  '@openuidev/react-ui@0.18.5(@openuidev/react-headless@0.18.5(ai@7.0.166(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1)))(@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))':
     dependencies:
       '@floating-ui/react-dom': 2.1.9(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@openuidev/react-headless': 0.18.5(ai@7.0.165(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
+      '@openuidev/react-headless': 0.18.5(ai@7.0.166(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
       '@openuidev/react-lang': 0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@radix-ui/react-accordion': 1.3.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@radix-ui/react-aspect-ratio': 1.2.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -7995,9 +7995,9 @@ snapshots:
 
   acorn@8.19.0: {}
 
-  ai@7.0.165(zod@4.6.7):
+  ai@7.0.166(zod@4.6.7):
     dependencies:
-      '@ai-sdk/gateway': 4.0.138(zod@4.6.7)
+      '@ai-sdk/gateway': 4.0.139(zod@4.6.7)
       '@ai-sdk/provider': 4.0.37
       '@ai-sdk/provider-utils': 5.0.76(zod@4.6.7)
       zod: 4.6.7
