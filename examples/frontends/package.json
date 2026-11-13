@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "UNLICENSED",
-  "packageManager": "pnpm@12.16.1",
+  "packageManager": "pnpm@12.18.0",
   "scripts": {
     "start": "node bin/server.js",
     "build": "node ace build",
