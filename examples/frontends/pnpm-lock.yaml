@@ -212,8 +212,8 @@ importers:
         specifier: 0.4.1
         version: 0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@openuidev/react-ui':
-        specifier: 0.18.5
-        version: 0.18.5(@openuidev/react-headless@0.18.6(ai@7.0.169(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1)))(@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
+        specifier: 0.18.6
+        version: 0.18.6(@openuidev/react-headless@0.18.6(ai@7.0.169(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1)))(@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
@@ -1306,8 +1306,8 @@ packages:
       react-dom:
         optional: true
 
-  '@openuidev/react-ui@0.18.5':
-    resolution: {integrity: sha512-mOcrpl79Umipu433WdURnbQo5NM7lG1zLoZhZYhtu51/HQUMXQqcN/o9nVzaMe5TPAQ/7oxjzMbQnAPHydzMGQ==}
+  '@openuidev/react-ui@0.18.6':
+    resolution: {integrity: sha512-WyNR8SfK2VQ/UrF7lWgCQ4vfB+F14u9M6bGFyHoRVaGDLTXAt8jdDd8iXjv5wKyvgQYJm7tM4WDjjHY4upub4Q==}
     peerDependencies:
       '@openuidev/react-headless': '>=0.18.2 <0.19.0'
       '@openuidev/react-lang': '>=1.0.0 <2.0.0'
@@ -6659,7 +6659,7 @@ snapshots:
       '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.7)
       react-dom: 19.3.1(react@19.3.1)
 
-  '@openuidev/react-ui@0.18.5(@openuidev/react-headless@0.18.6(ai@7.0.169(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1)))(@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))':
+  '@openuidev/react-ui@0.18.6(@openuidev/react-headless@0.18.6(ai@7.0.169(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1)))(@openuidev/react-lang@0.4.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.3)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))':
     dependencies:
       '@floating-ui/react-dom': 2.1.9(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@openuidev/react-headless': 0.18.6(ai@7.0.169(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(react@19.3.1))
