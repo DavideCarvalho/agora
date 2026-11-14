@@ -1,167 +1,130 @@
 ---
 title: Conventions
-description: Cross-cutting conventions every @adonis-agora/* library follows — pagination shapes, the meta envelope, and what `limit` is reserved for.
+description: How every @adonis-agora/* list endpoint is called and what it answers — filter[...] and sort, offset and cursor paging, the { data, meta } envelopes, and the 400s.
 ---
 
 # Conventions
 
-Each Agora library ships on its own, but a caller should only have to learn a
-cross-cutting idea once. This page collects the conventions that hold across the
-whole ecosystem, so they live in one place instead of only inside each library's
-own reference.
+Every HTTP list an Agora library serves (its console API, admin REST, SDK-facing routes) speaks
+one wire format: the one [`@adonis-agora/filter`](/docs/filter) defines. Learn it once and you can
+call any of them, with `curl`, `fetch` or the typed builder in `@adonis-agora/filter-client`.
 
-## Pagination
+## Filtering
 
-There are exactly two pagination mechanisms, and which one a listing uses is
-decided by what its backend can actually do — not by taste. Both are defined by
-[`@adonis-agora/filter`](/docs/filter), which is the only library that ships
-both.
+Filters go inside `filter[...]`, one key per field:
 
-### Offset — `page` / `size`
+| You want | Query string |
+| --- | --- |
+| One value | `filter[status]=failed` |
+| An operator | `filter[createdAt][gte]=2026-01-01` |
+| Any of several values | `filter[status][]=failed&filter[status][]=canceled` or `filter[status]=failed,canceled` |
+| Free text, when the list has it | `search=ana` |
 
-For SQL/Lucid-backed listings, where the store can seek to an arbitrary row.
+Each list documents its own fields and the operators each one takes. Bare keys (`?status=failed`)
+are not a filter.
 
-**Request** — `page` is a **1-based** page number defaulting to `1`, and `size`
-is the page size. On the wire that is `?page=2&size=25`. This mirrors filter's
-`FilterInput.page` / `FilterInput.size`, which it resolves into:
+## Sorting
 
-```ts
-// @adonis-agora/filter
-interface ResolvedPagination {
-  page: number
-  size: number
-}
+`sort` takes a comma-separated list of fields. A leading `-` sorts that field descending:
+
+```
+?sort=-createdAt,name
 ```
 
-— exactly the pair Lucid's `query.paginate(page, size)` takes.
+A list sorts only by the fields it documents. When its store has one fixed order, `sort` accepts
+that order (and its reverse, when the store can read backwards) and nothing else.
 
-**Response** — the `meta` / `data` envelope Lucid's own `.paginate()`
-serializes to, with the window co-located under `meta`:
+## Paging
+
+A list pages one of two ways, never both. Its docs say which.
+
+### Offset: `page` and `size`
+
+`page` is 1-based and defaults to `1`. `size` is the page size; each list has its own default and
+cap.
+
+```
+GET /payments/api/payments?filter[status]=failed&page=2&size=25
+```
 
 ```json
 {
-  "meta": { "page": 2, "size": 25, "total": 137 },
-  "data": []
+  "data": [],
+  "meta": { "total": 120, "perPage": 25, "currentPage": 2, "lastPage": 5, "firstPage": 1 }
 }
 ```
 
-`meta.page` and `meta.size` are always the resolved (clamped, defaulted) values
-actually applied, not the raw request. Beyond those two, each library adds what
-its store can answer cheaply: `total` in authkit, `count` in durable and
-payments, `count` + `hasMore` in telescope. Read the window off `meta`; never
-assume a field the library does not document.
+You are on the last page when `meta.currentPage === meta.lastPage`.
 
-The 0-based SQL offset is an implementation detail — `(page - 1) * size`,
-derived inside the store — and never appears in a public type.
+### Cursor: `after` / `before` and `first` / `last`
 
-### Cursor — `after` / `first`
+For feeds and stores that cannot count the matching rows. `first` is the page size going forward
+and `after` the cursor to start from; `last` and `before` page backwards, on the lists that support
+it.
 
-For backends whose "next page" handle is an opaque, protocol-native token rather
-than a row offset: S3's `ListObjectsV2` continuation token, Qdrant's scroll
-`next_page_offset`, or a keyset over `createdAt`/`id`. There is no way to
-compute an offset or seek to page 7, so cursor is the honest match.
+```
+GET /telescope/api/entries?filter[type]=exception&first=20
+GET /telescope/api/entries?filter[type]=exception&first=20&after=eyJpZCI6…
+```
 
-**Request** — `after` is the opaque cursor from a previous page's `nextCursor`
-(omit it for the first page) and `first` is the page size. This mirrors filter's
-`CursorParams`.
-
-**Response** — filter's `CursorPage<T>`, field for field:
-
-```ts
-// @adonis-agora/filter
-interface CursorPage<T> {
-  items: T[]
-  nextCursor: string | null
-  prevCursor: string | null
-  hasNext: boolean
-  hasPrev: boolean
+```json
+{
+  "data": [],
+  "meta": { "nextCursor": "eyJpZCI6…", "prevCursor": null, "hasNext": true, "hasPrev": false }
 }
 ```
 
-Cursor values are **opaque**. Hand a `nextCursor` back as `after`; never parse
-one, never build one.
+Send `meta.nextCursor` back as `after` for the next page, until it is `null`. Cursors are opaque:
+pass back the ones the server gave you, never build or parse one. A list that only pages forward
+always answers `prevCursor: null` and `hasPrev: false`.
 
-**Forward-only backends.** Filter's `CursorParams` also carries `before` /
-`last` for backward paging, because it builds keyset predicates over SQL it
-controls and can run the comparison in reverse. Neither media's nor agent's
-backends can, so both **omit** `before` / `last` from their own `CursorParams`
-— a parameter that type-checks and then silently does nothing is worse than one
-that does not exist — and pin `prevCursor: null` / `hasPrev: false` in every
-response. Those two fields stay present so the page *is* the ecosystem's
-`CursorPage` and not a near-miss of it: code written against one renders the
-other with no conditional, and a surface that later gains backward paging fills
-them in without a breaking change. They are constants, not a bug.
+### Other keys in the answer
 
-**Pages carrying more than one kind of item** use the envelope without `items`.
-Media's object listing returns common prefixes *and* objects in the same page,
-so it types that response as `CursorPageInfo & { folders, files }`, where
-`CursorPageInfo` is `Omit<CursorPage<never>, 'items'>`.
+Rows are always under `data`. A list may add top-level keys next to `data` and `meta` for side data
+that covers the whole list, such as durable's `statuses`. Small lists that never page answer
+`{ data }`.
 
-### `limit` is a cap, not a page
+## Errors
 
-`limit` is reserved for bounding a result set that has no page companion, and it
-deliberately keeps that name — respelling it `size` would claim a paging
-mechanism that is not there. Live examples:
+A request the list cannot honour answers `400` instead of being ignored:
 
-- Telescope's `?limit=` on `/api/stats` (top-N families and tags),
-  `/api/metrics/screens` and `/api/profiles`; the `topN` panel's `limit`;
-  `storage.memory({ limit })`, which is a ring-buffer capacity; and the MCP
-  `list_entries` tool's `limit` argument.
-- Filter's own group-by-count aggregation, which takes `groupByCount[limit]` /
-  `groupByCount[offset]` — `limit` bounds the rows (highest count first) and
-  `offset` pages that bound. Durable's `GET /durable/api/runs/values` *is* that
-  aggregation, so it kept `limit`/`offset` when its run listing moved to
-  `page`/`size`.
-- Durable's `durable:runs --limit` ace flag — a row cap with no page companion,
-  mapped to `size` internally.
-- Agent's `recentToolCalls(limit)` / `recentThreads(limit)`.
+- a `filter[...]` field the list does not have, or an operator that field does not take;
+- a `sort` field outside the list's sortable fields;
+- a cursor the server did not issue.
 
-The rule of thumb: if the parameter has a page companion it is `size`; if it is
-a bare ceiling on how many rows come back, it is `limit`.
+## Building it in code
 
-### Structural match, not a dependency
+- **Calling a list**: the [client builder](/docs/filter/guides/client) writes the query string
+  (`.where()`, `.sort()`, `.page()`, `.after()` / `.first()`) and types both envelopes.
+- **Serving a list from Lucid**: [pagination](/docs/filter/pagination) covers offset and keyset
+  (cursor) pages, and the `offsetPage` / `cursorPage` helpers.
+- **Serving a list from any other store** (an API, a cache, an in-memory array): see
+  [custom backends](/docs/filter/guides/custom-backends#serving-the-list-over-http).
 
-No library imports these types from `@adonis-agora/filter`. Each declares its
-own `page`/`size` fields, or its own `CursorParams` / `CursorPage`, and states
-in the docblock that it mirrors filter's — the same optional-integration
-convention the rest of the ecosystem follows, where a library lights up its
-neighbours when present rather than depending on them. Two concrete reasons:
-filter's barrel re-exports Lucid-typed members, and most of these contracts are
-implemented by stores that have no Lucid (and no filter) dependency at all.
+## Not a list
 
-The one exception is [`@adonis-agora/durable`](/docs/durable), which already
-depends on `@adonis-agora/filter` for its dashboard's filtering. That gives it
-somewhere to pin the two shapes together at **compile time**:
-`packages/adonis/test/dashboard/pagination-shape.spec.ts` assigns a
-`ResolvedPagination` straight into a `RunQuery`'s paging half and asserts
-key-and-type equality invariantly in both directions, so a rename or a retype on
-either side stops compiling instead of silently drifting.
+Two surfaces keep their own shape on purpose:
 
-### Which library uses which
+- **MCP dev tools** on [`/mcp/agora`](/docs/agent/dev-tools) take `limit` and answer
+  `{ items, next }`; pass `next` back to page.
+- Filter's **`groupByCount`** facets take `groupByCount[limit]` and `groupByCount[offset]`.
 
-| Library | Mechanism | Paginated surface |
+## Which library lists what
+
+| Library | Paging | Lists |
 | --- | --- | --- |
-| [agent](/docs/agent) | Cursor | Governance run read-model (`listRuns`), Qdrant `scrollChunks` |
-| [authkit](/docs/authkit) | Offset | Accounts, audit log, admin console and Admin API listings |
-| [authz](/docs/authz) | — | No paginated surface |
-| [collaboration](/docs/collaboration) | Offset | `listVersions` / `listComments` (`ListPageOptions`); the routes read `?page=&size=` |
-| [context](/docs/context) | — | No paginated surface |
-| [diagnostics](/docs/diagnostics) | — | No paginated surface |
-| [durable](/docs/durable) | Offset | Run listings — `RunQuery.page`/`.size`, `GET /durable/api/runs` |
-| [filter](/docs/filter) | Both | Defines both; the source of truth |
-| [media](/docs/media) | Cursor | Console object listing (S3) and collections listing |
-| [payments](/docs/payments) | Offset | Billing listings (`BillingListQuery`) |
-| [resilience](/docs/resilience) | — | No paginated surface |
-| [sail](/docs/sail) | — | No paginated surface |
-| [telescope](/docs/telescope) | Offset | Entry and trace listings (`EntryQuery`, `TraceIdQuery`) |
-
-Two things the table flattens:
-
-- **Collaboration** takes `page`/`size` on the request but its `GET
-  /collaboration/versions` and `GET /collaboration/comments` routes answer with
-  a bare array rather than the `meta` / `data` envelope.
-- A library's **driver/SPI layer** may keep the vocabulary of the protocol
-  underneath it. Media's `MediaStore.list` and `ExtendedDisk.list` still speak
-  `cursor`/`limit`; the dashboard maps `after` → `cursor` and `first` → `limit`
-  at its HTTP boundary. The convention governs the interfaces a *caller* uses,
-  not the SPI a custom store implements.
+| [agent](/docs/agent/governance/read-model) | Cursor | Governance runs, recent threads, recent tool calls and pending approvals; a thread's action proposals |
+| [authkit](/docs/authkit/admin-api) | Offset, cursor | Admin API users, clients and organizations by offset; the audit log by cursor |
+| [authz](/docs/authz/cli) | — | No HTTP list. The CLI's `--json` lists print the offset envelope |
+| [cms](/docs/cms/rest) | Offset | `GET /api/cms/collections/:slug` |
+| [collaboration](/docs/collaboration/routes) | Offset | A document's comments and versions |
+| [context](/docs/context) | — | No list |
+| [diagnostics](/docs/diagnostics/cli) | — | No HTTP list |
+| [durable](/docs/durable/observability/dashboard) | Offset | Runs, a fan's members, schedules |
+| [filter](/docs/filter/pagination) | Both | Defines the format |
+| [flags](/docs/flags/console) | Cursor | Flag history, change requests, schedules |
+| [media](/docs/media/dashboard) | Cursor | Console objects and collections |
+| [payments](/docs/payments/dashboard) | Offset | Console payments, subscriptions, disputes, webhook events, customers and audit |
+| [resilience](/docs/resilience/adonis#inspecting-circuits-and-policies) | Cursor | Circuits, bulkheads, rate limiters, recent events |
+| [sail](/docs/sail) | — | No list |
+| [telescope](/docs/telescope/dashboard) | Cursor | Entries, traces, CPU profiles |

@@ -15,6 +15,8 @@ What it demonstrates:
 
 ## Quickstart
 
+The `@adonis-agora/*` packages are pinned to the 1.0 release candidates (npm's `rc` tag).
+
 ```bash
 pnpm install
 pnpm rebuild                  # builds better-sqlite3's native binding (see note below)
@@ -35,11 +37,11 @@ config, no redeploy — see [Registering the OIDC
 client](#registering-the-oidc-client)):
 
 ```bash
-node ace authkit:clients:create --client-id=demo-app \
-  --redirect-uri=http://localhost:3333/auth/callback --json
+node ace authkit:client create --client-id=demo-app \
+  --redirect-uri=http://localhost:3333/auth/callback
 ```
 
-Copy the printed `clientSecret` into `.env`:
+It prints the client secret once. Copy it into `.env`:
 
 ```dotenv
 AUTHKIT_CLIENT_ID=demo-app
@@ -65,8 +67,8 @@ Grant yourself a role (find your id first — the home page shows your email,
 or query `app_users`):
 
 ```bash
-node ace authz:assign member <your-app-user-id>   # -> can view/create documents
-node ace authz:assign ADMIN <your-app-user-id>    # -> + the Telescope dashboard
+node ace authz:assignments:add member <your-app-user-id>   # -> can view/create documents
+node ace authz:assignments:add ADMIN <your-app-user-id>    # -> + the Telescope dashboard
 ```
 
 ## Verifying it actually works
@@ -103,8 +105,8 @@ Two ways, both already run as part of building this example:
 | Concern | File(s) |
 | --- | --- |
 | Login / signup / consent (topology A, host is its own IdP+client) | `config/authkit.ts`, `config/authkit_client.ts`, `app/models/auth_user.ts`, `app/models/app_user.ts`, `app/controllers/oidc_session_controller.ts`, `start/routes.ts` |
-| `ctx.auth` typed to this app's user | `types/authkit.ts` |
-| Permission checks (role → permission, wildcards) | `config/authz.ts`, `app/controllers/documents_controller.ts` (`authz.can(user, 'documents.view')` etc.) |
+| `ctx.auth` backed by the AuthKit session (`authkitClientGuard`), `middleware.auth()` on protected routes | `config/auth.ts`, `start/kernel.ts`, `app/middleware/auth_middleware.ts`, `app/middleware/silent_auth_middleware.ts` |
+| Permission checks (role → permission, wildcards) | `config/authz.ts`, `app/controllers/documents_controller.ts` (`authz.can(auth.user, 'documents.view')` etc.) |
 | Tenant/user context propagation | `app/middleware/stamp_context_middleware.ts` (writes `Context.set('userRef'/'tenantId', ...)` after login) + `config/authz.ts`'s `resolveTenant: tenantFromContext` (reads it back, zero import of this app's auth layer) |
 | Media upload + the ownership/authz-gated download | `app/controllers/documents_controller.ts` (`store`/`file` actions), `config/media.ts` |
 | Admin-only Telescope dashboard | `config/telescope_ui.ts`, `config/media_dashboard.ts` (same `authorizeByRoles` pattern) |
@@ -193,12 +195,7 @@ why a few files look the way they do:
    The docs and the `authkit:doctor` hint now name it, and `config/shield.ts`
    uses it.
 
-One rough edge this example *closed itself* rather than worked around:
-telescope's dashboard guard used to infer 401-vs-403 from the request's shape,
-which never sees the session cookie `authorizeByRoles` authenticates with. Since
-[`telescope@0.20.0`](https://www.npmjs.com/package/@adonis-agora/telescope) an
-`authorize` hook may return `{ allowed, reason }` instead of a bare boolean, and
-`config/telescope_ui.ts` does — so a wrong-role denial is a 403 and only an
-anonymous one is a 401 (asserted in `smoke-test.sh` step 10). `authz`'s
-`authorizeByRoles` still returns a plain boolean, so this composition is worth
-copying if you gate a dashboard the same way.
+The Telescope and media consoles are gated with authz's `authorizeByRoles({ roles: ['ADMIN'],
+loginPath: '/auth/login' })`: an anonymous page navigation goes to the login, an anonymous API call
+gets a 401, and a signed-in user without `ADMIN` gets a 403 (asserted in `smoke-test.sh` steps 2
+and 10).

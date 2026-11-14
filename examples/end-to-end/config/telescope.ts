@@ -26,7 +26,7 @@ export default defineConfig({
    * 'store' to 'lucid', and uncomment the lucid driver:
    */
   stores: {
-    memory: storage.memory({ limit: 1000 }),
+    memory: storage.memory({ maxEntries: 1000 }),
     // lucid: storage.lucid({ connection: 'pg' }),
   },
 

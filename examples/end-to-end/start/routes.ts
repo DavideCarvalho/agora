@@ -36,7 +36,7 @@ router
     router.get('/:id/file', [controllers.Documents, 'file']).as('documents.file')
   })
   .prefix('/documents')
-  .use(middleware.requireAuth({ redirectTo: '/auth/login' }))
+  .use(middleware.auth())
 
 // @adonis-agora/telescope's UI ("ui_provider") mounts its own routes at
 // /telescope automatically — gated via config/telescope_ui.ts's `authorize`

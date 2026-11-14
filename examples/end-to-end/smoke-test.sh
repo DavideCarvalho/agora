@@ -96,7 +96,7 @@ expect_code "GET /documents (ada, no role)" "403" "$code"
 echo "== 5. grant ada the 'member' role =="
 ada_id="$(node -e "const D=require('better-sqlite3');const db=new D('tmp/db.sqlite3');console.log(db.prepare(\"SELECT id FROM app_users WHERE email='ada@example.com'\").get().id)")"
 echo "  ada id = $ada_id"
-node ace authz:assign member "$ada_id" > /dev/null 2>&1
+node ace authz:assignments:add member "$ada_id" > /dev/null 2>&1
 pass "assigned 'member' to $ada_id"
 
 echo "== 6. authenticated + 'member' -> 200 on /documents =="
@@ -120,22 +120,20 @@ diff -q "$WORKDIR/testfile.txt" "$WORKDIR/downloaded.txt" > /dev/null && pass "d
 
 echo "== 9. a second user (no 'manage' grant) cannot download ada's file =="
 login_flow "$WORKDIR/bob.jar" "bob@example.com" "othersecret123" "Bob Babbage"
-node ace authz:assign member "$(node -e "const D=require('better-sqlite3');const db=new D('tmp/db.sqlite3');console.log(db.prepare(\"SELECT id FROM app_users WHERE email='bob@example.com'\").get().id)")" > /dev/null 2>&1
+node ace authz:assignments:add member "$(node -e "const D=require('better-sqlite3');const db=new D('tmp/db.sqlite3');console.log(db.prepare(\"SELECT id FROM app_users WHERE email='bob@example.com'\").get().id)")" > /dev/null 2>&1
 code="$(curl -s -o /dev/null -w '%{http_code}' -b "$WORKDIR/bob.jar" "$BASE_URL/documents/$doc_id/file")"
 expect_code "GET /documents/$doc_id/file (non-owner)" "403" "$code"
 
 echo "== 10. non-admin -> Telescope dashboard is 403, anonymous is 401 =="
-# config/telescope_ui.ts returns telescope's `AuthorizeDecision`
-# (`{ allowed, reason }`) rather than the bare boolean `authorizeByRoles`
-# gives, so the guard does not have to guess the status from the request's
-# shape — a session-cookie denial is told apart from an anonymous one.
+# config/telescope_ui.ts gates with authz's `authorizeByRoles`: signed in without
+# ADMIN is a 403, anonymous is a 401.
 code="$(curl -s -o /dev/null -w '%{http_code}' -b "$WORKDIR/ada.jar" "$BASE_URL/telescope")"
 expect_code "GET /telescope (ada, member only)" "403" "$code"
 code="$(curl -s -o /dev/null -w '%{http_code}' -H 'Accept: application/json' "$BASE_URL/telescope")"
 expect_code "GET /telescope (anonymous)" "401" "$code"
 
 echo "== 11. promote ada to ADMIN -> Telescope dashboard 200 =="
-node ace authz:assign ADMIN "$ada_id" > /dev/null 2>&1
+node ace authz:assignments:add ADMIN "$ada_id" > /dev/null 2>&1
 code="$(curl -s -o /dev/null -w '%{http_code}' -b "$WORKDIR/ada.jar" "$BASE_URL/telescope")"
 expect_code "GET /telescope (ada, ADMIN)" "200" "$code"
 

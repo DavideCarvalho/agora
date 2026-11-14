@@ -1,0 +1,69 @@
+---
+title: Getting started
+description: Install Agora libraries from the 1.0 release candidate, configure them in your AdonisJS app, and connect your coding agent to /mcp/agora.
+---
+
+# Getting started
+
+Every Agora library installs into an AdonisJS 7 app on its own. Pick the ones you need; they find
+each other at boot.
+
+## 1. Install from the `rc` tag
+
+The 1.x line is a **release candidate**. npm's `latest` tag still points at 0.x, so install with
+`@rc`, then run the package's configure hook:
+
+```sh
+npm i @adonis-agora/durable@rc @adonis-agora/telescope@rc
+node ace configure @adonis-agora/durable
+node ace configure @adonis-agora/telescope
+```
+
+`node ace configure` runs the same configure hook `node ace add` runs after its install (providers,
+`config/<lib>.ts`, migrations, whatever the library sets up). A library's own getting-started page shows
+`node ace add @adonis-agora/<lib>`; use the two commands above instead while 1.x is on `rc`. Keep
+every `@adonis-agora/*` package on the same release line.
+
+[Flags](/docs/flags) and the [CMS](/docs/cms) are still on 0.x and install from `latest` with
+`node ace add`.
+
+## 2. Check the configuration
+
+```sh
+node ace agora:doctor
+```
+
+It checks every installed library and prints the fix for each problem.
+
+## 3. Connect your coding agent
+
+Install the agent and register its MCP provider after the agent provider:
+
+```sh
+npm i @adonis-agora/agent@rc
+node ace configure @adonis-agora/agent
+```
+
+```ts title="adonisrc.ts"
+providers: [
+  // ...
+  () => import('@adonis-agora/agent/agent_provider'),
+  () => import('@adonis-agora/agent/mcp_provider'),
+]
+```
+
+Start the app and point Claude Code at the dev tools endpoint:
+
+```sh
+claude mcp add --transport http agora http://localhost:3333/mcp/agora
+```
+
+Every installed library with a console now answers your agent: "which durable runs failed in the
+last hour?", "show me the slowest requests in telescope". With [AuthKit](/docs/authkit) in the app,
+Claude Code opens your login in the browser and signs in with your account. See
+[dev tools over MCP](/docs/agent/dev-tools) for tokens, `devTools` options and what each lib exposes.
+
+## Next
+
+- [Conventions](/docs/conventions): the list format every library's API speaks.
+- Each library's docs, from the sidebar.

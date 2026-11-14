@@ -8,6 +8,7 @@ import {
   Image,
   KeyRound,
   type LucideIcon,
+  Newspaper,
   ShieldCheck,
   Ship,
   Telescope,
@@ -205,6 +206,18 @@ export const libs: AgoraLib[] = [
     iconName: 'Ship',
     packages: 1,
     stage: 'alpha',
+  },
+  {
+    slug: 'cms',
+    pkg: 'cms',
+    name: 'CMS',
+    blurb:
+      'A config-first CMS for AdonisJS — collections, globals, drafts, i18n, access rules, REST and local APIs, MCP tools and a schema-driven admin panel.',
+    role: 'Content',
+    icon: Newspaper,
+    iconName: 'Newspaper',
+    packages: 4,
+    stage: 'wip',
   },
 ];
 
