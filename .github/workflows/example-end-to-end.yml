@@ -73,19 +73,12 @@ jobs:
         run: node ace authz:sync
 
       - name: Register the OIDC client and export its secret
-        # `--json` output is interleaved with pretty-printed SQL debug logging
-        # (config/database.ts's `prettyPrintDebugQueries`), so this isn't
-        # strict JSON on one line — grep the one field we need instead of
-        # parsing the whole block.
+        # Hand the command the secret instead of parsing it out of the output,
+        # which is interleaved with SQL debug logging.
         run: |
-          OUTPUT=$(node ace authkit:clients:create --client-id=demo-app \
-            --redirect-uri=http://localhost:3333/auth/callback --json)
-          SECRET=$(echo "$OUTPUT" | grep -o '"clientSecret": "[^"]*"' | sed 's/.*"clientSecret": "//;s/"$//')
-          if [ -z "$SECRET" ]; then
-            echo "Failed to extract clientSecret from:" >&2
-            echo "$OUTPUT" >&2
-            exit 1
-          fi
+          SECRET=$(openssl rand -hex 32)
+          node ace authkit:client create --client-id=demo-app \
+            --redirect-uri=http://localhost:3333/auth/callback --client-secret="$SECRET"
           # `.env.example` already declares an EMPTY `AUTHKIT_CLIENT_SECRET=`
           # line (dotenv keeps the FIRST occurrence of a duplicate key) —
           # replace it in place rather than appending a second one, which

@@ -237,7 +237,7 @@ export const sources = [
     name: 'CMS',
     description:
       'A config-first CMS for AdonisJS — collections, globals, drafts and versions, i18n, access rules, a REST and local API, MCP tools and a schema-driven admin panel.',
-    icon: 'LayoutTemplate',
+    icon: 'Newspaper',
     repo: 'DavideCarvalho/adonis-agora-cms',
     ref: 'master',
     // Plain `.md` pages with a `# Title` heading; the sync lifts it into frontmatter.

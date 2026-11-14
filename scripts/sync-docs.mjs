@@ -232,6 +232,22 @@ function frontmatterFromHeading(content) {
 }
 
 /**
+ * `description: Fields: every type` is not valid YAML (a plain scalar cannot hold ": "), and the
+ * Next build dies on it with no filename. Quote such single-line values while syncing, so a lib's
+ * docs render as written.
+ */
+function quoteFrontmatterColons(content) {
+  const fm = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!fm) return content;
+  const lines = fm[1].split('\n').map((line) => {
+    const kv = /^([A-Za-z_][\w-]*):\s+(.*)$/.exec(line);
+    if (!kv || /^["'[{|>&*!]/.test(kv[2]) || !/:\s/.test(kv[2])) return line;
+    return `${kv[1]}: ${JSON.stringify(kv[2])}`;
+  });
+  return content.replace(fm[1], () => lines.join('\n'));
+}
+
+/**
  * A docs folder without an index page would leave /docs/<slug> (the library tab's link) a 404.
  * Give it a generated landing page: the library's description and one card per top-level page.
  */
@@ -302,6 +318,7 @@ function installDocs({ src, from, dest, base, assetsBase }) {
       const before = readFileSync(file, 'utf8');
       let after = rewriteLinks(before, src.slug, base);
       if (file.endsWith('.md')) after = frontmatterFromHeading(after);
+      after = quoteFrontmatterColons(after);
       if (assetsBase) after = rewriteAssets(after, assetsBase);
       links += (before.match(/\]\(\/docs|href="\/docs/g) || []).length;
       if (after !== before) writeFileSync(file, after);
