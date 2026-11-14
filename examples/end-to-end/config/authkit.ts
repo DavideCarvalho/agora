@@ -16,10 +16,13 @@ const authServerConfig = defineConfig({
   ttl: { accessToken: '15m', refreshToken: '30d' },
   accountStore: lucidAccountStore(AuthUser),
   mountPath: '/oidc',
-  admin: { enabled: true },
+  // The admin console at /admin: accounts with the ADMIN global role. `authorize`
+  // is the gate every @adonis-agora console takes; without it the console answers
+  // 403 to everyone in production.
+  admin: { enabled: true, roles: ['ADMIN'], authorize: () => true },
   adminApi: { enabled: true, apiKeys: [env.get('AUTHKIT_ADMIN_API_KEY')] },
   // Clients are managed at runtime via the admin console (/admin/clients), the
-  // Admin API, or `node ace authkit:clients:create` (see the README) — never
+  // Admin API, or `node ace authkit:client create` (see the README) — never
   // declared statically here, so no redeploy is needed to add one.
 
   /**

@@ -22,6 +22,98 @@ export class AppUserSchema extends BaseModel {
   declare updatedAt: DateTime
 }
 
+export class AuthAgentDeviceCodeSchema extends BaseModel {
+  static $columns = ['accountId', 'agentSub', 'clientId', 'createdAt', 'deviceCodeHash', 'expiresAt', 'grantId', 'id', 'intervalSeconds', 'lastPolledAt', 'requestedScope', 'status', 'userCode'] as const
+  $columns = AuthAgentDeviceCodeSchema.$columns
+  @column()
+  declare accountId: string | null
+  @column()
+  declare agentSub: string
+  @column()
+  declare clientId: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare deviceCodeHash: string
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column()
+  declare grantId: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare intervalSeconds: number
+  @column.dateTime()
+  declare lastPolledAt: DateTime | null
+  @column()
+  declare requestedScope: string
+  @column()
+  declare status: string
+  @column()
+  declare userCode: string
+}
+
+export class AuthAgentGrantSchema extends BaseModel {
+  static $columns = ['accountId', 'agentSub', 'clientId', 'createdAt', 'expiresAt', 'id', 'revokedAt', 'scope', 'updatedAt'] as const
+  $columns = AuthAgentGrantSchema.$columns
+  @column()
+  declare accountId: string
+  @column()
+  declare agentSub: string
+  @column()
+  declare clientId: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column.dateTime()
+  declare revokedAt: DateTime | null
+  @column()
+  declare scope: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class AuthAgentRefreshTokenSchema extends BaseModel {
+  static $columns = ['createdAt', 'expiresAt', 'grantId', 'tokenHash', 'usedAt'] as const
+  $columns = AuthAgentRefreshTokenSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare expiresAt: DateTime
+  @column()
+  declare grantId: string
+  @column({ isPrimary: true })
+  declare tokenHash: string
+  @column.dateTime()
+  declare usedAt: DateTime | null
+}
+
+export class AuthAgentRegistrySchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'identifier', 'jwksUri', 'name', 'protocol', 'status', 'updatedAt', 'updatedBy'] as const
+  $columns = AuthAgentRegistrySchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare identifier: string
+  @column()
+  declare jwksUri: string | null
+  @column()
+  declare name: string | null
+  @column()
+  declare protocol: string
+  @column()
+  declare status: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare updatedBy: string | null
+}
+
 export class AuthMfaSchema extends BaseModel {
   static $columns = ['accountId', 'lastTotpStep', 'mfaEnabledAt', 'recoveryCodes', 'totpSecret'] as const
   $columns = AuthMfaSchema.$columns
@@ -163,8 +255,10 @@ export class AuthUserSchema extends BaseModel {
 }
 
 export class AuthkitOidcPayloadSchema extends BaseModel {
-  static $columns = ['expiresAt', 'grantId', 'id', 'modelName', 'payload', 'uid', 'userCode'] as const
+  static $columns = ['accountId', 'expiresAt', 'grantId', 'id', 'modelName', 'payload', 'uid', 'userCode'] as const
   $columns = AuthkitOidcPayloadSchema.$columns
+  @column()
+  declare accountId: string | null
   @column.dateTime()
   declare expiresAt: DateTime | null
   @column()
@@ -216,28 +310,30 @@ export class AuthzRoleSchema extends BaseModel {
   declare name: string
 }
 
-export class AuthzUserPermissionSchema extends BaseModel {
-  static $columns = ['permissionId', 'userId', 'userType'] as const
-  $columns = AuthzUserPermissionSchema.$columns
+export class AuthzSubjectPermissionSchema extends BaseModel {
+  static $columns = ['permissionId', 'subjectId', 'subjectType'] as const
+  $columns = AuthzSubjectPermissionSchema.$columns
   @column()
   declare permissionId: string
   @column()
-  declare userId: string
+  declare subjectId: string
   @column({ isPrimary: true })
-  declare userType: string
+  declare subjectType: string
 }
 
-export class AuthzUserRoleSchema extends BaseModel {
-  static $columns = ['roleId', 'tenantId', 'userId', 'userType'] as const
-  $columns = AuthzUserRoleSchema.$columns
+export class AuthzSubjectRoleSchema extends BaseModel {
+  static $columns = ['roleId', 'source', 'subjectId', 'subjectType', 'tenantId'] as const
+  $columns = AuthzSubjectRoleSchema.$columns
   @column()
   declare roleId: string
   @column()
-  declare tenantId: string
+  declare source: string
   @column()
-  declare userId: string
+  declare subjectId: string
   @column({ isPrimary: true })
-  declare userType: string
+  declare subjectType: string
+  @column()
+  declare tenantId: string
 }
 
 export class DocumentSchema extends BaseModel {

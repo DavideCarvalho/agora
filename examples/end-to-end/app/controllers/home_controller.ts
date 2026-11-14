@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 
 export default class HomeController {
   async index({ auth, view }: HttpContext) {
-    const user = await auth.getUser()
+    const user = auth.user
     return view.render('pages/home', { user })
   }
 }

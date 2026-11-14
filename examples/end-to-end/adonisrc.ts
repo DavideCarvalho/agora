@@ -62,6 +62,7 @@ export default defineConfig({
     () => import('@adonis-agora/media/media_provider'),
     () => import('@adonis-agora/media/dashboard_provider'),
     () => import('@adonis-agora/authkit-server/authkit_server_provider'),
+    () => import('@adonisjs/auth/auth_provider'),
     () => import('@adonis-agora/authkit-client/authkit_client_provider'),
   ],
 

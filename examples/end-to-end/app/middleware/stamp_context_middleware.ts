@@ -11,7 +11,7 @@ import { Context } from '@adonis-agora/context'
  * its `configure` step) only establishes the store + trace id — it
  * deliberately does not know who the user is (see context's getting-started
  * doc, "Step 3 — Populate the user and tenant"). This middleware runs on the
- * ROUTER stack, after authkit's `authkit_middleware` has resolved `ctx.auth`,
+ * ROUTER stack, after the silent-auth middleware has resolved `ctx.auth.user`,
  * and fills in the two fields context left blank.
  *
  * Once `Context.set(...)` runs here, every one of these already reads it with
@@ -32,7 +32,7 @@ import { Context } from '@adonis-agora/context'
  */
 export default class StampContextMiddleware {
   async handle(ctx: HttpContext, next: NextFn) {
-    const user = await ctx.auth.getUser()
+    const user = ctx.auth.user
     if (user) {
       Context.set('userRef', { type: 'user', id: user.id })
       Context.set('tenantId', 'demo')

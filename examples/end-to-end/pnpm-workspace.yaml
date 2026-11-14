@@ -7,9 +7,12 @@ allowBuilds:
   esbuild: true
   '@swc/core': true
 minimumReleaseAgeExclude:
-  - '@adonis-agora/authkit-client@0.18.4'
-  - '@adonis-agora/authkit-server@0.66.0'
-  - '@adonis-agora/authz@0.15.0'
-  - '@adonis-agora/media@0.18.0'
-  - '@adonis-agora/telescope@0.21.0'
-  - '@adonis-agora/telescope-ui@1.5.0'
+  - '@adonis-agora/authkit-client@1.0.0-rc.6'
+  - '@adonis-agora/authkit-server@1.0.0-rc.22'
+  - '@adonis-agora/authz@1.0.0-rc.5'
+  - '@adonis-agora/context@1.0.0-rc.2'
+  - '@adonis-agora/media@1.0.0-rc.15'
+  - '@adonis-agora/telescope@1.0.0-rc.13'
+  - '@adonis-agora/telescope-ui@3.0.0-rc.11'
+  - '@adonis-agora/filter-client@1.0.0-rc.1'
+  - '@adonis-agora/filter@1.0.0-rc.5'

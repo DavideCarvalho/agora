@@ -27,14 +27,16 @@ export type ScannedRoutes = {
     'telescope_ui.metrics_screens': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_waterfall': { paramsTuple: [ParamValue]; params: {'traceId': ParamValue} }
     'telescope_ui.metrics_n_plus_one': { paramsTuple: [ParamValue]; params: {'traceId': ParamValue} }
+    'telescope_ui.metrics_ai': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_pulse': { paramsTuple?: []; params?: {} }
     'telescope_ui.stream': { paramsTuple?: []; params?: {} }
+    'telescope_ui.tenants': { paramsTuple?: []; params?: {} }
     'telescope_ui.meta': { paramsTuple?: []; params?: {} }
-    'media.dashboard.me': { paramsTuple?: []; params?: {} }
-    'media.dashboard.login': { paramsTuple?: []; params?: {} }
-    'media.dashboard.session': { paramsTuple?: []; params?: {} }
-    'media.dashboard.logout': { paramsTuple?: []; params?: {} }
     'media.dashboard.topology': { paramsTuple?: []; params?: {} }
+    'media.dashboard.tenants': { paramsTuple?: []; params?: {} }
+    'media.dashboard.tenants.select': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'media.dashboard.consoles': { paramsTuple?: []; params?: {} }
+    'media.dashboard.consoles.search': { paramsTuple?: []; params?: {} }
     'media.dashboard.disks': { paramsTuple?: []; params?: {} }
     'media.dashboard.objects': { paramsTuple?: []; params?: {} }
     'media.dashboard.object': { paramsTuple?: []; params?: {} }
@@ -64,12 +66,17 @@ export type ScannedRoutes = {
     'authkit.assets.passkeyRegister': { paramsTuple?: []; params?: {} }
     'authkit.assets.webauthnConfirm': { paramsTuple?: []; params?: {} }
     'authkit.assets.submitLock': { paramsTuple?: []; params?: {} }
+    'authkit.oauth_authorization_server': { paramsTuple?: []; params?: {} }
     'authkit.oidc.wildcard': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'authkit.oidc.root': { paramsTuple?: []; params?: {} }
+    'authkit.console_sso.start': { paramsTuple?: []; params?: {} }
+    'authkit.console_sso.callback': { paramsTuple?: []; params?: {} }
     'interaction.show': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.identifier': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.login': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.mfa_verify': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
+    'authkit.mfa.custom.begin': { paramsTuple: [ParamValue,ParamValue]; params: {'uid': ParamValue,'method': ParamValue} }
+    'authkit.mfa.custom.verify': { paramsTuple: [ParamValue,ParamValue]; params: {'uid': ParamValue,'method': ParamValue} }
     'interaction.change_expired_password': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.passkey_options': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.passkey_verify': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
@@ -81,6 +88,7 @@ export type ScannedRoutes = {
     'interaction.otp_unlock': { paramsTuple: [ParamValue]; params: {'token': ParamValue} }
     'registration.show_signup': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'registration.signup': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
+    'registration.signup_confirm': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'registration.show_forgot': { paramsTuple?: []; params?: {} }
     'registration.forgot': { paramsTuple?: []; params?: {} }
     'registration.show_reset': { paramsTuple?: []; params?: {} }
@@ -122,9 +130,6 @@ export type ScannedRoutes = {
     'account_orgs.invite': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'account_orgs.remove_member': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'accountId': ParamValue} }
     'account_orgs.revoke_invitation': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'invId': ParamValue} }
-    'account_orgs.list_json': { paramsTuple?: []; params?: {} }
-    'account_orgs.list_invitations_json': { paramsTuple?: []; params?: {} }
-    'account_orgs.show_json': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'account_api.me': { paramsTuple?: []; params?: {} }
     'account_api.security_overview': { paramsTuple?: []; params?: {} }
     'account_api.update_profile': { paramsTuple?: []; params?: {} }
@@ -148,12 +153,30 @@ export type ScannedRoutes = {
     'account_api.list_orgs': { paramsTuple?: []; params?: {} }
     'account_api.list_org_invitations': { paramsTuple?: []; params?: {} }
     'account_api.show_org': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'account_orgs_api.create_org': { paramsTuple?: []; params?: {} }
+    'account_orgs_api.deactivate_org': { paramsTuple?: []; params?: {} }
+    'account_orgs_api.accept_invitation': { paramsTuple: [ParamValue]; params: {'token': ParamValue} }
+    'account_orgs_api.activate_org': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'account_orgs_api.leave_org': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'account_orgs_api.invite_member': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'account_orgs_api.revoke_invitation': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'invId': ParamValue} }
+    'account_orgs_api.update_member_role': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'accountId': ParamValue} }
+    'account_orgs_api.remove_member': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'accountId': ParamValue} }
+    'account_mfa_api.enroll_totp': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.confirm_totp': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.disable_totp': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.regenerate_recovery_codes': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.passkey_register_options': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.passkey_register_verify': { paramsTuple?: []; params?: {} }
     'authkit_console_assets': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'console_overview': { paramsTuple?: []; params?: {} }
+    'console_switcher.search': { paramsTuple?: []; params?: {} }
+    'console_switcher.index': { paramsTuple?: []; params?: {} }
     'console_users.index': { paramsTuple?: []; params?: {} }
     'console_users.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_users.store': { paramsTuple?: []; params?: {} }
     'console_users.update_roles': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'console_users.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_users.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_users.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_users.reset_password': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -164,8 +187,12 @@ export type ScannedRoutes = {
     'console_sessions.user_revoke_sessions': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.index': { paramsTuple?: []; params?: {} }
     'console_clients.store': { paramsTuple?: []; params?: {} }
+    'console_clients.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'console_clients.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'console_clients.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'console_clients.revoke': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.regenerate_secret': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_roles.index': { paramsTuple?: []; params?: {} }
     'console_roles.store': { paramsTuple?: []; params?: {} }
@@ -185,8 +212,15 @@ export type ScannedRoutes = {
     'console_settings.index': { paramsTuple?: []; params?: {} }
     'console_settings.upsert': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
     'console_settings.destroy': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
+    'console_mcp_clients.show': { paramsTuple?: []; params?: {} }
+    'console_mcp_clients.update': { paramsTuple?: []; params?: {} }
     'console_keys.status': { paramsTuple?: []; params?: {} }
     'console_keys.rotate': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.index': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.connections': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.revoke_connection': { paramsTuple: [ParamValue]; params: {'grantId': ParamValue} }
+    'console_personal_agents.upsert': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_impersonation': { paramsTuple: [ParamValue]; params: {'userId': ParamValue} }
     'authkit_console_root': { paramsTuple?: []; params?: {} }
     'authkit_console_shell': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
@@ -206,6 +240,8 @@ export type ScannedRoutes = {
     'api_clients.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.regenerate_secret': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'api_clients.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'api_clients.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_orgs.index': { paramsTuple?: []; params?: {} }
     'api_orgs.store': { paramsTuple?: []; params?: {} }
     'api_orgs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -252,11 +288,15 @@ export type ScannedRoutes = {
     'telescope_ui.metrics_screens': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_waterfall': { paramsTuple: [ParamValue]; params: {'traceId': ParamValue} }
     'telescope_ui.metrics_n_plus_one': { paramsTuple: [ParamValue]; params: {'traceId': ParamValue} }
+    'telescope_ui.metrics_ai': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_pulse': { paramsTuple?: []; params?: {} }
     'telescope_ui.stream': { paramsTuple?: []; params?: {} }
+    'telescope_ui.tenants': { paramsTuple?: []; params?: {} }
     'telescope_ui.meta': { paramsTuple?: []; params?: {} }
-    'media.dashboard.me': { paramsTuple?: []; params?: {} }
     'media.dashboard.topology': { paramsTuple?: []; params?: {} }
+    'media.dashboard.tenants': { paramsTuple?: []; params?: {} }
+    'media.dashboard.consoles': { paramsTuple?: []; params?: {} }
+    'media.dashboard.consoles.search': { paramsTuple?: []; params?: {} }
     'media.dashboard.disks': { paramsTuple?: []; params?: {} }
     'media.dashboard.objects': { paramsTuple?: []; params?: {} }
     'media.dashboard.object': { paramsTuple?: []; params?: {} }
@@ -276,13 +316,17 @@ export type ScannedRoutes = {
     'authkit.assets.passkeyRegister': { paramsTuple?: []; params?: {} }
     'authkit.assets.webauthnConfirm': { paramsTuple?: []; params?: {} }
     'authkit.assets.submitLock': { paramsTuple?: []; params?: {} }
+    'authkit.oauth_authorization_server': { paramsTuple?: []; params?: {} }
     'authkit.oidc.wildcard': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'authkit.oidc.root': { paramsTuple?: []; params?: {} }
+    'authkit.console_sso.start': { paramsTuple?: []; params?: {} }
+    'authkit.console_sso.callback': { paramsTuple?: []; params?: {} }
     'interaction.show': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.magic_link_consume': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.switch_identifier': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.otp_unlock': { paramsTuple: [ParamValue]; params: {'token': ParamValue} }
     'registration.show_signup': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
+    'registration.signup_confirm': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'registration.show_forgot': { paramsTuple?: []; params?: {} }
     'registration.show_reset': { paramsTuple?: []; params?: {} }
     'registration.verify_email': { paramsTuple?: []; params?: {} }
@@ -296,9 +340,6 @@ export type ScannedRoutes = {
     'account_mfa.index': { paramsTuple?: []; params?: {} }
     'account_confirm.show': { paramsTuple?: []; params?: {} }
     'account_orgs.index': { paramsTuple?: []; params?: {} }
-    'account_orgs.list_json': { paramsTuple?: []; params?: {} }
-    'account_orgs.list_invitations_json': { paramsTuple?: []; params?: {} }
-    'account_orgs.show_json': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'account_api.me': { paramsTuple?: []; params?: {} }
     'account_api.security_overview': { paramsTuple?: []; params?: {} }
     'account_api.list_sessions': { paramsTuple?: []; params?: {} }
@@ -312,17 +353,23 @@ export type ScannedRoutes = {
     'account_api.show_org': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'authkit_console_assets': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'console_overview': { paramsTuple?: []; params?: {} }
+    'console_switcher.search': { paramsTuple?: []; params?: {} }
+    'console_switcher.index': { paramsTuple?: []; params?: {} }
     'console_users.index': { paramsTuple?: []; params?: {} }
     'console_users.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_sessions.index': { paramsTuple?: []; params?: {} }
     'console_sessions.user_sessions': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.index': { paramsTuple?: []; params?: {} }
+    'console_clients.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_roles.index': { paramsTuple?: []; params?: {} }
     'console_orgs.index': { paramsTuple?: []; params?: {} }
     'console_orgs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_audit.index': { paramsTuple?: []; params?: {} }
     'console_settings.index': { paramsTuple?: []; params?: {} }
+    'console_mcp_clients.show': { paramsTuple?: []; params?: {} }
     'console_keys.status': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.index': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.connections': { paramsTuple?: []; params?: {} }
     'console_impersonation': { paramsTuple: [ParamValue]; params: {'userId': ParamValue} }
     'authkit_console_root': { paramsTuple?: []; params?: {} }
     'authkit_console_shell': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
@@ -363,11 +410,15 @@ export type ScannedRoutes = {
     'telescope_ui.metrics_screens': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_waterfall': { paramsTuple: [ParamValue]; params: {'traceId': ParamValue} }
     'telescope_ui.metrics_n_plus_one': { paramsTuple: [ParamValue]; params: {'traceId': ParamValue} }
+    'telescope_ui.metrics_ai': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_pulse': { paramsTuple?: []; params?: {} }
     'telescope_ui.stream': { paramsTuple?: []; params?: {} }
+    'telescope_ui.tenants': { paramsTuple?: []; params?: {} }
     'telescope_ui.meta': { paramsTuple?: []; params?: {} }
-    'media.dashboard.me': { paramsTuple?: []; params?: {} }
     'media.dashboard.topology': { paramsTuple?: []; params?: {} }
+    'media.dashboard.tenants': { paramsTuple?: []; params?: {} }
+    'media.dashboard.consoles': { paramsTuple?: []; params?: {} }
+    'media.dashboard.consoles.search': { paramsTuple?: []; params?: {} }
     'media.dashboard.disks': { paramsTuple?: []; params?: {} }
     'media.dashboard.objects': { paramsTuple?: []; params?: {} }
     'media.dashboard.object': { paramsTuple?: []; params?: {} }
@@ -387,13 +438,17 @@ export type ScannedRoutes = {
     'authkit.assets.passkeyRegister': { paramsTuple?: []; params?: {} }
     'authkit.assets.webauthnConfirm': { paramsTuple?: []; params?: {} }
     'authkit.assets.submitLock': { paramsTuple?: []; params?: {} }
+    'authkit.oauth_authorization_server': { paramsTuple?: []; params?: {} }
     'authkit.oidc.wildcard': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'authkit.oidc.root': { paramsTuple?: []; params?: {} }
+    'authkit.console_sso.start': { paramsTuple?: []; params?: {} }
+    'authkit.console_sso.callback': { paramsTuple?: []; params?: {} }
     'interaction.show': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.magic_link_consume': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.switch_identifier': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.otp_unlock': { paramsTuple: [ParamValue]; params: {'token': ParamValue} }
     'registration.show_signup': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
+    'registration.signup_confirm': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'registration.show_forgot': { paramsTuple?: []; params?: {} }
     'registration.show_reset': { paramsTuple?: []; params?: {} }
     'registration.verify_email': { paramsTuple?: []; params?: {} }
@@ -407,9 +462,6 @@ export type ScannedRoutes = {
     'account_mfa.index': { paramsTuple?: []; params?: {} }
     'account_confirm.show': { paramsTuple?: []; params?: {} }
     'account_orgs.index': { paramsTuple?: []; params?: {} }
-    'account_orgs.list_json': { paramsTuple?: []; params?: {} }
-    'account_orgs.list_invitations_json': { paramsTuple?: []; params?: {} }
-    'account_orgs.show_json': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'account_api.me': { paramsTuple?: []; params?: {} }
     'account_api.security_overview': { paramsTuple?: []; params?: {} }
     'account_api.list_sessions': { paramsTuple?: []; params?: {} }
@@ -423,17 +475,23 @@ export type ScannedRoutes = {
     'account_api.show_org': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'authkit_console_assets': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'console_overview': { paramsTuple?: []; params?: {} }
+    'console_switcher.search': { paramsTuple?: []; params?: {} }
+    'console_switcher.index': { paramsTuple?: []; params?: {} }
     'console_users.index': { paramsTuple?: []; params?: {} }
     'console_users.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_sessions.index': { paramsTuple?: []; params?: {} }
     'console_sessions.user_sessions': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.index': { paramsTuple?: []; params?: {} }
+    'console_clients.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_roles.index': { paramsTuple?: []; params?: {} }
     'console_orgs.index': { paramsTuple?: []; params?: {} }
     'console_orgs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_audit.index': { paramsTuple?: []; params?: {} }
     'console_settings.index': { paramsTuple?: []; params?: {} }
+    'console_mcp_clients.show': { paramsTuple?: []; params?: {} }
     'console_keys.status': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.index': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.connections': { paramsTuple?: []; params?: {} }
     'console_impersonation': { paramsTuple: [ParamValue]; params: {'userId': ParamValue} }
     'authkit_console_root': { paramsTuple?: []; params?: {} }
     'authkit_console_shell': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
@@ -461,9 +519,7 @@ export type ScannedRoutes = {
     'telescope_ui.profiles_arm': { paramsTuple?: []; params?: {} }
     'telescope_ui.queues_live_retry': { paramsTuple: [ParamValue,ParamValue]; params: {'queue': ParamValue,'id': ParamValue} }
     'telescope_ui.queues_live_enqueue': { paramsTuple: [ParamValue]; params: {'queue': ParamValue} }
-    'media.dashboard.login': { paramsTuple?: []; params?: {} }
-    'media.dashboard.session': { paramsTuple?: []; params?: {} }
-    'media.dashboard.logout': { paramsTuple?: []; params?: {} }
+    'media.dashboard.tenants.select': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'media.dashboard.object.upload': { paramsTuple?: []; params?: {} }
     'media.dashboard.uploads.abort': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'media.dashboard.media_record.delete': { paramsTuple?: []; params?: {} }
@@ -479,6 +535,8 @@ export type ScannedRoutes = {
     'interaction.identifier': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.login': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.mfa_verify': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
+    'authkit.mfa.custom.begin': { paramsTuple: [ParamValue,ParamValue]; params: {'uid': ParamValue,'method': ParamValue} }
+    'authkit.mfa.custom.verify': { paramsTuple: [ParamValue,ParamValue]; params: {'uid': ParamValue,'method': ParamValue} }
     'interaction.change_expired_password': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.passkey_options': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
     'interaction.passkey_verify': { paramsTuple: [ParamValue]; params: {'uid': ParamValue} }
@@ -520,6 +578,18 @@ export type ScannedRoutes = {
     'account_api.revoke_other_sessions': { paramsTuple?: []; params?: {} }
     'account_api.revoke_all_sessions': { paramsTuple?: []; params?: {} }
     'account_api.create_token': { paramsTuple?: []; params?: {} }
+    'account_orgs_api.create_org': { paramsTuple?: []; params?: {} }
+    'account_orgs_api.deactivate_org': { paramsTuple?: []; params?: {} }
+    'account_orgs_api.accept_invitation': { paramsTuple: [ParamValue]; params: {'token': ParamValue} }
+    'account_orgs_api.activate_org': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'account_orgs_api.leave_org': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'account_orgs_api.invite_member': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'account_mfa_api.enroll_totp': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.confirm_totp': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.disable_totp': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.regenerate_recovery_codes': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.passkey_register_options': { paramsTuple?: []; params?: {} }
+    'account_mfa_api.passkey_register_verify': { paramsTuple?: []; params?: {} }
     'console_users.store': { paramsTuple?: []; params?: {} }
     'console_users.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_users.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -527,12 +597,17 @@ export type ScannedRoutes = {
     'console_sessions.revoke_all': { paramsTuple?: []; params?: {} }
     'console_sessions.user_revoke_sessions': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.store': { paramsTuple?: []; params?: {} }
+    'console_clients.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'console_clients.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'console_clients.revoke': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.regenerate_secret': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_roles.store': { paramsTuple?: []; params?: {} }
     'console_orgs.store': { paramsTuple?: []; params?: {} }
     'console_orgs.add_member': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_orgs.create_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_keys.rotate': { paramsTuple?: []; params?: {} }
+    'console_personal_agents.revoke_connection': { paramsTuple: [ParamValue]; params: {'grantId': ParamValue} }
+    'console_personal_agents.upsert': { paramsTuple?: []; params?: {} }
     'api_users.store': { paramsTuple?: []; params?: {} }
     'api_users.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_users.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -540,6 +615,8 @@ export type ScannedRoutes = {
     'api_users.revoke_sessions': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.store': { paramsTuple?: []; params?: {} }
     'api_clients.regenerate_secret': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'api_clients.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'api_clients.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_orgs.store': { paramsTuple?: []; params?: {} }
     'api_orgs.add_member': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_orgs.create_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -557,13 +634,16 @@ export type ScannedRoutes = {
     'authkit.oidc.root': { paramsTuple?: []; params?: {} }
     'account_api.update_login_methods': { paramsTuple?: []; params?: {} }
     'console_settings.upsert': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
+    'console_mcp_clients.update': { paramsTuple?: []; params?: {} }
     'api_settings.upsert': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
   }
   PATCH: {
     'authkit.oidc.wildcard': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'authkit.oidc.root': { paramsTuple?: []; params?: {} }
     'account_api.update_profile': { paramsTuple?: []; params?: {} }
+    'account_orgs_api.update_member_role': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'accountId': ParamValue} }
     'console_users.update_roles': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'console_users.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_roles.update': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
     'console_orgs.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -580,6 +660,8 @@ export type ScannedRoutes = {
     'account_api.revoke_app': { paramsTuple: [ParamValue]; params: {'clientId': ParamValue} }
     'account_api.remove_passkey': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'account_api.revoke_token': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'account_orgs_api.revoke_invitation': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'invId': ParamValue} }
+    'account_orgs_api.remove_member': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'accountId': ParamValue} }
     'console_users.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_clients.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'console_roles.destroy': { paramsTuple: [ParamValue]; params: {'name': ParamValue} }
@@ -587,6 +669,7 @@ export type ScannedRoutes = {
     'console_orgs.remove_member': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'accountId': ParamValue} }
     'console_orgs.revoke_invitation': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'invitationId': ParamValue} }
     'console_settings.destroy': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
+    'console_personal_agents.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_users.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_orgs.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

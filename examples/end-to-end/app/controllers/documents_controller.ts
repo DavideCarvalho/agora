@@ -9,7 +9,7 @@ import Document from '#models/document'
  * The protected resource for goal #2 (authz-gated access) AND goal #4 (media
  * access with NO built-in authorization, wired shut by this controller).
  *
- * Every action reads `ctx.auth.getUser()` (authkit) and checks it against
+ * Every action reads `ctx.auth.user` (authkit's guard) and checks it against
  * `@adonis-agora/authz` — the exact "structural adapter" pattern documented
  * in adonis-agent's authz-tool-authorizer.ts and used by every
  * `@adonis-agora` dashboard's `authorize` hook: resolve the user, ask authz,
@@ -18,10 +18,10 @@ import Document from '#models/document'
 export default class DocumentsController {
   /**
    * GET /documents — list every document. Gated on the "documents.view"
-   * permission (see README for how to grant it: `node ace authz:grant`).
+   * permission (see README for how to grant it: `node ace authz:assignments:add`).
    */
   async index({ auth, response }: HttpContext) {
-    const user = await auth.getUser()
+    const user = auth.user
     if (!user) return response.unauthorized({ error: 'Not authenticated' })
     if (!(await authz.can(user, 'documents.view'))) {
       return response.forbidden({ error: 'Forbidden' })
@@ -38,7 +38,7 @@ export default class DocumentsController {
    * @adonis-agora/media (owner collections). Gated on "documents.create".
    */
   async store({ auth, request, response }: HttpContext) {
-    const user = await auth.getUser()
+    const user = auth.user
     if (!user) return response.unauthorized({ error: 'Not authenticated' })
     if (!(await authz.can(user, 'documents.create'))) {
       return response.forbidden({ error: 'Forbidden' })
@@ -72,7 +72,7 @@ export default class DocumentsController {
    * single byte is ever resolved.
    */
   async file({ auth, params, response }: HttpContext) {
-    const user = await auth.getUser()
+    const user = auth.user
     if (!user) return response.unauthorized({ error: 'Not authenticated' })
 
     const document = await Document.find(params.id)
