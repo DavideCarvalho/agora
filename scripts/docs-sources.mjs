@@ -36,7 +36,7 @@ export const sources = [
     path: 'apps/docs/content/docs',
     repoDir: 'adonis-authkit',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [
       { id: 'v0', label: '0.x', ref: '@adonis-agora/authkit-server@0.90.2' },
     ],
@@ -52,7 +52,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-context',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/context@0.7.1' }],
   },
   {
@@ -66,7 +66,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-diagnostics',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [
       { id: 'v0', label: '0.x', ref: '@adonis-agora/diagnostics@0.3.2' },
     ],
@@ -82,7 +82,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-resilience',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [
       { id: 'v0', label: '0.x', ref: '@adonis-agora/resilience@0.4.3' },
     ],
@@ -98,7 +98,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-durable',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/durable@0.60.0' }],
   },
   {
@@ -112,7 +112,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-telescope',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [
       { id: 'v0', label: '0.x', ref: '@adonis-agora/telescope@0.27.1' },
     ],
@@ -128,7 +128,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-authz',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/authz@0.20.2' }],
   },
   {
@@ -142,7 +142,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-media',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/media@0.30.0' }],
   },
   {
@@ -156,7 +156,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-filter',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/filter@0.11.3' }],
   },
   {
@@ -170,7 +170,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-sail',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/sail@0.6.1' }],
   },
   {
@@ -184,7 +184,7 @@ export const sources = [
     path: 'packages/adonis/docs',
     repoDir: 'adonis-agent',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/agent@0.97.7' }],
   },
   {
@@ -198,7 +198,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-collaboration',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [
       { id: 'v0', label: '0.x', ref: '@adonis-agora/collaboration@0.20.2' },
     ],
@@ -212,7 +212,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-payments',
     migrated: true,
-    latestLabel: '1.x',
+    latestLabel: '1.x (rc)',
     versions: [
       { id: 'v0', label: '0.x', ref: '@adonis-agora/payments@0.26.1' },
     ],
@@ -229,6 +229,22 @@ export const sources = [
     repoDir: 'adonis-flags',
     migrated: true,
     // Pre-1.0: one line of docs, no version dropdown yet.
+    latestLabel: '0.x',
+    versions: [],
+  },
+  {
+    slug: 'cms',
+    name: 'CMS',
+    description:
+      'A config-first CMS for AdonisJS — collections, globals, drafts and versions, i18n, access rules, a REST and local API, MCP tools and a schema-driven admin panel.',
+    icon: 'LayoutTemplate',
+    repo: 'DavideCarvalho/adonis-agora-cms',
+    ref: 'master',
+    // Plain `.md` pages with a `# Title` heading; the sync lifts it into frontmatter.
+    path: 'docs',
+    repoDir: 'adonis-cms',
+    migrated: true,
+    // Stays on 0.x through the 1.0 release of the other libraries.
     latestLabel: '0.x',
     versions: [],
   },

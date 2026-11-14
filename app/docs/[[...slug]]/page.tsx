@@ -7,12 +7,13 @@ import {
   ViewOptionsPopover,
 } from 'fumadocs-ui/layouts/docs/page';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { History } from 'lucide-react';
+import { FlaskConical, History } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DocsPartners } from '@/components/docs-partners';
 import { getMDXComponents } from '@/components/mdx';
+import { libs } from '@/lib/libs';
 import { gitConfig } from '@/lib/shared';
 import {
   getPageImage,
@@ -48,6 +49,62 @@ function OlderVersionBanner({ page }: { page: (typeof source)['$inferPage'] }) {
   );
 }
 
+/**
+ * The "this major is a release candidate" notice. A version labelled `… (rc)` in
+ * scripts/docs-sources.mjs is published on npm's `rc` dist-tag while `latest` still points
+ * at the previous major, so a plain install gets the older docs' package.
+ */
+function ReleaseCandidateBanner({
+  page,
+}: {
+  page: (typeof source)['$inferPage'];
+}) {
+  const versioned = getPageVersion(page);
+  if (!versioned || !/\(rc\)/i.test(versioned.version.label)) return null;
+  const { lib, version } = versioned;
+  const major = version.label.replace(/\s*\(rc\)/i, '');
+  const pkg = `@adonis-agora/${libs.find((l) => l.slug === lib.slug)?.pkg ?? lib.slug}`;
+  const older = lib.versions.find((v) => !v.latest);
+  return (
+    <div
+      role="note"
+      className="not-prose mb-2 flex items-start gap-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
+    >
+      <FlaskConical className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+      <div className="space-y-1.5">
+        <p>
+          {lib.name} {major} is a <strong>release candidate</strong>. npm&apos;s{' '}
+          <code>latest</code> tag still installs{' '}
+          {older ? older.label : 'the previous major'}, so install these
+          docs&apos; version from the <code>rc</code> tag:
+        </p>
+        <pre className="overflow-x-auto rounded-lg bg-fd-secondary px-2.5 py-1.5 text-xs">
+          <code>{`npm i ${pkg}@rc\nnode ace configure ${pkg}`}</code>
+        </pre>
+        <p className="text-fd-muted-foreground">
+          The same goes for every <code>@adonis-agora/*</code> package these
+          docs install: add <code>@rc</code>, and where a page says{' '}
+          <code>node ace add</code>, install with <code>@rc</code> first and
+          then run <code>node ace configure</code>.
+          {older ? (
+            <>
+              {' '}
+              On {older.label}?{' '}
+              <Link
+                href={projectUrl(page.url, version, older)}
+                className="font-medium text-fd-primary underline underline-offset-4"
+              >
+                Read the {older.label} docs
+              </Link>
+              .
+            </>
+          ) : null}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
   const page = source.getPage(params.slug);
@@ -63,6 +120,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       tableOfContent={{ footer: <DocsPartners slug={params.slug?.[0]} /> }}
     >
       <OlderVersionBanner page={page} />
+      <ReleaseCandidateBanner page={page} />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription className="mb-0">
         {page.data.description}

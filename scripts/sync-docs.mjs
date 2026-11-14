@@ -216,6 +216,49 @@ function normalizeIndexTitle(dir, src) {
   writeFileSync(file, text.replace(fm[0], patched));
 }
 
+/**
+ * Plain-Markdown docs (`.md`, GitHub-style) often carry no frontmatter and start with a
+ * `# Title` heading instead. The page schema needs a `title`, so lift that heading into
+ * frontmatter (and drop it from the body, which the page header already renders).
+ */
+function frontmatterFromHeading(content) {
+  if (/^---\n/.test(content)) return content;
+  const heading = content.match(/^\s*#\s+(.+?)\s*#*\s*$/m);
+  if (!heading || content.slice(0, heading.index).trim() !== '') return content;
+  const body = content
+    .slice(heading.index + heading[0].length)
+    .replace(/^\n+/, '');
+  return `---\ntitle: ${JSON.stringify(heading[1])}\n---\n\n${body}`;
+}
+
+/**
+ * A docs folder without an index page would leave /docs/<slug> (the library tab's link) a 404.
+ * Give it a generated landing page: the library's description and one card per top-level page.
+ */
+function writeFallbackIndex(dir, src, base) {
+  if (existsSync(join(dir, 'index.mdx')) || existsSync(join(dir, 'index.md')))
+    return;
+  const cards = readdirSync(dir)
+    .filter((name) => /\.mdx?$/.test(name))
+    .sort()
+    .map((name) => {
+      const text = readFileSync(join(dir, name), 'utf8');
+      const fm = text.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+      const raw = fm.match(/^title:\s*(.+?)\s*$/m)?.[1] ?? name;
+      const title = raw.startsWith('"')
+        ? JSON.parse(raw)
+        : raw.replace(/^'|'$/g, '');
+      return `  <Card title={${JSON.stringify(title)}} href="${base}/${name.replace(/\.mdx?$/, '')}" />`;
+    });
+  const description = src.description
+    ? `description: ${JSON.stringify(src.description)}\n`
+    : '';
+  writeFileSync(
+    join(dir, 'index.mdx'),
+    `---\ntitle: ${JSON.stringify(src.name)}\n${description}---\n\n<Cards>\n${cards.join('\n')}\n</Cards>\n`,
+  );
+}
+
 function writeJson(file, value) {
   writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 }
@@ -249,6 +292,8 @@ function installDocs({ src, from, dest, base, assetsBase }) {
   // Internal plans (docs/plans/*.md) have no frontmatter title and break the
   // strict page-schema build too — never publish them.
   rmSync(join(dest, 'plans'), { recursive: true, force: true });
+  // Dated design specs (docs/specs/*.md) are internal too.
+  rmSync(join(dest, 'specs'), { recursive: true, force: true });
 
   let files = 0;
   let links = 0;
@@ -256,6 +301,7 @@ function installDocs({ src, from, dest, base, assetsBase }) {
     if (file.endsWith('.mdx') || file.endsWith('.md')) {
       const before = readFileSync(file, 'utf8');
       let after = rewriteLinks(before, src.slug, base);
+      if (file.endsWith('.md')) after = frontmatterFromHeading(after);
       if (assetsBase) after = rewriteAssets(after, assetsBase);
       links += (before.match(/\]\(\/docs|href="\/docs/g) || []).length;
       if (after !== before) writeFileSync(file, after);
@@ -263,6 +309,7 @@ function installDocs({ src, from, dest, base, assetsBase }) {
     }
   }
   normalizeIndexTitle(dest, src);
+  writeFallbackIndex(dest, src, base);
   return { files, links };
 }
 

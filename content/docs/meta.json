@@ -1,6 +1,7 @@
 {
   "pages": [
     "index",
+    "getting-started",
     "conventions",
     "---Libraries---",
     "context",
@@ -16,6 +17,7 @@
     "collaboration",
     "payments",
     "flags",
+    "cms",
     "sail"
   ]
 }

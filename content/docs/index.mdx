@@ -1,6 +1,6 @@
 ---
 title: Agora
-description: The AdonisJS ecosystem — context, diagnostics, resilience, durable, telescope, authz, collaboration, media, filter, payments, flags, agent and authkit.
+description: The AdonisJS ecosystem — context, diagnostics, resilience, durable, telescope, authz, collaboration, media, filter, payments, flags, agent, authkit and cms.
 ---
 
 # Agora
@@ -8,6 +8,9 @@ description: The AdonisJS ecosystem — context, diagnostics, resilience, durabl
 **Agora** is a family of production-grade libraries for AdonisJS — a Greek gathering place for your
 app's cross-cutting concerns. Each library ships on its own, but they compose: they share context,
 emit to one diagnostics bus, and surface in one observability console.
+
+New here? **[Getting started](/docs/getting-started)** installs a first library and connects your coding
+agent to it.
 
 ## The libraries
 
@@ -24,6 +27,8 @@ emit to one diagnostics bus, and surface in one observability console.
 - **[Flags](/docs/flags)** — feature flags and A/B experiments with real statistics (SRM, CUPED, sequential tests), targeting in your database, Parquet/DuckDB and ClickHouse analytics, a central flags server for many apps, and OpenFeature/OFREP.
 - **[Agent](/docs/agent)** — a governed, durable-ready AI agent: streaming chat, tool-calling, HITL approvals, quota/cost accounting and multi-agent delegation.
 - **[AuthKit](/docs/authkit)** — a full OIDC/OAuth2 Authorization Server (IdP) + OIDC client + React ergonomics: MFA, passwordless, device flow, DPoP and more.
+- **[CMS](/docs/cms)** — a config-first CMS: collections, globals, drafts, i18n and a schema-driven admin panel.
+- **[Sail](/docs/sail)** — Docker-powered local dev services, isolated per git worktree.
 
 ## How they fit together
 
@@ -33,3 +38,93 @@ Install only what you need.
 
 Cross-cutting shapes are shared the same way — matched structurally, never imported. See
 **[Conventions](/docs/conventions)** for the ones that hold ecosystem-wide, starting with pagination.
+
+## Your coding agent sees your app: `/mcp/agora`
+
+With `@adonis-agora/agent` installed and its `mcp_provider` registered, your app serves one MCP
+endpoint, `/mcp/agora`, where every installed library that has a console registers read tools:
+durable runs, telescope entries, payments, agent spend and more. Connect Claude Code once:
+
+```sh
+claude mcp add --transport http agora http://localhost:3333/mcp/agora
+```
+
+Then ask it "why did run 42 fail?". Each lib's tools follow that lib's console `authorize`. See
+[dev tools over MCP](/docs/agent/dev-tools).
+
+## Every library has a CLI
+
+Each library ships ace commands to read and change its data from a terminal, with `--json` on every
+command for scripts and agents:
+[agent](/docs/agent/cli) ·
+[authkit](/docs/authkit/cli) ·
+[authz](/docs/authz/cli) ·
+[cms](/docs/cms/cli) ·
+[collaboration](/docs/collaboration/cli) ·
+[diagnostics](/docs/diagnostics/cli) ·
+[durable](/docs/durable/cli) ·
+[filter](/docs/filter/cli) ·
+[flags](/docs/flags/commands) ·
+[media](/docs/media/cli) ·
+[payments](/docs/payments/cli) ·
+[resilience](/docs/resilience/cli) ·
+[sail](/docs/sail/commands) ·
+[telescope](/docs/telescope/reference/cli).
+
+## One health check: `agora:doctor`
+
+```sh
+node ace agora:doctor
+```
+
+One report for every installed library's configuration, with the fix for each problem. Use
+`--json --strict` in CI. Each library documents its own checks:
+[agent](/docs/agent/doctor) ·
+[authkit](/docs/authkit/health-check) ·
+[authz](/docs/authz/doctor) ·
+[diagnostics](/docs/diagnostics/doctor) ·
+[durable](/docs/durable/tooling/doctor) ·
+[filter](/docs/filter/doctor) ·
+[media](/docs/media/health-check) ·
+[payments](/docs/payments/doctor) ·
+[resilience](/docs/resilience/doctor) ·
+[telescope](/docs/telescope/reference/health-check).
+
+## The consoles
+
+The libraries with a web console share one look, so they feel like one product:
+
+- **One shell.** The same sidebar, cards, tables and light/dark themes everywhere. Each console keeps
+  one accent colour of its own, so you always know which one you are in.
+- **A console switcher.** The brand at the top of the sidebar lists the other consoles the signed-in
+  viewer may open. Each console decides with its own `authorize`.
+- **⌘K search** (`Ctrl-K`) finds things in the console you are in and in the others: runs, entries,
+  payments, users.
+- **Who is signed in.** The sidebar footer shows the signed-in user and a sign-out button. With
+  AuthKit installed, sign-out ends the AuthKit session in every console.
+
+The consoles:
+[Workflows](/docs/durable/observability/dashboard) ·
+[Telescope](/docs/telescope/dashboard) ·
+[Payments](/docs/payments/dashboard) ·
+[Media](/docs/media/dashboard) ·
+[Agents](/docs/agent/governance/dashboard) ·
+[Identity](/docs/authkit/admin-console) ·
+[Flags](/docs/flags/console).
+See [switching between consoles](/docs/telescope/dashboard#switching-between-consoles) and
+[signed-in user and sign-out](/docs/authkit/admin-console#signed-in-user-and-sign-out).
+
+## MCP clients sign in by themselves
+
+With AuthKit in the app, Claude Code, Claude, ChatGPT, VS Code and Cursor sign in to your MCP
+endpoints with your users' own accounts. It turns on as soon as an MCP endpoint is registered, so
+`/mcp/agora` needs no setup: the client opens your login in the browser and connects. See
+[MCP clients](/docs/authkit/mcp-clients).
+
+## Content: the CMS
+
+[`@adonis-agora/cms`](/docs/cms) is a config-first CMS. Declare collections and globals in
+`config/cms.ts`, and the tables, the admin panel, the REST and local APIs and the types follow. It
+uses the same list format as the other libraries (see [Conventions](/docs/conventions)) and
+exposes its content over MCP. The CMS is still on 0.x and installs from npm's `latest` tag. Start
+with [using the CMS in an app](/docs/cms/using).
