@@ -1,0 +1,14 @@
+{
+  "title": "Agora Hub",
+  "icon": "Network",
+  "pages": [
+    "index",
+    "building",
+    "deploying",
+    "migrating",
+    "identity",
+    "calls-between-apps",
+    "secrets",
+    "pitfalls"
+  ]
+}

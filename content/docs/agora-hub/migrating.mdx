@@ -1,0 +1,207 @@
+---
+title: Migrating in phases
+description: Move apps onto the Hub one library at a time — observability, config and crypto, flags, durable, identity — each with a go/no-go and a rollback that is a config flip.
+---
+
+# Migrating in phases
+
+Move one library at a time, lowest risk first. Each phase is a production change of its own:
+
+- it has a **go/no-go** list you check before calling it done;
+- its **rollback is a config or env flip** plus a redeploy, written down and tried before the
+  cutover;
+- the next phase starts only once the previous one has run quietly for a while.
+
+| Phase | Library | Risk | Users notice |
+| --- | --- | --- | --- |
+| 0 | the Hub itself | none | nothing |
+| 1 | telescope | low | nothing |
+| 2 | config + crypto | low | nothing |
+| 3 | flags | medium | nothing, if the ruleset moved intact |
+| 4 | durable | high | nothing, if in-flight runs drained |
+| 5 | identity (AuthKit) | highest | one sign-in again |
+
+## Every app needs a service-tenant client
+
+Before phase 1, create **one** service-tenant client per app on the Hub. One client gets a token for
+every resource it holds, so the same id and secret serve telescope, config, crypto, flags and
+durable:
+
+```sh
+node ace authkit:client create --client-id=app-a --partition=app-a \
+  --capability=telescope:ingest \
+  --capability=flags:ruleset:read --capability=flags:events:write --capability=flags:declarations:write \
+  --capability=config:read
+```
+
+Add `config:secrets:read` only for apps that read secret values, and the
+`crypto:encrypt:<key>` / `crypto:decrypt:<key>` capabilities in phase 2.
+
+The partition is the app's name everywhere: in telescope's App picker, in service discovery
+(`http://app-a/…`), in flags' events and in durable's queues. Use a single label (`app-a`, not
+`app-a.prod`). Store the secret as a platform secret on the app (`AGORA_TENANT_CLIENT_ID`,
+`AGORA_TENANT_CLIENT_SECRET`). See [Service tenants](/docs/authkit/service-tenants).
+
+## Phase 1: telescope
+
+The app keeps recording exactly as before; its entries also go to the Hub.
+
+```ts title="config/telescope.ts (app-a)"
+import { authkitTenantToken } from '@adonis-agora/authkit-client'
+
+export default defineConfig({
+  topology: 'tenant',
+  tenant: {
+    url: env.get('HUB_URL'), // https://hub.example.com
+    partition: 'app-a',
+    token: authkitTenantToken({
+      issuer: env.get('HUB_ISSUER'), // https://hub.example.com/oidc
+      clientId: env.get('AGORA_TENANT_CLIENT_ID'),
+      clientSecret: env.get('AGORA_TENANT_CLIENT_SECRET'),
+      resource: 'urn:agora:telescope',
+    }),
+    local: 'memory', // keep the app's own console useful during the transition
+  },
+  stores: { memory: storage.memory({ maxEntries: 500 }) },
+})
+```
+
+`HUB_ISSUER` is the Hub's issuer even while the app still runs its own AuthKit: the tenant token
+comes from the Hub, the app's users still sign in where they always did.
+
+**Go/no-go**
+
+- `node ace telescope:server:status` on the app: *the server accepts this app as "app-a"*.
+- The Hub's console shows the app in the App picker and in **Fleet**, with its version.
+- A request on `app-a` that calls `app-b` shows as one trace with both apps (see
+  [Calls between apps](/docs/agora-hub/calls-between-apps)).
+- Fleet shows the tenant's send buffer near zero; no `entries-dropped` alert.
+
+**Rollback**: remove `topology` and `tenant` (back to standalone). Entries already sent stay on the
+Hub.
+
+## Phase 2: config and crypto
+
+Both libraries hold little data and change rarely, so they move next.
+
+**Config.** Copy each app's values into its scope on the Hub (console, or the store API), then make
+the app a tenant:
+
+```ts title="config/config.ts (app-a)"
+export default defineConfig({
+  topology: 'tenant',
+  tenant: {
+    url: env.get('HUB_CONFIG_URL'), // https://hub.example.com/_config
+    partition: 'app-a',
+    token: authkitTenantToken({ /* same client */ resource: 'urn:agora:config' }),
+    snapshotPath: 'storage/config/snapshot.json',
+  },
+})
+```
+
+The snapshot lets the app boot while the Hub is down. Keep the bootstrap values in the platform
+(see [Secrets](/docs/agora-hub/secrets)).
+
+**Crypto.** Create the key names on the Hub, then switch `config/crypto.ts` from `standalone` to
+`tenant`. Calls in your code stay the same. Ciphertext made with a local key opens only with that
+key: rewrap the data that must be served by the Hub, or keep the local key around until it is
+rewrapped. Give each app's client the `crypto:encrypt:<key>` / `crypto:decrypt:<key>` capabilities it
+needs.
+
+**Go/no-go**
+
+- `node ace agora:doctor --deep` on the app: `config` and `crypto.tenant` reach the Hub and the
+  token is accepted.
+- The app boots with the Hub stopped (snapshot) and picks up a change made on the Hub.
+- Data encrypted before the switch still decrypts.
+
+**Rollback**: back to `standalone`. Keep the values and keys on both sides during the test window,
+so either side can serve.
+
+## Phase 3: flags
+
+Export the app's ruleset and import it into the Hub, then make the app a tenant:
+
+```sh
+# on app-a (still standalone)
+node ace flags:export --env=production --out=flags.json
+# on the Hub
+node ace flags:import flags.json --env=production --force
+```
+
+```ts title="config/flags.ts (app-a)"
+export default defineConfig({
+  topology: 'tenant',
+  flags: { /* the flags this app declares, unchanged */ },
+  tenant: {
+    url: env.get('HUB_FLAGS_URL'), // https://hub.example.com/_flags
+    partition: 'app-a',
+    token: authkitTenantToken({ /* same client */ resource: 'urn:agora:flags' }),
+    snapshotPath: 'storage/flags/ruleset.json',
+  },
+})
+```
+
+Decide whether the event and exposure history moves too, or whether experiments start fresh on the
+Hub; running experiments are easier to end before the switch.
+
+**Go/no-go**
+
+- The Hub's console lists the app's flags with the same targeting; a flag flipped on the Hub
+  reaches the app within seconds.
+- The app boots with the Hub down and serves the snapshot.
+- Events from the app arrive on the Hub.
+
+**Rollback**: back to `standalone`. The app's own flag tables were not touched.
+
+## Phase 4: durable
+
+The Hub becomes the store and the scheduler; the app keeps running its own steps as a tenant. Both
+sides must use the same transport on the same broker (BullMQ on the Hub's Redis in
+[Building the Hub](/docs/agora-hub/building)).
+
+```ts title="config/durable.ts (app-a)"
+export default defineConfig({
+  topology: 'tenant',
+  transport: 'bullmq',
+  transports: {
+    bullmq: transports.bullmq({ connection: env.get('HUB_REDIS_URL'), prefix: 'hub' }),
+  },
+  tenant: {
+    partition: 'app-a',
+    token: authkitTenantToken({ /* same client */ resource: 'urn:agora:durable' }),
+  },
+})
+```
+
+Before the switch:
+
+1. **Drain in-flight runs.** Stop starting new long runs, then wait for the running ones to finish:
+   `node ace durable:runs --status pending,running,suspended,blocked,cancelling` must come back empty (or only with runs
+   you decided to cancel and restart later).
+2. **Move the schedules**: declare them on the Hub, remove them from the app, so a schedule never
+   fires on both sides.
+3. **Check idempotency**: a step that ran on the old side may run once more on the new one.
+4. Keep every workflow version registered on the app until its last run on the old store has ended.
+
+See [Topology & config](/docs/durable/cluster/topology-and-config) for the tenant shape and
+[Authenticate tenants](/docs/durable/cluster/authenticate-tenants).
+
+**Go/no-go**
+
+- A run started on the app shows on the Hub's console, its steps execute on the app's worker, and
+  it completes.
+- Schedules fire once, on the Hub.
+- `node ace agora:doctor --deep` on both sides: no transport or tenant errors.
+
+**Rollback**: back to `standalone` on the app, with its own store. Runs started on the Hub during
+the window finish there or are restarted; write that decision down before the cutover.
+
+## Phase 5: identity
+
+The most careful phase. It has its own page: [Identity](/docs/agora-hub/identity).
+
+## Apps that stay standalone
+
+An app with no reason to share anything can ignore the Hub entirely. Every library defaults to
+`standalone`, so an app that never sets `topology` keeps working unchanged next to apps that moved.

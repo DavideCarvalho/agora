@@ -1,0 +1,255 @@
+---
+title: Identity
+description: Serve the accounts you already have from the Hub without copying them, then make the Hub the issuer for every app — one re-login, same signing keys, passkeys kept through WebAuthn related origins.
+---
+
+# Identity
+
+Identity moves last, in two steps:
+
+1. **Shared, read-only.** The Hub's AuthKit serves the accounts that already exist in the app that
+   is your IdP today (`app-a`), from the same tables, under the Hub's issuer. Nothing changes for
+   anyone: `app-a` keeps being the IdP, and you can sign in on the Hub with your existing account.
+2. **Cutover.** The Hub becomes the only writer and the issuer for every app. `app-a` and `app-b`
+   become relying parties of the Hub. Everyone signs in once more.
+
+No account is copied at any point: both steps use the rows that are already there.
+
+## Step 1: the Hub serves the existing identity
+
+### A connection to the identity database
+
+Add a connection to `app-a`'s database and qualify every table with its schema. The Hub must never
+manage that schema: no migrations, no `autoManage`, no `searchPath`.
+
+```ts title="config/database.ts (Hub)"
+export const IDENTITY_CONNECTION = 'identity'
+export const IDENTITY_SCHEMAS = {
+  accounts: 'auth', // the schema where app-a keeps users, passkeys, provider identities
+  authkit: 'app_a', // the schema where app-a's AuthKit keeps its tables and the keystore
+} as const
+
+connections: {
+  // ...the Hub's own connections
+  [IDENTITY_CONNECTION]: {
+    client: 'pg',
+    connection: {
+      host: env.get('IDENTITY_DB_HOST'),
+      port: env.get('IDENTITY_DB_PORT'),
+      user: env.get('IDENTITY_DB_USER'),
+      password: env.get('IDENTITY_DB_PASSWORD'),
+      database: env.get('IDENTITY_DB_DATABASE'),
+    },
+    pool: { min: 0, max: 5 },
+    // An empty directory on purpose: this connection never runs migrations.
+    migrations: { paths: ['database/identity_migrations_disabled'] },
+  },
+},
+```
+
+Copy `app-a`'s account models into the Hub with the schema written into the table name
+(`static table = 'auth.users'`), so the models find their rows whatever the role's `search_path` is.
+
+<Callout type="warn" title="No DDL on someone else's schema">
+`app-a` owns those tables. A test that records every query on the `identity` connection from boot and
+fails on any `CREATE`, `ALTER` or `DROP` is cheap and catches a library or a migration that would
+touch them. Refusing `migration:*` and `db:*` with `--connection=identity` in `bin/console.ts` closes
+the other door.
+</Callout>
+
+### AuthKit over the same tables
+
+The Hub's AuthKit uses the same adapter tables, account store and keystore as `app-a`, under its
+own issuer:
+
+```ts title="config/authkit.ts (Hub)"
+export default defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'), // https://hub.example.com/oidc
+  mountPath: '/oidc',
+  adapter: adapters.database({ connection: IDENTITY_CONNECTION, schema: IDENTITY_SCHEMAS.authkit }),
+  // Sessions, grants and tokens stay per instance, in the Hub's own Redis.
+  session: { adapter: adapters.redis({ connection: 'main' }) },
+  schema: { connection: IDENTITY_CONNECTION, name: IDENTITY_SCHEMAS.authkit, autoManage: false },
+  jwks: {
+    source: 'managed',
+    algorithm: 'RS256',
+    store: { driver: 'lucid', connection: IDENTITY_CONNECTION, schema: IDENTITY_SCHEMAS.authkit },
+    readOnly: env.get('AUTHKIT_KEYSTORE_READ_ONLY', true),
+  },
+  accountStore: lucidAccountStore(AuthUser, {
+    // the same capabilities app-a has: passkeys, provider identities, organizations, TOTP
+    webauthnCredentialModel: WebauthnCredential,
+    providerIdentityModel: ProviderIdentity,
+    encrypter: {
+      encrypt: (value) => encryption.encrypt(value),
+      decrypt: (value) => encryption.decrypt<string>(value),
+    },
+    password: { pepper: env.get('PASSWORD_PEPPER') },
+  }),
+  // ...the same login methods, roles claim and token lifetimes as app-a
+})
+```
+
+What must be **identical** to `app-a`:
+
+| Setting | Why |
+| --- | --- |
+| `APP_KEY` (and any legacy keys) and `config/encryption.ts` | the keystore and TOTP secrets are sealed with the encryption service |
+| `PASSWORD_PEPPER` | password hashes don't verify without it |
+| `jwks.store` (same table, same row) | both servers sign with the same keys |
+| roles lookup (`resolveTokenRoles`) | the same people are admins on both |
+
+Set `APP_KEY` and `PASSWORD_PEPPER` on the Hub as **references** to `app-a`'s variables, not copies.
+
+### Read-only keystore
+
+`jwks.readOnly: true` makes the Hub use `app-a`'s keys without ever writing them: no scheduled
+rotation, `authkit:key rotate|generate|retire` and the Admin API's rotate refused with
+`409 keystore_read_only`, and a boot failure when the key is missing or does not open. The Hub picks
+up a rotation `app-a` makes within a minute. See
+[Two servers, one identity](/docs/authkit/keystore-vaults#two-servers-one-identity).
+
+### What is shared and what is not
+
+| Shared (same rows) | Per instance |
+| --- | --- |
+| accounts, passkeys, provider identities, TOTP, organizations | sessions, grants, authorization codes, refresh tokens (each server's Redis) |
+| OIDC clients and registrations | the issuer: tokens from the Hub carry `iss = https://hub.example.com/oidc` |
+| runtime settings (`auth_settings`) | |
+| the keystore (written only by `app-a`) | |
+
+Two consequences while both run:
+
+- **Settings are shared.** Changing sign-up, login methods or lockout in the Hub's console changes
+  them for `app-a` too. Change shared settings from one place, or lock them in `defineConfig`.
+- **Clients are shared.** Every client of `app-a` also exists on the Hub. A relying party that does
+  not check `iss` would accept a token from the Hub; make sure yours do.
+
+App-specific work that happens on account events in `app-a` (cleaning up the app's data when an
+account is deleted, for instance) does not run on the Hub. Refuse account deletion on the Hub until
+step 2 gives it a way to call `app-a` (see [Calls between apps](/docs/agora-hub/calls-between-apps)).
+
+**Go/no-go for step 1**: both `/oidc/jwks` publish the same `kid`; you sign in on the Hub with an
+existing account and open its consoles; at the same time you are still signed in on `app-a`;
+`node ace agora:doctor --deep` reports the keystore as read-only and OK.
+
+## Step 2: the cutover
+
+### Prepare the Hub
+
+Before the day, deploy the Hub with everything `app-a`'s IdP did, still `readOnly`:
+
+- **First-party clients**: `firstPartyClients: ['app-a', 'app-b']`, so their users see no consent
+  screen and their tokens keep the roles claim.
+- **Sign-up**, login methods, rate limits, token lifetimes and the language: the same as `app-a`.
+- **Branded screens and emails**: port `app-a`'s login screens and its email hooks (magic link, new
+  device). Without them, login works but looks like the default.
+- **Social login**: the provider's callback moves to the Hub domain
+  (`https://hub.example.com/auth/google/callback`). Register that URL with the provider, on the same
+  OAuth client, before the cutover.
+- **MCP**: list each app's MCP endpoint in `mcpClients.resources`
+  (`https://app-a.example.com/mcp/agora`), so MCP clients connecting to the app sign in on the Hub.
+  See [MCP clients](/docs/authkit/mcp-clients).
+- **Account deletion**: wrap the account store's deletion so it first calls each app's erase route
+  with a service token, then deletes the account.
+
+The OIDC clients already exist (the clients table is shared). Check them:
+
+```sh
+node ace authkit:client show app-a
+node ace authkit:client show app-b
+```
+
+### Make the apps relying parties
+
+`app-a` stops running `authkit-server`'s provider and becomes a client of the Hub, exactly like
+`app-b`. If it already authenticated against itself through `authkit-client`, only the issuer
+changes:
+
+```ts title="config/authkit_client.ts (app-a and app-b)"
+export default defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'), // now https://hub.example.com/oidc
+  clientId: env.get('AUTHKIT_CLIENT_ID'),
+  clientSecret: env.get('AUTHKIT_CLIENT_SECRET'),
+  redirectUri: `${env.get('APP_URL')}/auth/callback`,
+  resolver: resolvers.jwt(),
+})
+```
+
+The Hub serves the same accounts, so `sub` is still the account id and `ctx.auth.user` keeps
+resolving to the same user. Redirect the app's old account and admin pages
+(`/account/*`, `/auth/admin/*`) to the Hub's. Remove the CSRF exemptions for routes the app no
+longer serves (`/oidc`). The app may keep the `authkit-server` package installed **as a library**
+if its models use its mixins; `agora:doctor` then warns that the provider is not registered, which
+is expected. See [Deployment topologies](/docs/authkit/topologies).
+
+### The order
+
+Never have two keystore writers at the same time.
+
+1. Pick the moment with whoever owns the product: everyone is signed out once. Tell your users.
+2. Deploy the Hub with everything above, keystore still read-only. Check the discovery document's
+   issuer, a branded login, the clients, and the doctor.
+3. `app-a`: set `AUTHKIT_ISSUER` to the Hub and deploy the relying-party build. It stops rotating
+   keys and stops serving `/oidc`.
+4. Hub: `AUTHKIT_KEYSTORE_READ_ONLY=false`, redeploy. The Hub is now the only writer (rotation and
+   settings). Only **after** step 3.
+5. `app-b`: set `AUTHKIT_ISSUER` to the Hub, redeploy.
+6. Run the checks below.
+
+**Go/no-go**
+
+- Login on each app goes to the Hub, shows no consent screen, and comes back signed in; admins keep
+  their role.
+- Signing out of one app ends the Hub session and, with back-channel logout, the other app's.
+- `claude mcp add --transport http app-a https://app-a.example.com/mcp/agora` opens the login on the
+  Hub.
+- `node ace authkit:key list` on the Hub shows the same `kid`s as before.
+- A test account deleted on the Hub is gone from every app.
+
+### Rollback
+
+All env and the previous deploy; no data changes:
+
+1. Hub: `AUTHKIT_KEYSTORE_READ_ONLY=true`, redeploy **first**.
+2. `app-a`: issuer back to its own, redeploy the previous image. It is the IdP and the writer again.
+3. `app-b`: issuer back to `app-a`, redeploy.
+
+Everyone signs in once more. Keep the variables the old image needs (the pepper, the admin API key,
+the old social callback) until the rollback window is over.
+
+### What people notice
+
+- **One sign-in again**, on every app: existing tokens carry the old issuer, and the old IdP's
+  sessions live in a Redis the Hub does not read.
+- **MCP clients reconnect**: the next 401 points them at the Hub, and they run OAuth again there,
+  with a new consent.
+- **Signing keys don't change**: same keystore, same `kid`s. Tokens issued by other services keep
+  verifying.
+
+## Passkeys
+
+A passkey is bound to its **rpId**, the domain it was registered on. Passkeys registered on
+`app-a.example.com` can't be used on `hub.example.com` by default. WebAuthn **Related Origin
+Requests** fix that without re-registering anyone:
+
+1. On the Hub, keep `app-a`'s rpId. The expected origin stays the Hub's own (the issuer's origin):
+
+   ```ts title="config/authkit.ts (Hub)"
+   webauthn: { rpId: env.get('WEBAUTHN_RP_ID') }, // app-a.example.com
+   ```
+
+2. On `app-a`, publish the Hub as a related origin of its rpId:
+
+   ```ts title="start/routes.ts (app-a)"
+   router.get('/.well-known/webauthn', ({ response }) => {
+     return response.json({ origins: ['https://hub.example.com'] })
+   })
+   ```
+
+   Keep serving it after the cutover: the rpId still names `app-a`'s domain.
+
+Browsers with Related Origin Requests (Chrome and Edge 128+, Safari 18+) then offer the existing
+passkeys on the Hub. Other browsers (Firefox, at the time of writing) don't: their users sign in by
+email link or code, or TOTP, and can register a new passkey on the Hub. See
+[WebAuthn](/docs/authkit/webauthn).

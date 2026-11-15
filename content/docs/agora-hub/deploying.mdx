@@ -1,0 +1,107 @@
+---
+title: Deploying the Hub
+description: A service, its own database and Redis, a domain behind your CDN with an origin-secret header, and secrets set as platform secrets before the first deploy.
+---
+
+# Deploying the Hub
+
+The Hub deploys like any AdonisJS app. Nothing in this page is specific to one platform; use the
+service, database and Redis your other apps already use.
+
+## What to create
+
+| Piece | Notes |
+| --- | --- |
+| A service | Built from the Hub's Dockerfile. Migrations run at boot, before the server starts. |
+| A Postgres database | The Hub's own. Each library lives in its own schema (see [Building the Hub](/docs/agora-hub/building)). |
+| A Redis | The Hub's own: sessions, OIDC grants, durable's broker, flags and config streams. |
+| A domain | `hub.example.com`. It becomes the issuer (`https://hub.example.com/oidc`), so pick it once. |
+
+<Callout type="info">
+Plan the Redis memory with every tenant in mind. Durable runs, telescope batches and flags events
+from **all** your apps pass through it. A Redis shared with an app works, but one app's cache can
+then evict the Hub's keys; prefer a Redis for the Hub, or `maxmemory-policy noeviction` on a shared
+one.
+</Callout>
+
+## Set the variables first
+
+Set every variable **before** the first deploy. Many platforms start building as soon as a service
+exists; a deploy that boots without `APP_KEY`, the database or the issuer crashes in a loop, and a
+restart loop can hit the platform's limits before you notice.
+
+```sh
+# the order that works on most platforms
+1. create the service, the database and the Redis (no deploy yet)
+2. set the variables and secrets
+3. attach the domain
+4. deploy
+```
+
+Use the platform's **secret** variables for anything sensitive, and prefer **references** to another
+service's variables over copied values: the Hub's `DB_HOST`/`DB_PASSWORD` should reference its
+database service, and a value two services must share (see [Identity](/docs/agora-hub/identity))
+should reference the service that owns it. A reference keeps working when the owner rotates it; a
+copy silently drifts.
+
+| Variable | Value |
+| --- | --- |
+| `APP_KEY` | a new one (`node ace generate:key`), or a reference when the Hub serves an existing identity |
+| `APP_URL` | `https://hub.example.com` |
+| `AUTHKIT_ISSUER` | `https://hub.example.com/oidc` |
+| `DB_*` | references to the Hub's database |
+| `REDIS_*` | references to the Hub's Redis |
+| `CRYPTO_ROOT_KEY` | the root that seals crypto's keys |
+| `GIT_SHA` (or a build id) | for Fleet's deploys |
+| `ORIGIN_SHARED_SECRET` | see below |
+
+The full list of what lives in the platform and what may live in the Hub's own config server is in
+[Secrets](/docs/agora-hub/secrets).
+
+## Behind a CDN
+
+If your apps sit behind a CDN or proxy (Cloudflare, Fastly, a load balancer), put the Hub behind the
+same one, and make the origin refuse requests that did not come through it. The CDN adds a header
+with a shared secret; the Hub checks it in a server middleware:
+
+```ts title="app/middleware/origin_secret_middleware.ts"
+import { timingSafeEqual } from 'node:crypto'
+import env from '#start/env'
+import type { HttpContext } from '@adonisjs/core/http'
+import type { NextFn } from '@adonisjs/core/types/http'
+
+const PROBES = new Set(['/health/live', '/health/ready'])
+
+export default class OriginSecretMiddleware {
+  async handle(ctx: HttpContext, next: NextFn) {
+    const expected = env.get('ORIGIN_SHARED_SECRET')
+    if (!expected || PROBES.has(ctx.request.url())) return next()
+
+    const given = Buffer.from(ctx.request.header('x-origin-secret') ?? '')
+    const want = Buffer.from(expected)
+    if (given.length !== want.length || !timingSafeEqual(given, want)) {
+      return ctx.response.forbidden('Forbidden')
+    }
+    return next()
+  }
+}
+```
+
+Exempt the platform's health probes, which reach the container directly. Tenants on the same
+private network can call the Hub's internal address instead of the public one; requests that do go
+through the public domain carry the header like everyone else's.
+
+## After the first deploy
+
+```sh
+node ace agora:doctor --deep        # in the Hub's container: no errors
+curl -fsS https://hub.example.com/health/ready
+curl -fsS https://hub.example.com/oidc/.well-known/openid-configuration | jq .issuer
+```
+
+- The issuer in the discovery document must be exactly `AUTHKIT_ISSUER`.
+- Without the origin header, the public origin answers 403.
+- Sign in, open every console, and check that Fleet shows the Hub with its version.
+
+Only then start the [migration](/docs/agora-hub/migrating). Until the first phase, no app talks to
+the Hub, so this deploy cannot affect them.
