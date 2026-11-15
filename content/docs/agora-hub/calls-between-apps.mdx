@@ -31,9 +31,19 @@ List the apps a call may carry the trace to; the callee needs nothing:
 
 ```ts title="config/telescope.ts (app-a)"
 propagation: {
-  targets: [/^https:\/\/app-[a-z]\.example\.com$/],
+  // The origins the apps really run at: what discovery resolves `app-b` to (its APP_URL or
+  // fleet.url), never the short name.
+  targets: ['https://app-b.example.com'],
 },
 ```
+
+`targets` is matched against the origin the request **actually goes to**. Service discovery rewrites
+`http://app-b/…` to `https://app-b.example.com/…` first, in the outermost interceptor, so the trace
+check (like the authkit token and the crypto envelope) sees the real origin. The `fetch` above
+therefore carries `traceparent` with this `targets`, and so does a `fetch` written with the full
+URL. Listing `'http://app-b'` would match nothing once discovery resolved the name. Without
+discovery (no Hub, no `discovery` map), the short name is not resolved at all, so write the full
+URL in `fetch`.
 
 On the Hub, **Traces** shows `app-a → app-b` and one waterfall with both apps' spans. Queue jobs
 carry the trace too. See [Tracing across apps](/docs/telescope/concepts/tracing-across-apps).

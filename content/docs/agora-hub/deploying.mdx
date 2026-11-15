@@ -66,6 +66,7 @@ with a shared secret; the Hub checks it in a server middleware:
 
 ```ts title="app/middleware/origin_secret_middleware.ts"
 import { timingSafeEqual } from 'node:crypto'
+import app from '@adonisjs/core/services/app'
 import env from '#start/env'
 import type { HttpContext } from '@adonisjs/core/http'
 import type { NextFn } from '@adonisjs/core/types/http'
@@ -74,8 +75,16 @@ const PROBES = new Set(['/health/live', '/health/ready'])
 
 export default class OriginSecretMiddleware {
   async handle(ctx: HttpContext, next: NextFn) {
+    // `request.url()` is the pathname only (no query string), so `/health/ready?x=1` matches too.
+    if (PROBES.has(ctx.request.url())) return next()
+
     const expected = env.get('ORIGIN_SHARED_SECRET')
-    if (!expected || PROBES.has(ctx.request.url())) return next()
+    if (!expected) {
+      // Fail closed in production: a missing secret must never open the origin to everyone.
+      // Outside production (local dev, tests) there is no CDN in front, so let requests through.
+      if (app.inProduction) return ctx.response.forbidden('Forbidden')
+      return next()
+    }
 
     const given = Buffer.from(ctx.request.header('x-origin-secret') ?? '')
     const want = Buffer.from(expected)
@@ -87,9 +96,20 @@ export default class OriginSecretMiddleware {
 }
 ```
 
-Exempt the platform's health probes, which reach the container directly. Tenants on the same
-private network can call the Hub's internal address instead of the public one; requests that do go
-through the public domain carry the header like everyone else's.
+Register it as a **server** middleware, first in the list, so it runs for every request, routed or
+not (consoles, `/oidc`, the tenant APIs, assets):
+
+```ts title="start/kernel.ts"
+server.use([
+  () => import('#middleware/origin_secret_middleware'),
+  () => import('#middleware/container_bindings_middleware'),
+  // ...the rest
+])
+```
+
+The platform's health probes reach the container directly, without the CDN, so the two probe paths
+are exempt. Tenants on the same private network can call the Hub's internal address instead of the
+public one; requests that do go through the public domain carry the header like everyone else's.
 
 ## After the first deploy
 

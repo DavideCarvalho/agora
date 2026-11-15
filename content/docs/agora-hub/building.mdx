@@ -28,6 +28,9 @@ start reading the wrong schema. The `schema` option of each library is safe ther
 </Callout>
 
 ```ts title="config/database.ts"
+import env from '#start/env'
+import { defineConfig } from '@adonisjs/lucid'
+
 export const HUB_SCHEMAS = {
   authkit: 'authkit',
   durable: 'durable',
@@ -55,12 +58,40 @@ export default defineConfig({
 })
 ```
 
+## Redis
+
+Several libraries below name a Redis connection (`connection: 'main'`): AuthKit's sessions,
+durable's control plane, telescope's Redis check. That is the `main` connection of
+`@adonisjs/redis`, pointed at the Hub's own Redis:
+
+```ts title="config/redis.ts"
+import env from '#start/env'
+import { defineConfig } from '@adonisjs/redis'
+
+export default defineConfig({
+  connection: 'main',
+  connections: {
+    main: {
+      host: env.get('REDIS_HOST'),
+      port: env.get('REDIS_PORT'),
+      password: env.get('REDIS_PASSWORD'),
+      db: 0,
+      keyPrefix: 'hub:',
+    },
+  },
+})
+```
+
 ## Service-tenant resources
 
 Every control plane accepts a token for its own resource. Declare them all on the Hub's AuthKit,
 and turn on [calls between apps](/docs/agora-hub/calls-between-apps) at the same time:
 
 ```ts title="config/authkit.ts"
+import env from '#start/env'
+import { HUB_SCHEMAS } from '#config/database'
+import { adapters, defineConfig } from '@adonis-agora/authkit-server'
+
 export const HUB_RESOURCES = {
   durable: 'urn:agora:durable',
   flags: 'urn:agora:flags',
@@ -94,6 +125,9 @@ AuthKit runs in the same process, so each control plane verifies tenant tokens w
 in-process verifier from `@adonis-agora/authkit-server` (no discovery request to itself):
 
 ```ts title="config/telescope.ts"
+import env from '#start/env'
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
 import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
 import { checks, defineConfig, storage } from '@adonis-agora/telescope'
 
@@ -114,6 +148,10 @@ export default defineConfig({
 ```
 
 ```ts title="config/durable.ts"
+import env from '#start/env'
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
 import { controlPlanes, defineConfig, stores, transports } from '@adonis-agora/durable'
 
 export default defineConfig({
@@ -122,7 +160,12 @@ export default defineConfig({
   transport: 'bullmq',
   transports: {
     bullmq: transports.bullmq({
-      connection: { host: env.get('REDIS_HOST'), port: env.get('REDIS_PORT') },
+      // Raw ioredis options (not a config/redis.ts name). A redis:// URL string works too.
+      connection: {
+        host: env.get('REDIS_HOST'),
+        port: env.get('REDIS_PORT'),
+        password: env.get('REDIS_PASSWORD'),
+      },
       prefix: 'hub',
     }),
   },
@@ -134,6 +177,11 @@ export default defineConfig({
 ```
 
 ```ts title="config/flags.ts"
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
+import { defineConfig, stores } from '@adonis-agora/flags'
+
 export default defineConfig({
   topology: 'control-plane',
   flags: {},
@@ -144,6 +192,12 @@ export default defineConfig({
 ```
 
 ```ts title="config/config.ts"
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
+import { hubAuthorize } from '#hub/authorize'
+import { defineConfig, stores } from '@adonis-agora/config'
+
 export default defineConfig({
   topology: 'control-plane',
   verifyTenant: authkitTenantVerifier({ audience: HUB_RESOURCES.config }),
@@ -154,6 +208,13 @@ export default defineConfig({
 ```
 
 ```ts title="config/crypto.ts"
+import env from '#start/env'
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
+import { hubAuthorize } from '#hub/authorize'
+import { defineConfig, stores } from '@adonis-agora/crypto'
+
 export default defineConfig({
   topology: 'control-plane',
   verifyTenant: authkitTenantVerifier({ audience: HUB_RESOURCES.crypto }),
@@ -164,21 +225,34 @@ export default defineConfig({
 })
 ```
 
-Tenants post with tokens, not cookies. Exempt each library's tenant API from CSRF:
+Tenants and other servers post with tokens, not cookies. Exempt every machine-to-machine route
+from CSRF, with each library's own helper:
 
 ```ts title="config/shield.ts"
+import { authkitCsrfExceptions } from '@adonis-agora/authkit-server'
 import { telescopeCsrfExceptions } from '@adonis-agora/telescope'
 import { flagsCsrfExceptions } from '@adonis-agora/flags'
+import { configCsrfExceptions } from '@adonis-agora/config'
 import { cryptoCsrfExceptions } from '@adonis-agora/crypto'
 
 csrf: {
   enabled: true,
   exceptRoutes: (ctx) => {
     const url = ctx.request.url()
-    return telescopeCsrfExceptions(url) || flagsCsrfExceptions(url) || cryptoCsrfExceptions(url)
+    return (
+      authkitCsrfExceptions(url, { mountPath: '/oidc' }) || // token, introspection, back-channel logout
+      telescopeCsrfExceptions(url) ||
+      flagsCsrfExceptions(url) ||
+      configCsrfExceptions(url) ||
+      cryptoCsrfExceptions(url)
+    )
   },
 },
 ```
+
+Durable needs no exemption: its tenants talk to the Hub over the broker (BullMQ above), not over
+HTTP. If you change a library's route prefix, pass the same prefix to its helper
+(`flagsCsrfExceptions(url, { prefix })`).
 
 Each library's own page has the full option list:
 [telescope](/docs/telescope/concepts/central-server) ·
@@ -196,6 +270,8 @@ everywhere, the console switcher lists all of them and ⌘K searches across them
 ```ts title="app/hub/authorize.ts"
 import type { HttpContext } from '@adonisjs/core/http'
 import { consoleLoginUrl, ensureConsoleSession, realAccountId } from '@adonis-agora/authkit-server'
+// Your own lookup: the account's global roles (authz, a column, …).
+import { rolesOf } from '#hub/roles'
 
 export async function hubAuthorize(ctx: HttpContext) {
   await ensureConsoleSession(ctx)
@@ -203,15 +279,20 @@ export async function hubAuthorize(ctx: HttpContext) {
   const accountId = realAccountId(ctx)
   if (!accountId) return { redirectTo: consoleLoginUrl(ctx.request.url(true)) }
 
-  const roles = await rolesOf(accountId) // your authz lookup
+  const roles = await rolesOf(accountId)
   return roles.includes('ADMIN') ? true : { allowed: false as const, reason: 'forbidden' as const }
 }
 ```
+
+`#hub/*` is a subpath import: add `"#hub/*": "./app/hub/*.js"` to `imports` in `package.json`.
 
 Pass it to every console's config (`authorize: hubAuthorize`), to AuthKit's `admin.authorize`, and
 to the MCP hub:
 
 ```ts title="config/mcp.ts"
+import { defineMcpConfig } from '@adonis-agora/agent/mcp'
+import { hubAuthorize } from '#hub/authorize'
+
 export default defineMcpConfig({
   name: 'Agora Hub',
   version: '1.0.0',

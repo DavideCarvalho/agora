@@ -47,6 +47,18 @@ the wrong thing. Use telescope's two routes for two different jobs:
 
 See [Health checks](/docs/telescope/concepts/health-checks).
 
+## The database restarts during a deploy
+
+A deploy can restart the database itself: a new container running migrations at boot asks for more
+connections or memory, the database runs out of headroom and restarts, and the new container's
+migrations fail while the old container keeps serving (so nothing looks down). Before a big
+rollout, especially one that deploys the Hub and several tenants at once:
+
+- check the database's health, memory and connection headroom, and its restart history;
+- stagger the deploys instead of starting every service at once;
+- make sure the platform's health check hits the database. A health check that only proves the
+  process answers won't show any of this; point it (or your uptime monitor) at `/health/ready`.
+
 ## Versions and doctor warnings
 
 Flags, config and crypto are on 0.x while the other libraries are on the 1.x release candidate.

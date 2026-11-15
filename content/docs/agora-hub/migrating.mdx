@@ -47,7 +47,9 @@ The partition is the app's name everywhere: in telescope's App picker, in servic
 The app keeps recording exactly as before; its entries also go to the Hub.
 
 ```ts title="config/telescope.ts (app-a)"
+import env from '#start/env'
 import { authkitTenantToken } from '@adonis-agora/authkit-client'
+import { defineConfig, storage } from '@adonis-agora/telescope'
 
 export default defineConfig({
   topology: 'tenant',
@@ -88,12 +90,21 @@ Both libraries hold little data and change rarely, so they move next.
 the app a tenant:
 
 ```ts title="config/config.ts (app-a)"
+import env from '#start/env'
+import { authkitTenantToken } from '@adonis-agora/authkit-client'
+import { defineConfig } from '@adonis-agora/config'
+
 export default defineConfig({
   topology: 'tenant',
   tenant: {
     url: env.get('HUB_CONFIG_URL'), // https://hub.example.com/_config
     partition: 'app-a',
-    token: authkitTenantToken({ /* same client */ resource: 'urn:agora:config' }),
+    token: authkitTenantToken({
+      issuer: env.get('HUB_ISSUER'),
+      clientId: env.get('AGORA_TENANT_CLIENT_ID'),
+      clientSecret: env.get('AGORA_TENANT_CLIENT_SECRET'),
+      resource: 'urn:agora:config',
+    }),
     snapshotPath: 'storage/config/snapshot.json',
   },
 })
@@ -130,13 +141,22 @@ node ace flags:import flags.json --env=production --force
 ```
 
 ```ts title="config/flags.ts (app-a)"
+import env from '#start/env'
+import { authkitTenantToken } from '@adonis-agora/authkit-client'
+import { defineConfig } from '@adonis-agora/flags'
+
 export default defineConfig({
   topology: 'tenant',
   flags: { /* the flags this app declares, unchanged */ },
   tenant: {
     url: env.get('HUB_FLAGS_URL'), // https://hub.example.com/_flags
     partition: 'app-a',
-    token: authkitTenantToken({ /* same client */ resource: 'urn:agora:flags' }),
+    token: authkitTenantToken({
+      issuer: env.get('HUB_ISSUER'),
+      clientId: env.get('AGORA_TENANT_CLIENT_ID'),
+      clientSecret: env.get('AGORA_TENANT_CLIENT_SECRET'),
+      resource: 'urn:agora:flags',
+    }),
     snapshotPath: 'storage/flags/ruleset.json',
   },
 })
@@ -161,18 +181,40 @@ sides must use the same transport on the same broker (BullMQ on the Hub's Redis 
 [Building the Hub](/docs/agora-hub/building)).
 
 ```ts title="config/durable.ts (app-a)"
+import env from '#start/env'
+import { authkitTenantToken } from '@adonis-agora/authkit-client'
+import { defineConfig, transports } from '@adonis-agora/durable'
+
 export default defineConfig({
   topology: 'tenant',
   transport: 'bullmq',
   transports: {
-    bullmq: transports.bullmq({ connection: env.get('HUB_REDIS_URL'), prefix: 'hub' }),
+    bullmq: transports.bullmq({
+      // The Hub's Redis, same shape and same prefix as on the Hub (raw ioredis options).
+      connection: {
+        host: env.get('HUB_REDIS_HOST'),
+        port: env.get('HUB_REDIS_PORT'),
+        password: env.get('HUB_REDIS_PASSWORD'),
+      },
+      prefix: 'hub',
+    }),
   },
   tenant: {
     partition: 'app-a',
-    token: authkitTenantToken({ /* same client */ resource: 'urn:agora:durable' }),
+    token: authkitTenantToken({
+      issuer: env.get('HUB_ISSUER'),
+      clientId: env.get('AGORA_TENANT_CLIENT_ID'),
+      clientSecret: env.get('AGORA_TENANT_CLIENT_SECRET'),
+      resource: 'urn:agora:durable',
+    }),
   },
 })
 ```
+
+`HUB_REDIS_HOST`, `HUB_REDIS_PORT` and `HUB_REDIS_PASSWORD` are the Hub's `REDIS_HOST`,
+`REDIS_PORT` and `REDIS_PASSWORD`, set on the app as references to the Hub's Redis service. The
+`connection` is the raw ioredis connection, not a `config/redis.ts` name; a `redis://` or `rediss://`
+URL string works too, if you prefer one variable.
 
 Before the switch:
 
