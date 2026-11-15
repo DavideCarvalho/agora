@@ -1,0 +1,338 @@
+---
+title: Building the Hub
+description: One AdonisJS app with every Agora control plane, one database with a schema per library, one login in front of every console, health checks and Fleet.
+---
+
+# Building the Hub
+
+The Hub is a new AdonisJS app. Install the libraries the way you install them in any app (see
+[Getting started](/docs/getting-started)), then give each one `topology: 'control-plane'`.
+
+```sh
+npm i @adonis-agora/authkit-server@rc @adonis-agora/telescope@rc @adonis-agora/durable@rc \
+  @adonis-agora/agent@rc @adonis-agora/flags @adonis-agora/config @adonis-agora/crypto
+```
+
+Run `node ace configure <package>` for each one, then edit the configs below.
+
+## One database, a schema per library
+
+Give the Hub its own Postgres database, and put each library in a schema of its own with the
+library's `schema` option. Every query then names its schema (`"durable"."durable_workflow_runs"`),
+so nothing depends on the connection's `search_path`.
+
+<Callout type="warn" title="Never searchPath">
+Don't use a Lucid `searchPath` to find library tables. Behind PgBouncer in transaction mode, a
+`SET search_path` sticks to whichever server connection ran it, and queries from other clients
+start reading the wrong schema. The `schema` option of each library is safe there.
+</Callout>
+
+```ts title="config/database.ts"
+import env from '#start/env'
+import { defineConfig } from '@adonisjs/lucid'
+
+export const HUB_SCHEMAS = {
+  authkit: 'authkit',
+  durable: 'durable',
+  flags: 'flags',
+  config: 'config',
+  crypto: 'crypto',
+  telescope: 'telescope',
+} as const
+
+const connection = {
+  host: env.get('DB_HOST'),
+  port: env.get('DB_PORT'),
+  user: env.get('DB_USER'),
+  password: env.get('DB_PASSWORD'),
+  database: env.get('DB_DATABASE'),
+}
+
+export default defineConfig({
+  connection: 'hub',
+  connections: {
+    hub: { client: 'pg', connection, pool: { min: 1, max: 15 } },
+    // A small pool of its own, so a burst of telescope writes never starves the others.
+    telescope: { client: 'pg', connection, pool: { min: 1, max: 5 } },
+  },
+})
+```
+
+## Redis
+
+Several libraries below name a Redis connection (`connection: 'main'`): AuthKit's sessions,
+durable's control plane, telescope's Redis check. That is the `main` connection of
+`@adonisjs/redis`, pointed at the Hub's own Redis:
+
+```ts title="config/redis.ts"
+import env from '#start/env'
+import { defineConfig } from '@adonisjs/redis'
+
+export default defineConfig({
+  connection: 'main',
+  connections: {
+    main: {
+      host: env.get('REDIS_HOST'),
+      port: env.get('REDIS_PORT'),
+      password: env.get('REDIS_PASSWORD'),
+      db: 0,
+      keyPrefix: 'hub:',
+    },
+  },
+})
+```
+
+## Service-tenant resources
+
+Every control plane accepts a token for its own resource. Declare them all on the Hub's AuthKit,
+and turn on [calls between apps](/docs/agora-hub/calls-between-apps) at the same time:
+
+```ts title="config/authkit.ts"
+import env from '#start/env'
+import { HUB_SCHEMAS } from '#config/database'
+import { adapters, defineConfig } from '@adonis-agora/authkit-server'
+
+export const HUB_RESOURCES = {
+  durable: 'urn:agora:durable',
+  flags: 'urn:agora:flags',
+  config: 'urn:agora:config',
+  crypto: 'urn:agora:crypto',
+  telescope: 'urn:agora:telescope',
+} as const
+
+export default defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'), // https://hub.example.com/oidc
+  mountPath: '/oidc',
+  adapter: adapters.database({ connection: 'hub', schema: HUB_SCHEMAS.authkit }),
+  session: { adapter: adapters.redis({ connection: 'main' }) },
+  schema: { connection: 'hub', name: HUB_SCHEMAS.authkit },
+  jwks: { source: 'managed', algorithm: 'RS256' },
+  // ...accountStore, login methods, branding
+  serviceTenants: {
+    resources: Object.fromEntries(Object.values(HUB_RESOURCES).map((r) => [r, {}])),
+    apps: { expiresIn: 300 },
+  },
+})
+```
+
+If your apps already have users, the Hub's AuthKit can serve **those** accounts instead of new ones.
+That is the [identity](/docs/agora-hub/identity) phase; start with a Hub that has its own admin
+accounts and come back to it last.
+
+## The control planes
+
+AuthKit runs in the same process, so each control plane verifies tenant tokens with the
+in-process verifier from `@adonis-agora/authkit-server` (no discovery request to itself):
+
+```ts title="config/telescope.ts"
+import env from '#start/env'
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
+import { checks, defineConfig, storage } from '@adonis-agora/telescope'
+
+export default defineConfig({
+  topology: 'control-plane',
+  verifyTenant: authkitTenantVerifier({ audience: HUB_RESOURCES.telescope }),
+  store: 'lucid',
+  stores: {
+    lucid: storage.lucid({ connection: 'telescope', schema: HUB_SCHEMAS.telescope }),
+  },
+  // The Hub receives entries and serves consoles: its own requests are noise.
+  watchers: ['diagnostics'],
+  checks: [checks.redis({ connection: 'main' }), checks.lucid({ connection: 'hub' })],
+  health: { readiness: '/health/ready', liveness: '/health/live' },
+  fleet: { app: 'hub', version: env.get('GIT_SHA') },
+  prune: { after: '7d' },
+})
+```
+
+```ts title="config/durable.ts"
+import env from '#start/env'
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
+import { controlPlanes, defineConfig, stores, transports } from '@adonis-agora/durable'
+
+export default defineConfig({
+  topology: 'control-plane',
+  verifyTenant: authkitTenantVerifier({ audience: HUB_RESOURCES.durable }),
+  transport: 'bullmq',
+  transports: {
+    bullmq: transports.bullmq({
+      // Raw ioredis options (not a config/redis.ts name). A redis:// URL string works too.
+      connection: {
+        host: env.get('REDIS_HOST'),
+        port: env.get('REDIS_PORT'),
+        password: env.get('REDIS_PASSWORD'),
+      },
+      prefix: 'hub',
+    }),
+  },
+  controlPlane: controlPlanes.redis({ connection: 'main', prefix: 'hub' }),
+  store: 'lucid',
+  stores: { lucid: stores.lucid({ connection: 'hub', schema: HUB_SCHEMAS.durable }) },
+  worker: { embedded: true }, // one container: dispatch, recovery, timers and schedules
+})
+```
+
+```ts title="config/flags.ts"
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
+import { defineConfig, stores } from '@adonis-agora/flags'
+
+export default defineConfig({
+  topology: 'control-plane',
+  flags: {},
+  verifyTenant: authkitTenantVerifier({ audience: HUB_RESOURCES.flags }),
+  store: stores.lucid({ connection: 'hub' }),
+  schema: HUB_SCHEMAS.flags,
+})
+```
+
+```ts title="config/config.ts"
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
+import { hubAuthorize } from '#hub/authorize'
+import { defineConfig, stores } from '@adonis-agora/config'
+
+export default defineConfig({
+  topology: 'control-plane',
+  verifyTenant: authkitTenantVerifier({ audience: HUB_RESOURCES.config }),
+  store: stores.lucid({ connection: 'hub' }),
+  schema: HUB_SCHEMAS.config,
+  console: { authorize: hubAuthorize },
+})
+```
+
+```ts title="config/crypto.ts"
+import env from '#start/env'
+import { HUB_SCHEMAS } from '#config/database'
+import { HUB_RESOURCES } from '#config/authkit'
+import { authkitTenantVerifier } from '@adonis-agora/authkit-server'
+import { hubAuthorize } from '#hub/authorize'
+import { defineConfig, stores } from '@adonis-agora/crypto'
+
+export default defineConfig({
+  topology: 'control-plane',
+  verifyTenant: authkitTenantVerifier({ audience: HUB_RESOURCES.crypto }),
+  store: stores.lucid({ connection: 'hub' }),
+  schema: HUB_SCHEMAS.crypto,
+  crypto: { keys: [env.get('CRYPTO_ROOT_KEY')] }, // the root that seals every key
+  console: { authorize: hubAuthorize },
+})
+```
+
+Tenants and other servers post with tokens, not cookies. Exempt every machine-to-machine route
+from CSRF, with each library's own helper:
+
+```ts title="config/shield.ts"
+import { authkitCsrfExceptions } from '@adonis-agora/authkit-server'
+import { telescopeCsrfExceptions } from '@adonis-agora/telescope'
+import { flagsCsrfExceptions } from '@adonis-agora/flags'
+import { configCsrfExceptions } from '@adonis-agora/config'
+import { cryptoCsrfExceptions } from '@adonis-agora/crypto'
+
+csrf: {
+  enabled: true,
+  exceptRoutes: (ctx) => {
+    const url = ctx.request.url()
+    return (
+      authkitCsrfExceptions(url, { mountPath: '/oidc' }) || // token, introspection, back-channel logout
+      telescopeCsrfExceptions(url) ||
+      flagsCsrfExceptions(url) ||
+      configCsrfExceptions(url) ||
+      cryptoCsrfExceptions(url)
+    )
+  },
+},
+```
+
+Durable needs no exemption: its tenants talk to the Hub over the broker (BullMQ above), not over
+HTTP. If you change a library's route prefix, pass the same prefix to its helper
+(`flagsCsrfExceptions(url, { prefix })`).
+
+Each library's own page has the full option list:
+[telescope](/docs/telescope/concepts/central-server) ·
+[durable](/docs/durable/cluster/topology-and-config) ·
+[flags](/docs/flags/central-server) ·
+[config](https://github.com/DavideCarvalho/adonis-agora-config/blob/master/docs/central-server.mdx) ·
+[crypto](https://github.com/DavideCarvalho/adonis-agora-crypto/blob/master/docs/deployment.mdx).
+
+## One login in front of every console
+
+The Hub serves every console from one process: `/telescope`, `/durable`, `/flags`, `/_config`,
+`/_crypto` and AuthKit's `/admin`. Give them **one** `authorize` function, so the same rule decides
+everywhere, the console switcher lists all of them and ⌘K searches across them:
+
+```ts title="app/hub/authorize.ts"
+import type { HttpContext } from '@adonisjs/core/http'
+import { consoleLoginUrl, ensureConsoleSession, realAccountId } from '@adonis-agora/authkit-server'
+// Your own lookup: the account's global roles (authz, a column, …).
+import { rolesOf } from '#hub/roles'
+
+export async function hubAuthorize(ctx: HttpContext) {
+  await ensureConsoleSession(ctx)
+  // During an impersonation, the admin behind it decides, never the impersonated account.
+  const accountId = realAccountId(ctx)
+  if (!accountId) return { redirectTo: consoleLoginUrl(ctx.request.url(true)) }
+
+  const roles = await rolesOf(accountId)
+  return roles.includes('ADMIN') ? true : { allowed: false as const, reason: 'forbidden' as const }
+}
+```
+
+`#hub/*` is a subpath import: add `"#hub/*": "./app/hub/*.js"` to `imports` in `package.json`.
+
+Pass it to every console's config (`authorize: hubAuthorize`), to AuthKit's `admin.authorize`, and
+to the MCP hub:
+
+```ts title="config/mcp.ts"
+import { defineMcpConfig } from '@adonis-agora/agent/mcp'
+import { hubAuthorize } from '#hub/authorize'
+
+export default defineMcpConfig({
+  name: 'Agora Hub',
+  version: '1.0.0',
+  devTools: { authorize: hubAuthorize },
+})
+```
+
+`/mcp/agora` on the Hub then exposes every control plane's read tools (runs, entries, flags, keys)
+to coding agents, behind the same rule. MCP clients sign in through the Hub's AuthKit with no extra
+setup; see [MCP clients](/docs/authkit/mcp-clients).
+
+<Callout type="warn">
+The MCP hub decides **only** with `authorize`. Never pass `() => true` there.
+</Callout>
+
+## Health, readiness and Fleet
+
+The telescope config above gives the Hub:
+
+- `/health/live`: 200 while the process answers. Point the platform's **liveness** probe here.
+- `/health/ready`: 503 while Redis or Postgres is down. Point the platform's **readiness** probe and
+  your uptime monitor here.
+- **Fleet**: every instance of the Hub and of every tenant app, their versions, deploys and restart
+  loops. Set `fleet.version` from the build (a commit SHA, or a hash your Dockerfile writes) so a
+  deploy shows up as one.
+
+See [Health checks](/docs/telescope/concepts/health-checks) and [Fleet](/docs/telescope/concepts/fleet).
+
+## Check it
+
+```sh
+node ace agora:doctor --deep
+```
+
+It must report no errors before you deploy. Warnings about a 0.x library next to 1.x ones are
+expected while flags, config and crypto are on 0.x (see [Pitfalls](/docs/agora-hub/pitfalls)).
+
+Then, locally:
+
+- sign in on the Hub and open every console from the switcher;
+- create a service-tenant client and check that each control plane takes its token
+  (`node ace telescope:server:status` from a test app) and refuses another resource's;
+- `curl /health/ready` answers 200, and 503 with Redis stopped.

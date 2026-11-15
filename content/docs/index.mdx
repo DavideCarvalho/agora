@@ -30,6 +30,13 @@ agent to it.
 - **[CMS](/docs/cms)** — a config-first CMS: collections, globals, drafts, i18n and a schema-driven admin panel.
 - **[Sail](/docs/sail)** — Docker-powered local dev services, isolated per git worktree.
 
+## Many apps, one Hub
+
+Running several AdonisJS apps? An **[Agora Hub](/docs/agora-hub)** is one app that runs every
+control plane (identity, workflows, flags, config, keys, observability), with your other apps as its
+tenants: one login, one console, and traced, authenticated calls between apps. The guide covers
+building it, deploying it and moving apps onto it one library at a time.
+
 ## How they fit together
 
 Everything is wired through small `Symbol.for('@agora/<lib>:<name>')` capability slots, so a library

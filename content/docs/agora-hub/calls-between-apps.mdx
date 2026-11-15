@@ -1,0 +1,150 @@
+---
+title: Calls between apps
+description: Plain fetch from one app to another, traced, routed by name, authenticated and encrypted — each by the library that owns it, with configuration only.
+---
+
+# Calls between apps
+
+Once your apps are tenants of the Hub, a call from `app-a` to `app-b` stays a plain `fetch` and a
+plain route. Each library adds one piece to it, from configuration:
+
+| Piece | Library | On the caller (`fetch`) | On the callee (route) |
+| --- | --- | --- | --- |
+| trace | telescope | adds `traceparent` | continues the trace; the Hub shows one waterfall across apps |
+| discovery | telescope | `http://app-b/…` goes to wherever `app-b` runs | nothing |
+| identity | authkit-client | adds a short-lived token for `app-b` | verifies it; `ctx.agora.caller` says which app called |
+| privacy | crypto | seals the JSON body for `app-b` | opens it before the route reads the body |
+
+Each piece works alone: telescope alone gives traced calls, authkit-client adds authentication,
+crypto adds encryption.
+
+```ts title="app/services/invoices.ts (app-a)"
+const response = await fetch('http://app-b/internal/invoices', {
+  method: 'POST',
+  body: JSON.stringify(invoice),
+})
+```
+
+## Trace
+
+List the apps a call may carry the trace to; the callee needs nothing:
+
+```ts title="config/telescope.ts (app-a)"
+propagation: {
+  // The origins the apps really run at: what discovery resolves `app-b` to (its APP_URL or
+  // fleet.url), never the short name.
+  targets: ['https://app-b.example.com'],
+},
+```
+
+`targets` is matched against the origin the request **actually goes to**. Service discovery rewrites
+`http://app-b/…` to `https://app-b.example.com/…` first, in the outermost interceptor, so the trace
+check (like the authkit token and the crypto envelope) sees the real origin. The `fetch` above
+therefore carries `traceparent` with this `targets`, and so does a `fetch` written with the full
+URL. Listing `'http://app-b'` would match nothing once discovery resolved the name. Without
+discovery (no Hub, no `discovery` map), the short name is not resolved at all, so write the full
+URL in `fetch`.
+
+On the Hub, **Traces** shows `app-a → app-b` and one waterfall with both apps' spans. Queue jobs
+carry the trace too. See [Tracing across apps](/docs/telescope/concepts/tracing-across-apps).
+
+## Service discovery
+
+Every tenant sends its URL with its heartbeat (`APP_URL`, or `fleet.url`), and the Hub serves the
+map to the others. `fetch('http://app-b/…')` then reaches `app-b` wherever it runs, and keeps working
+from a snapshot when the Hub is down. Hosts with a dot, IPs and `localhost` are never touched.
+
+In local development, pin the names to your ports:
+
+```ts title="config/telescope.ts"
+discovery: { 'app-b': 'http://localhost:3334' },
+```
+
+See [Service discovery](/docs/telescope/concepts/service-discovery).
+
+## Identity
+
+Grant `app-a` the right to call `app-b`, on the Hub:
+
+```sh
+node ace authkit:client grant-app app-a --app=app-b --capability=invoices:write
+```
+
+On the caller, the same service-tenant client the app already has for the control planes:
+
+```ts title="config/authkit_client.ts (app-a)"
+service: {
+  name: 'app-a',
+  clientId: env.get('AGORA_TENANT_CLIENT_ID'),
+  clientSecret: env.get('AGORA_TENANT_CLIENT_SECRET'),
+},
+```
+
+On the callee:
+
+```ts title="config/authkit_client.ts (app-b)"
+service: { name: 'app-b' },
+```
+
+```ts title="start/routes.ts (app-b)"
+import { authkitService } from '@adonis-agora/authkit-client'
+
+router
+  .post('/internal/invoices', [InvoicesController, 'store'])
+  .use(authkitService({ apps: ['app-a'], capabilities: ['invoices:write'] }))
+```
+
+Only the exact origin of a known app gets a token; a redirect to another origin loses it. A caller
+is an app, never a user: `ctx.auth` stays empty for it. See
+[Calls between apps](/docs/authkit/calls-between-apps).
+
+The Hub can call the apps the same way: give the Hub its own service client and grant it the apps it
+calls. That is how account deletion on the Hub reaches each app's cleanup route.
+
+## Privacy
+
+Create one key per hop on the Hub (`node ace crypto:keys:create svc-a-b --type aes256-gcm`), give
+the caller's client `crypto:encrypt:svc-a-b` and the callee's `crypto:decrypt:svc-a-b`, then:
+
+```ts title="config/crypto.ts (app-a and app-b)"
+envelope: { key: 'svc-a-b' },
+```
+
+JSON bodies to `app-b` leave sealed; `app-b`'s routes read plaintext from `request.body()`. See
+[encrypted service-to-service requests](https://github.com/DavideCarvalho/adonis-agora-crypto/blob/master/docs/transport.mdx).
+
+## Browsers always use HTTP
+
+Everything above is server to server. Anything a browser calls (every console and its API, live
+tail, client errors, flags in the browser, OFREP) stays on HTTP, and the Hub keeps those routes
+mounted whatever else you choose.
+
+## Transports between an app and the Hub
+
+How a tenant talks to each control plane is a per-library choice. HTTP is the default everywhere;
+a broker you already run is an option where it fits:
+
+| Library | Channel | Drivers |
+| --- | --- | --- |
+| telescope | entries (push) | http, queue, bullmq, redis, durable |
+| flags | events (push), ruleset (watch) | push: http, queue, bullmq, redis, durable · watch: http (SSE), redis, durable |
+| config | values (watch), reads | watch: http (SSE), redis, durable · reads: http |
+| crypto | operations (call) | http; queue, bullmq and durable with extra latency |
+| durable | tasks and run requests | bullmq, queue, db |
+
+Every message carries the tenant's token and the Hub verifies it on every message, so a shared
+broker is not a trust boundary. A tenant on a broker still reads service discovery over HTTP: give
+it `discovery.serverUrl`. See [telescope transports](/docs/telescope/concepts/transports) and
+[durable transports](/docs/durable/transports).
+
+## The global dispatcher
+
+Telescope, authkit-client and crypto each compose an interceptor onto Node's global `fetch`
+dispatcher, alongside OpenTelemetry's. They handle both Node 24 and Node 26 (whose bundled undici
+reads a different global slot), and authkit-client and crypto refuse to boot when their interceptor
+is not in the chain, rather than letting calls go out without a token or in plaintext.
+
+Don't call `setGlobalDispatcher()` with a new `Agent` after boot: it replaces the chain and the
+libraries' boot check can't see what you did later. To add a proxy or mTLS, compose onto the existing
+dispatcher (`getGlobalDispatcher().compose(...)`), or pass your own `fetch` to the one client that
+needs it.

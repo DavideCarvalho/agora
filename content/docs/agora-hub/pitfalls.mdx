@@ -1,0 +1,100 @@
+---
+title: Pitfalls
+description: A checklist of what goes wrong when you move apps onto an Agora Hub, and how to avoid each one.
+---
+
+# Pitfalls
+
+What goes wrong in practice, roughly in the order you meet it.
+
+## Deploys that start before the variables exist
+
+Creating a service often triggers a build right away. If it boots without `APP_KEY`, the database or
+`AUTHKIT_ISSUER`, it crashes and restarts in a loop.
+
+- Create the service, the database and Redis, **set the variables**, then deploy.
+- When a cutover changes variables on several services, set them all before the redeploys, in the
+  order the [identity cutover](/docs/agora-hub/identity) lists.
+
+## Platform limits
+
+A new service, a new database and a new Redis may hit your plan's limits on services, memory or
+connections. Check them before the day, not during it. Restart loops count against some limits too.
+
+## The global fetch dispatcher on Node 26
+
+Telescope, authkit-client and crypto add interceptors to Node's global `fetch` dispatcher. Node 26
+reads a different global slot than Node 24; the libraries handle both and refuse to boot when their
+interceptor is missing. What breaks them is code that **replaces** the global dispatcher
+(`setGlobalDispatcher(new Agent(...))`) after boot. Compose onto it instead, or give the one client
+that needs a proxy its own `fetch`. See [Calls between apps](/docs/agora-hub/calls-between-apps#the-global-dispatcher).
+
+## A shared Redis runs out of memory
+
+Durable's broker, telescope batches, flags events, OIDC sessions: all of it goes through the Hub's
+Redis, for every app. On a Redis shared with an app's cache, an eviction policy can drop the Hub's
+keys under pressure. Give the Hub its own Redis, or use `noeviction` and watch memory.
+`checks.redis()` reports `INFO memory` on Fleet.
+
+## `/health` that checks nothing
+
+A route that answers 200 while Postgres or Redis is down tells the platform and your uptime monitor
+the wrong thing. Use telescope's two routes for two different jobs:
+
+- `/health/live` for the **liveness** probe: the process answers. Never let it fail on a dependency,
+  or the platform restarts every instance when Redis blinks.
+- `/health/ready` for the **readiness** probe and uptime monitors: 503 while a critical check is down.
+
+See [Health checks](/docs/telescope/concepts/health-checks).
+
+## The database restarts during a deploy
+
+A deploy can restart the database itself: a new container running migrations at boot asks for more
+connections or memory, the database runs out of headroom and restarts, and the new container's
+migrations fail while the old container keeps serving (so nothing looks down). Before a big
+rollout, especially one that deploys the Hub and several tenants at once:
+
+- check the database's health, memory and connection headroom, and its restart history;
+- stagger the deploys instead of starting every service at once;
+- make sure the platform's health check hits the database. A health check that only proves the
+  process answers won't show any of this; point it (or your uptime monitor) at `/health/ready`.
+
+## Versions and doctor warnings
+
+Flags, config and crypto are on 0.x while the other libraries are on the 1.x release candidate.
+`agora:doctor` warns that the versions don't line up; that warning is expected. Errors are not:
+`node ace agora:doctor --deep` must have none on the Hub and on each app before every phase.
+
+Keep every 1.x package on the same `rc` line, and upgrade the Hub before (or with) its tenants: a
+control plane understands older tenants more reliably than the other way round.
+
+## searchPath behind PgBouncer
+
+A Lucid `searchPath` leaks between clients behind PgBouncer in transaction mode. Use each library's
+`schema` option, and write the schema into your own models' table names when the Hub reads another
+app's tables.
+
+## Two keystore writers
+
+During the identity work, exactly one server may write the keystore. Keep `jwks.readOnly: true` on
+the Hub until the old IdP has stopped, and on rollback flip the Hub back to read-only **before**
+bringing the old IdP back.
+
+## Shared AuthKit settings
+
+While the Hub serves an existing identity, runtime settings (sign-up, login methods, lockout) are
+the same rows for both servers. A change in one console changes both. Pick one place to change them.
+
+## Stacked pull requests
+
+The Hub, each app's tenant config and the identity cutover are separate changes that depend on each
+other. If you stack them as pull requests, merge from the bottom, retarget the next one after each
+merge, and never deploy a layer whose base isn't deployed yet. Keep each phase's cutover in its own
+change so its rollback is a single revert.
+
+## Things to decide before each cutover
+
+- Who confirms the moment (the identity cutover signs everyone out).
+- What happens to in-flight durable runs and running experiments.
+- Whether event and audit history moves or starts fresh on the Hub.
+- How long the old side keeps its data and variables for the rollback window.
