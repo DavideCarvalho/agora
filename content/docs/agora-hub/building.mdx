@@ -328,7 +328,9 @@ The telescope config above gives the Hub:
 - `/health/ready`: 503 while Redis or Postgres is down. Point the platform's **readiness** probe and
   your uptime monitor here.
 - **Fleet**: every instance of the Hub and of every tenant app, their versions, deploys and restart
-  loops. Set `fleet.version` from the build (a commit SHA, or a hash your Dockerfile writes) so a
+  loops. Workers show up too, next to the web instances: each long-running ace command
+  (`node ace durable:work`, `node ace queue:work`) reports under its command's name, with its own
+  health checks. `fleet.report: ['web']` keeps them out; `fleet.role` names a process yourself. Set `fleet.version` from the build (a commit SHA, or a hash your Dockerfile writes) so a
   deploy shows up as one.
 
 See [Health checks](/docs/telescope/concepts/health-checks) and [Fleet](/docs/telescope/concepts/fleet).
