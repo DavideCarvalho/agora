@@ -1,0 +1,207 @@
+---
+title: Encrypting user data
+description: One key per person on the Hub's crypto control plane, encrypted Lucid columns guarded by CHECK constraints, a backfill for existing rows, crypto-shredding on account deletion, and encrypted collaborative documents.
+---
+
+# Encrypting user data
+
+With crypto on the Hub, each app can encrypt a person's data with a key that belongs to that
+person. The Hub's crypto control plane holds the keys; the app encrypts and decrypts in its own
+process with cached data keys, so steady-state reads and writes make no network call. Deleting the
+person's key makes all of their data unreadable, in the database and in its backups.
+
+This page is the map. The details live in crypto's
+[per-subject encryption](https://github.com/DavideCarvalho/adonis-agora-crypto/blob/master/docs/subjects.mdx)
+guide and collaboration's [encryption at rest](/docs/collaboration/storage/encryption).
+
+## The app's token
+
+Subject keys are named `subject_<type>_<id>` (`subject_customer_42`). Give the app's client the
+subject operations, by prefix:
+
+```sh
+node ace authkit:client create --client-id=shop --partition=shop \
+  --capability=crypto:datakey:subject_* --capability=crypto:encrypt:subject_* \
+  --capability=crypto:decrypt:subject_*
+```
+
+Creating and forgetting keys needs `crypto:keys:manage:subject_*` and `crypto:keys:read:subject_*`.
+For least privilege, keep those on a separate client (same partition) used only by the process that
+creates and forgets subjects, such as a worker or the erase route below, so the token that serves
+web requests can never delete a key. See
+[Capabilities by resource](/docs/agora-hub/control-planes#capabilities-by-resource).
+
+```ts title="config/crypto.ts (shop)"
+import { defineConfig } from '@adonis-agora/crypto'
+import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
+
+export default defineConfig({
+  topology: 'tenant',
+  tenant: {
+    url: hubUrl('urn:agora:crypto'),
+    partition: APP_PARTITION,
+    token: hubToken('urn:agora:crypto'),
+  },
+  subjects: { createKeys: 'explicit' },
+})
+```
+
+With `createKeys: 'lazy'` instead, a subject's key is created on its first write, and the web token
+needs the two `crypto:keys:*:subject_*` capabilities as well.
+
+## Encrypted columns
+
+```ts title="app/models/order_note.ts"
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { encrypted } from '@adonis-agora/crypto'
+
+export default class OrderNote extends BaseModel {
+  static selfAssignPrimaryKey = true
+
+  @column({ isPrimary: true })
+  declare id: string
+
+  @column()
+  declare customerId: number
+
+  @encrypted({ subject: (note: OrderNote) => note.customerId, namespace: 'customer' })
+  declare body: string
+}
+```
+
+Values are encrypted on `save()` / `create()` and decrypted on every read through the model. The
+column is `text`, and each value is bound to its table, column and row. Writes that skip the model
+(`query().update()`, raw SQL) do not encrypt, so guard the column in the database too.
+
+## CHECK constraints
+
+A CHECK constraint makes the database refuse plaintext, and values sealed for another subject than
+the row's, whatever wrote them:
+
+```ts title="database/migrations/1763300000000_encrypt_order_notes.ts"
+import { BaseSchema } from '@adonisjs/lucid/schema'
+import { addEncryptedColumnCheck } from '@adonis-agora/crypto'
+import crypto from '@adonis-agora/crypto/services/main'
+
+export default class extends BaseSchema {
+  async up() {
+    this.schema.raw(
+      addEncryptedColumnCheck({
+        table: 'shop.order_notes',
+        column: 'body',
+        subjectColumn: 'customer_id',
+        namespace: 'customer',
+        using: crypto.subjects,
+        notValid: true, // existing rows are checked once the backfill is done
+      })
+    )
+  }
+}
+```
+
+## Existing rows
+
+Deploy the model with `legacyPlaintext: true` first, so rows still in plaintext keep reading while
+every save encrypts:
+
+```ts title="app/models/order_note.ts"
+@encrypted({
+  subject: (note: OrderNote) => note.customerId,
+  namespace: 'customer',
+  legacyPlaintext: true, // only until the backfill below is done
+})
+declare body: string
+```
+
+Then encrypt the rest, remove `legacyPlaintext` and validate the constraint:
+
+```sh
+node ace crypto:subjects:backfill '#models/order_note' --dry-run
+node ace crypto:subjects:backfill '#models/order_note' --batch-size 500
+```
+
+```sql
+ALTER TABLE shop.order_notes VALIDATE CONSTRAINT order_notes_body_encrypted;
+```
+
+The backfill is safe to rerun and to run while the app serves traffic.
+
+## Forgetting a person
+
+When an account is deleted, forget its subject in every app that holds its data. On the Hub,
+account deletion calls each app's erase route (see [Identity](/docs/agora-hub/identity)); the app
+forgets the subject there:
+
+```ts title="app/controllers/internal/erase_account_controller.ts"
+import type { HttpContext } from '@adonisjs/core/http'
+import crypto from '@adonis-agora/crypto/services/main'
+import Customer from '#models/customer'
+
+export default class EraseAccountController {
+  async handle({ request, response }: HttpContext) {
+    const customer = await Customer.findBy('accountId', request.input('accountId'))
+    // Already erased: answer the same, so the Hub can retry safely.
+    if (!customer) return response.noContent()
+
+    // Shred first: if the delete below fails, the data is already unreadable, and a retry
+    // finishes the job (forgetting a forgotten subject is fine).
+    await crypto.forgetSubject({ type: 'customer', id: customer.id })
+    await customer.delete()
+    return response.noContent()
+  }
+}
+```
+
+The process that runs it needs `crypto:keys:manage:subject_*`. From then on every value sealed for
+that subject fails with `forgotten`. Rows left behind read as
+`null` with `onUndecryptable: 'null'` on the column
+(`@encrypted({ subject, namespace, onUndecryptable: 'null' })`). Other processes that already cached the
+subject's data key keep it until the cache TTL ends (5 minutes by default); call
+`crypto.subjects.evict({ type, id })` on each to close that window. The same from a terminal:
+
+```sh
+node ace crypto:subjects:forget 42 --type customer --force
+```
+
+## Collaborative documents
+
+[`@adonis-agora/collaboration`](/docs/collaboration) encrypts stored documents, versions and
+comments through a storage codec. Seal them with the owner's subject key, so forgetting the person
+shreds their documents too:
+
+```ts title="app/services/collaboration/document_codec.ts"
+import type { StorageCodec, StorageCodecContext } from '@adonis-agora/collaboration'
+import crypto from '@adonis-agora/crypto/services/main'
+
+/** 'customers/42/brief' → customer 42, the same id `forgetSubject` receives. */
+function owner(ctx: StorageCodecContext) {
+  const match = /^customers\/(\d+)\//.exec(ctx.docName)
+  if (!match) throw new Error(`no owner in document name "${ctx.docName}"`)
+  return { type: 'customer', id: Number(match[1]) }
+}
+const aad = (ctx: StorageCodecContext) => `${ctx.docName}:${ctx.kind}:${ctx.field}`
+
+export const documentCodec: StorageCodec = {
+  async encode(plaintext, ctx) {
+    const text = typeof plaintext === 'string' ? plaintext : Buffer.from(plaintext).toString('base64')
+    return crypto.subjects.encrypt(owner(ctx), text, { aad: aad(ctx) })
+  },
+  async decode(encoded, ctx) {
+    const text = await crypto.subjects.decrypt(encoded as string, { subject: owner(ctx), aad: aad(ctx) })
+    return ctx.field === 'body' || ctx.field === 'anchor' ? text : new Uint8Array(Buffer.from(text, 'base64'))
+  },
+}
+```
+
+```ts title="config/collaboration.ts"
+import { defineConfig, lucidStorage } from '@adonis-agora/collaboration'
+import { documentCodec } from '#services/collaboration/document_codec'
+
+export default defineConfig({
+  engine: 'yjs',
+  storage: lucidStorage({ connection: 'primary', codec: documentCodec }),
+})
+```
+
+Existing documents keep opening and are encrypted on their next save, or all at once with
+`node ace collaboration:reencode`.

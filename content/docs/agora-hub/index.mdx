@@ -59,6 +59,10 @@ Each library moves on its own. An app can be a telescope tenant and still own it
 app can stay fully `standalone` next to the Hub. Leaving an app out is a normal, supported setup:
 `standalone` stays the default in every library.
 
+The Hub is one way to arrange the control planes, not the only one: any of them can run as its own
+service, and a control plane can itself be a tenant of another one. See
+[Composing control planes](/docs/agora-hub/control-planes).
+
 ## What stays in each app
 
 - Its own database, its own business tables, its own routes and controllers.
@@ -70,13 +74,20 @@ app can stay fully `standalone` next to the Hub. Leaving an app out is a normal,
 
 1. **[Building the Hub](/docs/agora-hub/building)**: every control plane in one app, one database
    with a schema per library, one login in front of every console.
-2. **[Deploying it](/docs/agora-hub/deploying)**: a service, its database and Redis, a domain.
-3. **[Migrating in phases](/docs/agora-hub/migrating)**: observability, then config and crypto, flags,
+2. **[Composing control planes](/docs/agora-hub/control-planes)**: the Hub or separate services,
+   one issuer and the capabilities each app needs, finding every control plane from the issuer,
+   and calls over the private network.
+3. **[Deploying it](/docs/agora-hub/deploying)**: a service, its database and Redis, a domain.
+4. **[Migrating in phases](/docs/agora-hub/migrating)**: observability, then config and crypto, flags,
    workflows, and identity last, each with a go/no-go and a rollback.
-4. **[Identity](/docs/agora-hub/identity)**: serve the accounts you already have from the Hub, then
+5. **[Identity](/docs/agora-hub/identity)**: serve the accounts you already have from the Hub, then
    make it the issuer for every app.
-5. **[Calls between apps](/docs/agora-hub/calls-between-apps)**: traced, authenticated and encrypted
+6. **[Calls between apps](/docs/agora-hub/calls-between-apps)**: traced, authenticated and encrypted
    `fetch` between apps, with no new API.
-6. **[Secrets](/docs/agora-hub/secrets)**: what goes in the Hub's config server and what stays in
+7. **[Who records what](/docs/agora-hub/observability)**: each event recorded once, under the app it
+   belongs to, and which apps each viewer sees.
+8. **[Encrypting user data](/docs/agora-hub/encrypting-user-data)**: a key per person on the Hub,
+   encrypted columns, and forgetting a person on account deletion.
+9. **[Secrets](/docs/agora-hub/secrets)**: what goes in the Hub's config server and what stays in
    the platform's environment.
-7. **[Pitfalls](/docs/agora-hub/pitfalls)**: a checklist of what goes wrong in practice.
+10. **[Pitfalls](/docs/agora-hub/pitfalls)**: a checklist of what goes wrong in practice.

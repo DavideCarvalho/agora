@@ -108,8 +108,9 @@ server.use([
 ```
 
 The platform's health probes reach the container directly, without the CDN, so the two probe paths
-are exempt. Tenants on the same private network can call the Hub's internal address instead of the
-public one; requests that do go through the public domain carry the header like everyone else's.
+are exempt. Tenants on the same private network can call the control planes at the Hub's internal
+address; the guard then admits those direct calls to the control-plane APIs only, still
+token-authenticated. See [Over the private network](/docs/agora-hub/control-planes#over-the-private-network).
 
 ## After the first deploy
 

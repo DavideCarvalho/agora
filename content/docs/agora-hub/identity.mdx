@@ -151,7 +151,43 @@ Before the day, deploy the Hub with everything `app-a`'s IdP did, still `readOnl
   (`https://app-a.example.com/mcp/agora`), so MCP clients connecting to the app sign in on the Hub.
   See [MCP clients](/docs/authkit/mcp-clients).
 - **Account deletion**: wrap the account store's deletion so it first calls each app's erase route
-  with a service token, then deletes the account.
+  with a service token, then deletes the account. An app that encrypts the person's data forgets
+  their key there (see [Encrypting user data](/docs/agora-hub/encrypting-user-data#forgetting-a-person)).
+- **Per-app emails and new accounts**: the Hub signs users in to several apps; see below.
+
+### One issuer, several apps
+
+The email hooks receive `client`, the app the user is signing in to, as `{ clientId, appName? }`.
+Use it to send each app's own email:
+
+```ts title="config/authkit.ts (the Hub)"
+mail: {
+  onMagicLink: async ({ email, magicUrl, client }) => {
+    const { default: mail } = await import('@adonisjs/mail/services/main')
+    const { default: MagicLinkMail } = await import('#mails/magic_link_mail')
+    await mail.send(new MagicLinkMail({ email, magicUrl, app: client?.appName ?? 'Example' }))
+  },
+},
+```
+
+`appName` comes from `branding.clients[clientId].appName`, or the client's registered name. It is
+absent when no app is in play, such as on the account pages. `onEmailVerification`, `onNewLogin`,
+`onNewDeviceLogin` and `onOtpUnlock` get the same `client`. See [Emails](/docs/authkit/emails).
+
+`onAccountCreated` runs once for every account the Hub creates (sign-up, social, admin, import), with
+the same `client` when the user was signing up to an app. Give the account its default role there:
+
+```ts title="config/authkit.ts (the Hub)"
+onAccountCreated: async ({ account, client }) => {
+  const { default: authz } = await import('@adonis-agora/authz/services/main')
+  const role = client?.clientId === 'billing' ? 'ACCOUNTANT' : 'CUSTOMER'
+  await authz.assignRole({ type: 'user', id: account.id }, role)
+},
+```
+
+Import services inside the hooks: `config/authkit.ts` loads before they are ready. A failing
+`onAccountCreated` is logged and the sign-up carries on, so keep it safe to run again. See
+[Set up every new account](/docs/authkit/customizing-auth#set-up-every-new-account-onaccountcreated).
 
 The OIDC clients already exist (the clients table is shared). Check them:
 

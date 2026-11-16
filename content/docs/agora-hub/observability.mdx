@@ -1,0 +1,158 @@
+---
+title: Who records what
+description: Each event is recorded once, by the process that coordinated it, and filed under the app it belongs to — on the Hub, through a relaying control plane, and in every console.
+---
+
+# Who records what
+
+With apps spread over several control planes, one question decides whether your traces and counts
+are right: which process records an event, and under which app.
+
+## The rule
+
+**The process that coordinates an action emits its event.** When a control plane coordinates
+something for a tenant (a workflow run, an exposure it receives, a key operation), the control plane
+emits the event with `app` set to the tenant's partition, and the tenant does not emit a duplicate.
+
+`app` travels on the [diagnostics](/docs/diagnostics) envelope, so every consumer sees it.
+Telescope's diagnostics watcher tags the entry `app:<partition>`, and the console's App picker files
+it under that app:
+
+```ts title="start/diagnostics.ts"
+import logger from '@adonisjs/core/services/logger'
+import { onDiagnostic } from '@adonis-agora/diagnostics'
+
+onDiagnostic('durable', 'run.failed', (event) => {
+  logger.warn({ app: event.app, ...(event.payload as object) }, 'workflow failed')
+})
+```
+
+Code of your own that coordinates work for other apps follows the same rule:
+
+```ts title="app/services/settlement_service.ts"
+import { emit } from '@adonis-agora/diagnostics'
+
+export default class SettlementService {
+  async settle(app: string, invoiceId: string) {
+    // ...
+    emit('billing', 'invoice.settled', { invoiceId }, { app })
+  }
+}
+```
+
+## What each library records, and where
+
+| Library | The control plane records | The tenant records |
+| --- | --- | --- |
+| telescope | every entry an app sends, tagged `app:` and `env:` from its token | its own requests, queries, jobs, exceptions, as usual |
+| durable | every transition of a tenant's runs: run and step started, suspended, completed, failed, triggers and routing | what happens inside a step (queries, HTTP calls, exceptions), in the run's trace |
+| flags | the exposures and tracks it receives from tenants and their browsers | its evaluations, with `app` = its partition |
+| config | the documents it serves (`tenant.fetch`), registered keys and re-seals, and every change made in the console | `tenant.reload` when it applies a new version |
+| crypto | every key operation it runs for a tenant, and refusals | only what the server cannot see: subject cache misses, and the data keys it drops on `forgetSubject` |
+
+So a durable run of `shop` shows once, on the durable control plane, under **shop**, and the same
+trace holds the queries its steps ran on `shop`'s own pods.
+
+Flags is the one library where a tenant can keep its copy: set `diagnostics: 'local'` in the
+tenant's `config/flags.ts` when the control plane does not run diagnostics. With both on, exposures
+and tracks are counted twice.
+
+## In the Hub
+
+With every control plane in one process, nothing more is needed. The Hub's telescope
+(`watchers: ['diagnostics']`, see [Building the Hub](/docs/agora-hub/building#the-control-planes))
+records what durable, flags, config and crypto emit for each app, filed under that app next to the
+entries the apps send themselves.
+
+## Relaying from a separate control plane
+
+A control plane running as its own service records its tenants' events in its own process. To file
+them under each app in the central telescope, make it a telescope tenant that **relays**:
+
+```ts title="config/telescope.ts (durable control plane)"
+import env from '#start/env'
+import { authkitTenantToken, controlPlaneUrl } from '@adonis-agora/authkit-client'
+import { defineConfig, storage } from '@adonis-agora/telescope'
+import { durableTelescopeExtension } from '@adonis-agora/durable/telescope'
+
+const issuer = env.get('AUTHKIT_ISSUER')
+
+export default defineConfig({
+  topology: 'tenant',
+  extensions: [durableTelescopeExtension()],
+  tenant: {
+    url: controlPlaneUrl({ issuer, resource: 'urn:agora:telescope' }),
+    partition: 'durable',
+    token: authkitTenantToken({
+      issuer,
+      clientId: env.get('AGORA_TENANT_CLIENT_ID'),
+      clientSecret: env.get('AGORA_TENANT_CLIENT_SECRET'),
+      resource: 'urn:agora:telescope',
+    }),
+    relay: true,
+    local: 'memory',
+  },
+  stores: { memory: storage.memory({ maxEntries: 500 }) },
+})
+```
+
+Give its client the relay capability, for every app or only some:
+
+```sh
+node ace authkit:client create --client-id=durable --partition=durable --capability=telescope:ingest:relay
+# or, limited to two apps
+node ace authkit:client create --client-id=durable --partition=durable \
+  --capability=telescope:ingest:relay:shop --capability=telescope:ingest:relay:billing
+```
+
+- An entry tagged `app:shop` is stored as **shop**'s, with a `via:durable` tag that says who sent it.
+- An entry with no `app:` tag is the sender's own, filed under **durable**.
+- An `app:` the token may not relay for is refused. Without the capability, every entry is filed
+  under the sender.
+
+`node ace telescope:server:status` on the relaying service shows which apps its token may relay
+for, and warns when `relay: true` is set but the token may not. See
+[Relaying for other apps](/docs/telescope/concepts/central-server#relaying-for-other-apps) and
+[Observability with a control plane](/docs/durable/observability/telescope#observability-with-a-control-plane).
+
+## Who sees which app
+
+Every console that holds several apps takes the same per-viewer grant: return `apps` from its
+`authorize`, a list of partitions or `'*'` for all of them. One function covers telescope, durable,
+flags, config and crypto:
+
+```ts title="app/hub/apps_authorize.ts"
+import type { HttpContext } from '@adonisjs/core/http'
+import { consoleLoginUrl, ensureConsoleSession, realAccountId } from '@adonis-agora/authkit-server'
+// Your own lookup: global roles and the apps a team operates.
+import { appsOf, rolesOf } from '#hub/roles'
+
+export async function hubAppsAuthorize(ctx: HttpContext) {
+  await ensureConsoleSession(ctx)
+  const accountId = realAccountId(ctx)
+  if (!accountId) return { redirectTo: consoleLoginUrl(ctx.request.url(true)) }
+
+  if ((await rolesOf(accountId)).includes('ADMIN')) return { allowed: true as const, apps: '*' as const }
+  const apps = await appsOf(accountId) // ['shop']
+  return apps.length > 0
+    ? { allowed: true as const, apps }
+    : { allowed: false as const, reason: 'forbidden' as const }
+}
+```
+
+| Console | Where `authorize` goes |
+| --- | --- |
+| telescope | `config/telescope_ui.ts` |
+| durable | `config/durable_dashboard.ts` |
+| flags | `config/flags_dashboard.ts` |
+| config | `console.authorize` in `config/config.ts` |
+| crypto | `console.authorize` in `config/crypto.ts` |
+
+With a list, the viewer's pickers, listings, searches, ⌘K and MCP tools show only those apps, and a
+request for another app answers `403`. The durable console answers not found instead: another
+app's run, its live tail and its actions do not exist for that viewer. Shared data
+stays visible where it is shared: the flags ruleset is one for every app. Actions that reach every
+app at once, such as telescope's queue retries or a CPU capture, need `'*'`.
+
+`config` and `crypto` also take `console.apps`, a fixed upper bound for every viewer: a granted app
+outside it is still refused.

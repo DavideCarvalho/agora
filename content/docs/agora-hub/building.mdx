@@ -100,6 +100,9 @@ export const HUB_RESOURCES = {
   telescope: 'urn:agora:telescope',
 } as const
 
+// Where each control plane lives, published in the issuer's discovery for the apps to find.
+const hub = new URL(env.get('APP_URL')).origin
+
 export default defineConfig({
   issuer: env.get('AUTHKIT_ISSUER'), // https://hub.example.com/oidc
   mountPath: '/oidc',
@@ -109,11 +112,20 @@ export default defineConfig({
   jwks: { source: 'managed', algorithm: 'RS256' },
   // ...accountStore, login methods, branding
   serviceTenants: {
-    resources: Object.fromEntries(Object.values(HUB_RESOURCES).map((r) => [r, {}])),
+    resources: {
+      [HUB_RESOURCES.telescope]: { url: hub },
+      [HUB_RESOURCES.flags]: { url: `${hub}/_flags` },
+      [HUB_RESOURCES.config]: { url: `${hub}/_config` },
+      [HUB_RESOURCES.crypto]: { url: `${hub}/_crypto` },
+      [HUB_RESOURCES.durable]: {}, // tenants reach durable over its broker
+    },
     apps: { expiresIn: 300 },
   },
 })
 ```
+
+Each `url` lets the apps find that control plane from the issuer instead of an environment variable
+per library; see [Finding the control planes](/docs/agora-hub/control-planes#finding-the-control-planes).
 
 If your apps already have users, the Hub's AuthKit can serve **those** accounts instead of new ones.
 That is the [identity](/docs/agora-hub/identity) phase; start with a Hub that has its own admin
@@ -316,7 +328,9 @@ The telescope config above gives the Hub:
 - `/health/ready`: 503 while Redis or Postgres is down. Point the platform's **readiness** probe and
   your uptime monitor here.
 - **Fleet**: every instance of the Hub and of every tenant app, their versions, deploys and restart
-  loops. Set `fleet.version` from the build (a commit SHA, or a hash your Dockerfile writes) so a
+  loops. Workers show up too, next to the web instances: each long-running ace command
+  (`node ace durable:work`, `node ace queue:work`) reports under its command's name, with its own
+  health checks. `fleet.report: ['web']` keeps them out; `fleet.role` names a process yourself. Set `fleet.version` from the build (a commit SHA, or a hash your Dockerfile writes) so a
   deploy shows up as one.
 
 See [Health checks](/docs/telescope/concepts/health-checks) and [Fleet](/docs/telescope/concepts/fleet).
