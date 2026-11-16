@@ -1,0 +1,316 @@
+---
+title: Composing control planes
+description: Run each library's control plane in the Hub or as its own service, make apps tenants of each one independently, and let one AuthKit issuer hold the trust and the map of where everything runs.
+---
+
+# Composing control planes
+
+Every Agora library with a control plane (telescope, durable, flags, config, crypto) decides its
+topology on its own. The Hub is the simplest arrangement: all of them in one process. It is not the
+only one.
+
+- **One Hub, or separate services.** A control plane can run inside the Hub or as its own
+  AdonisJS app. A busy durable control plane can get its own service and workers while the others
+  stay in the Hub; nothing else changes for the apps.
+- **An app is a tenant of each library independently.** `shop` can send its entries to telescope
+  and read its flags from the Hub while it keeps its own durable store. Each `config/<lib>.ts` has
+  its own `topology`.
+- **A control plane can be a tenant of another library's control plane.** A durable control plane
+  running as its own service is itself a telescope tenant: it sends what it records for every app to
+  the central telescope, filed under each app (see [Who records what](/docs/agora-hub/observability)).
+
+```
+               auth.example.com: AuthKit (the issuer)
+            tokens for urn:agora:<lib> · agora_control_planes
+                               │
+       ┌───────────────────────┼─────────────────────────┐
+  hub.example.com                              durable.example.com
+  telescope, flags, config, crypto             durable control plane
+  (control planes)                             telescope tenant (relay)
+       ▲  ▲                                          ▲
+       │  └──────────── shop, billing ───────────────┘
+       │                (tenants of each lib)
+       └──────── entries relayed for shop and billing
+```
+
+## One issuer is the trust root
+
+Whatever the layout, one AuthKit issuer vouches for everyone. It declares one **resource** per
+control plane and gives each app **one** service-tenant client. The client's partition is the app's
+name everywhere; its capabilities say what the app may do on each control plane. A token is valid
+only for the resource it names: the flags control plane refuses a `urn:agora:telescope` token.
+
+```ts title="config/authkit.ts (the issuer)"
+serviceTenants: {
+  resources: {
+    'urn:agora:telescope': { url: 'https://hub.example.com' },
+    'urn:agora:flags': { url: 'https://hub.example.com/_flags' },
+    'urn:agora:config': { url: 'https://hub.example.com/_config' },
+    'urn:agora:crypto': { url: 'https://hub.example.com/_crypto' },
+    'urn:agora:durable': {},
+  },
+},
+```
+
+```sh
+node ace authkit:client create --client-id=shop --partition=shop \
+  --capability=telescope:ingest \
+  --capability=flags:ruleset:read --capability=flags:events:write --capability=flags:declarations:write \
+  --capability=config:read \
+  --capability=crypto:datakey:subject_* --capability=crypto:encrypt:subject_* --capability=crypto:decrypt:subject_*
+```
+
+A control plane that runs as its own service gets a client too, for the resources it is a tenant of
+(`durable` above holds `telescope:ingest:relay`).
+
+### Capabilities by resource
+
+| Resource | Capability | Who needs it |
+| --- | --- | --- |
+| `urn:agora:telescope` | `telescope:ingest` | every app that sends entries |
+| | `telescope:ingest:relay` | a control plane that sends entries for other apps (implies `telescope:ingest`) |
+| | `telescope:ingest:relay:<app>` | the same, limited to one app (`telescope:ingest:relay:shop`) |
+| `urn:agora:flags` | `flags:ruleset:read` | every app that reads flags |
+| | `flags:events:write` | every app that sends exposures, tracks, usage, or serves flags to a browser |
+| | `flags:declarations:write` | every app that declares flags (they are published at boot) |
+| | `flags:ofrep:evaluate` | OFREP callers only |
+| `urn:agora:config` | `config:read` | every app that reads its configuration |
+| | `config:secrets:read` | only apps that read secret values |
+| `urn:agora:crypto` | `crypto:encrypt:<key>`, `crypto:decrypt:<key>` | named keys, such as the envelope key of a [call between apps](/docs/agora-hub/calls-between-apps#privacy) |
+| | `crypto:datakey:subject_*`, `crypto:encrypt:subject_*`, `crypto:decrypt:subject_*` | apps that [encrypt user data](/docs/agora-hub/encrypting-user-data) with per-subject keys |
+| | `crypto:keys:manage:subject_*`, `crypto:keys:read:subject_*` | the client that creates and forgets subject keys |
+| | `crypto:rewrap:subject_*` | the client that rewraps data keys after a rotation |
+| `urn:agora:durable` | none required; `tenancy:*` (or `tenancy:<org>`) | add it when the app starts runs for its active organization |
+
+In crypto's key-name segment, a capability can name a prefix: `crypto:decrypt:subject_*` matches
+`subject_researcher_7`, never `orders`. Nothing is implied across operations: `crypto:encrypt:media`
+cannot decrypt.
+
+Change a client's capabilities in the issuer's console or with the Admin API. The next token
+carries them; a token already issued keeps the old ones until it expires. See
+[Service tenants](/docs/authkit/service-tenants).
+
+## Finding the control planes
+
+Give each resource a `url` on the issuer, as above, and AuthKit publishes the map in its discovery
+document:
+
+```json title="GET https://hub.example.com/oidc/.well-known/openid-configuration"
+{
+  "issuer": "https://hub.example.com/oidc",
+  "agora_control_planes": {
+    "urn:agora:telescope": "https://hub.example.com",
+    "urn:agora:flags": "https://hub.example.com/_flags",
+    "urn:agora:config": "https://hub.example.com/_config",
+    "urn:agora:crypto": "https://hub.example.com/_crypto"
+  }
+}
+```
+
+Each URL is what the library's `tenant.url` expects: the **origin** for telescope (the tenant adds
+`/_telescope/v1`), the **route prefix** for flags, config and crypto. URLs must be `https` (`http`
+only on `localhost`).
+
+The apps then need one variable, the issuer, and read every control plane from it.
+`controlPlaneUrl` returns a lazy URL: nothing is fetched until a library first calls it, the
+discovery document is cached, and when a control plane stops answering or answers 404 the library
+looks it up again and retries at the new address. Moving a control plane is a change in the
+issuer's `config/authkit.ts` only.
+
+Keep the issuer and the client in one config file of the app:
+
+```ts title="config/hub.ts (shop)"
+import env from '#start/env'
+import { authkitTenantToken, controlPlaneUrl } from '@adonis-agora/authkit-client'
+
+const issuer = env.get('AUTHKIT_ISSUER') // https://hub.example.com/oidc
+
+export const APP_PARTITION = 'shop'
+
+export function hubUrl(resource: string) {
+  return controlPlaneUrl({ issuer, resource })
+}
+
+export function hubToken(resource: string) {
+  return authkitTenantToken({
+    issuer,
+    clientId: env.get('AGORA_TENANT_CLIENT_ID'),
+    clientSecret: env.get('AGORA_TENANT_CLIENT_SECRET'),
+    resource,
+  })
+}
+```
+
+### Telescope
+
+```ts title="config/telescope.ts (shop)"
+import { defineConfig, storage } from '@adonis-agora/telescope'
+import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
+
+export default defineConfig({
+  topology: 'tenant',
+  tenant: {
+    url: hubUrl('urn:agora:telescope'),
+    partition: APP_PARTITION,
+    token: hubToken('urn:agora:telescope'),
+    local: 'memory',
+  },
+  stores: { memory: storage.memory({ maxEntries: 500 }) },
+})
+```
+
+### Crypto
+
+```ts title="config/crypto.ts (shop)"
+import { defineConfig } from '@adonis-agora/crypto'
+import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
+
+export default defineConfig({
+  topology: 'tenant',
+  tenant: {
+    url: hubUrl('urn:agora:crypto'),
+    partition: APP_PARTITION,
+    token: hubToken('urn:agora:crypto'),
+  },
+})
+```
+
+### Flags
+
+```ts title="config/flags.ts (shop)"
+import { defineConfig, flag } from '@adonis-agora/flags'
+import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
+
+export default defineConfig({
+  topology: 'tenant',
+  flags: {
+    new_checkout: flag.boolean({ default: false }),
+  },
+  tenant: {
+    url: hubUrl('urn:agora:flags'),
+    partition: APP_PARTITION,
+    token: hubToken('urn:agora:flags'),
+    snapshotPath: 'storage/flags/ruleset.json',
+  },
+})
+```
+
+### Config
+
+```ts title="config/config.ts (shop)"
+import { defineConfig } from '@adonis-agora/config'
+import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
+
+export default defineConfig({
+  topology: 'tenant',
+  tenant: {
+    url: hubUrl('urn:agora:config'),
+    partition: APP_PARTITION,
+    token: hubToken('urn:agora:config'),
+    snapshotPath: 'storage/config/snapshot.json',
+  },
+})
+```
+
+### Durable
+
+Durable needs no URL. Its tenants talk to the control plane over the broker both sides share
+(BullMQ on the Hub's Redis, for instance), so the issuer declares `urn:agora:durable` without a
+`url` and the app keeps its `transports` config. See
+[Migrating: durable](/docs/agora-hub/migrating#phase-4-durable).
+
+### Check it
+
+```sh
+node ace agora:doctor --deep        # every control plane URL resolves and accepts the token
+node ace telescope:server:status    # "The server accepts this app as "shop""
+```
+
+Each library's own page has the details: telescope's
+[central server](/docs/telescope/concepts/central-server#finding-the-server-through-authkit),
+[flags](/docs/flags/central-server#a-tenant),
+[config](https://github.com/DavideCarvalho/adonis-agora-config/blob/master/docs/tenant.mdx),
+[crypto](https://github.com/DavideCarvalho/adonis-agora-crypto/blob/master/docs/deployment.mdx) and
+AuthKit's [Find the control planes](/docs/authkit/service-tenants#find-the-control-planes).
+
+## Over the private network
+
+When the apps and the Hub run on the same platform, tenants can reach the control planes over the
+platform's private network instead of going out to the internet and back through your CDN. Two
+pieces make it work.
+
+**On the Hub**, the [origin guard](/docs/agora-hub/deploying#behind-a-cdn) admits a request without
+the CDN header only when it is a direct in-cluster call to a control-plane API:
+
+- the socket's peer is a private address (never `request.ip()`, which trusts `x-forwarded-for`);
+- it carries no forwarding header, which every public proxy and ingress adds;
+- its path starts with a control plane's tenant API prefix.
+
+Login, `/oidc`, the consoles and their APIs keep requiring the header. The admitted routes still
+verify the tenant token on every request: the private network only skips the trip through the CDN.
+
+```ts title="app/middleware/origin_secret_middleware.ts (the Hub)"
+import { BlockList, isIP } from 'node:net'
+import type { HttpContext } from '@adonisjs/core/http'
+
+const CONTROL_PLANE_PREFIXES = ['/_telescope/v1/', '/_flags/v1/', '/_config/v1/', '/_crypto/v1/']
+const FORWARDING_HEADERS = ['forwarded', 'cf-connecting-ip', 'x-real-ip']
+
+const PRIVATE = new BlockList()
+PRIVATE.addSubnet('10.0.0.0', 8, 'ipv4')
+PRIVATE.addSubnet('172.16.0.0', 12, 'ipv4')
+PRIVATE.addSubnet('192.168.0.0', 16, 'ipv4')
+PRIVATE.addSubnet('fc00::', 7, 'ipv6')
+
+function isPrivate(address: string | undefined) {
+  const ip = address?.replace(/^::ffff:/i, '') // IPv4 on a dual-stack socket
+  const family = ip ? isIP(ip) : 0
+  return family !== 0 && PRIVATE.check(ip!, family === 4 ? 'ipv4' : 'ipv6')
+}
+
+export function isDirectControlPlaneCall(ctx: HttpContext) {
+  const path = ctx.request.url()
+  if (/\\|%2e|%2f|%5c/i.test(path) || path.split('/').some((s) => s === '.' || s === '..')) {
+    return false
+  }
+  const headers = Object.keys(ctx.request.headers()).map((name) => name.toLowerCase())
+  if (headers.some((h) => h.startsWith('x-forwarded-') || FORWARDING_HEADERS.includes(h))) {
+    return false
+  }
+  return (
+    isPrivate(ctx.request.request.socket.remoteAddress) &&
+    CONTROL_PLANE_PREFIXES.some((prefix) => path.startsWith(prefix))
+  )
+}
+```
+
+In the middleware's `handle`, after the header check fails and before answering 403:
+
+```ts
+if (isDirectControlPlaneCall(ctx)) return next()
+```
+
+**On each app**, point the control-plane URLs at the Hub's private address. Every library's
+`tenant.url` takes a function, so wrap the discovered URL and swap only its origin, in the same
+`config/hub.ts`:
+
+```ts title="config/hub.ts (shop)"
+export function hubUrl(resource: string) {
+  const discovered = controlPlaneUrl({ issuer, resource })
+  const internal = env.get('HUB_INTERNAL_URL') // the Hub's address on the private network
+  if (!internal) return discovered
+
+  const toInternal = (url: string) => {
+    const target = new URL(url)
+    // The Hub is the issuer: a control plane published elsewhere is used as it is.
+    if (target.origin !== new URL(issuer).origin) return url
+    return `${new URL(internal).origin}${target.pathname.replace(/\/$/, '')}`
+  }
+  return Object.assign(async () => toInternal(await discovered()), {
+    refresh: async () => toInternal(await discovered.refresh()),
+  })
+}
+```
+
+Tokens still come from the public issuer, and their `iss` does not change: only the path the
+control-plane calls take is different. Browsers never use the private address.

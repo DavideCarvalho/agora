@@ -42,6 +42,11 @@ The partition is the app's name everywhere: in telescope's App picker, in servic
 `app-a.prod`). Store the secret as a platform secret on the app (`AGORA_TENANT_CLIENT_ID`,
 `AGORA_TENANT_CLIENT_SECRET`). See [Service tenants](/docs/authkit/service-tenants).
 
+The examples below name each control plane's URL with an environment variable. With a `url` per
+resource on the Hub's AuthKit, an app can read them all from the issuer instead; see
+[Finding the control planes](/docs/agora-hub/control-planes#finding-the-control-planes). The full
+list of capabilities is in [Capabilities by resource](/docs/agora-hub/control-planes#capabilities-by-resource).
+
 ## Phase 1: telescope
 
 The app keeps recording exactly as before; its entries also go to the Hub.

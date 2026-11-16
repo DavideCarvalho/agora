@@ -36,6 +36,19 @@ Redis, for every app. On a Redis shared with an app's cache, an eviction policy 
 keys under pressure. Give the Hub its own Redis, or use `noeviction` and watch memory.
 `checks.redis()` reports `INFO memory` on Fleet.
 
+`noeviction` has its own failure: a full Redis then **refuses every write** (`OOM command not
+allowed`), so sessions, runs and events start failing together. Size it for every tenant, alert
+well before `maxmemory`, and give every cached key a TTL.
+
+## A broker's memory cap above the container's
+
+`maxmemory` is a promise Redis makes to itself, not to the platform. Set it above the memory the
+container really has and Redis grows past the container's limit and is killed, taking every queue,
+session and stream with it. Keep `maxmemory` comfortably below the container's real limit (leave
+room for fork-based persistence and client buffers). If you need more memory, raise the container's
+limit first, then `maxmemory`. Some managed Redis services also reapply their own `maxmemory` and
+policy on restart: check them after every restart, not just once.
+
 ## `/health` that checks nothing
 
 A route that answers 200 while Postgres or Redis is down tells the platform and your uptime monitor
@@ -67,6 +80,39 @@ Flags, config and crypto are on 0.x while the other libraries are on the 1.x rel
 
 Keep every 1.x package on the same `rc` line, and upgrade the Hub before (or with) its tenants: a
 control plane understands older tenants more reliably than the other way round.
+
+## A control plane URL with the wrong shape
+
+Telescope's `tenant.url` is the server's **origin**; flags, config and crypto take their **route
+prefix** (`https://hub.example.com/_flags`). The `url` you publish for each resource on the issuer
+must follow the same rule, or every request from the apps answers 404. `node ace agora:doctor --deep`
+on an app reports a URL that does not resolve.
+
+## Capabilities that arrive late
+
+A client's new capabilities reach the app with its **next** token. A token already issued keeps
+the old ones until it expires, so a fresh `403` right after a change can last up to the resource's
+`expiresIn`. Disabling a client works the same way: tokens it already holds stay valid until they
+expire.
+
+## Counted twice, or filed under the wrong app
+
+- A control plane that runs as its own service and sends to a central telescope needs
+  `relay: true` **and** `telescope:ingest:relay` on its token. With one but not the other, its
+  tenants' entries are filed under the control plane itself. `node ace telescope:server:status`
+  warns about it.
+- `diagnostics: 'local'` on a flags tenant makes it publish exposures and tracks the control plane
+  already publishes. Use it only when the control plane does not run diagnostics.
+- A tenant that emits its own copy of an event the control plane coordinates (a run finishing, a
+  key operation) doubles every count. See [Who records what](/docs/agora-hub/observability).
+
+## Direct calls over the private network refused
+
+The Hub's origin guard admits a direct call only from a private address, with no forwarding headers,
+to a control-plane API path. A sidecar or internal proxy that adds `x-forwarded-for` turns the call
+into a public one, and it gets a 403 without the CDN header. Logins, consoles and `/oidc` are never
+reachable that way: tokens still come from the public issuer. See
+[Over the private network](/docs/agora-hub/control-planes#over-the-private-network).
 
 ## searchPath behind PgBouncer
 

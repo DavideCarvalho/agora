@@ -4,10 +4,13 @@
   "pages": [
     "index",
     "building",
+    "control-planes",
     "deploying",
     "migrating",
     "identity",
     "calls-between-apps",
+    "observability",
+    "encrypting-user-data",
     "secrets",
     "pitfalls"
   ]
