@@ -20,18 +20,17 @@ only one.
   the central telescope, filed under each app (see [Who records what](/docs/agora-hub/observability)).
 
 ```
-               auth.example.com: AuthKit (the issuer)
-            tokens for urn:agora:<lib> · agora_control_planes
-                               │
-       ┌───────────────────────┼─────────────────────────┐
   hub.example.com                              durable.example.com
-  telescope, flags, config, crypto             durable control plane
-  (control planes)                             telescope tenant (relay)
+  AuthKit (the issuer)                         durable control plane
+  telescope, flags, config, crypto             telescope tenant (relay)
+  (control planes)
        ▲  ▲                                          ▲
        │  └──────────── shop, billing ───────────────┘
        │                (tenants of each lib)
        └──────── entries relayed for shop and billing
 ```
+
+Every token comes from the Hub's AuthKit, including the durable service's own.
 
 ## One issuer is the trust root
 
@@ -80,7 +79,7 @@ A control plane that runs as its own service gets a client too, for the resource
 | | `crypto:datakey:subject_*`, `crypto:encrypt:subject_*`, `crypto:decrypt:subject_*` | apps that [encrypt user data](/docs/agora-hub/encrypting-user-data) with per-subject keys |
 | | `crypto:keys:manage:subject_*`, `crypto:keys:read:subject_*` | the client that creates and forgets subject keys |
 | | `crypto:rewrap:subject_*` | the client that rewraps data keys after a rotation |
-| `urn:agora:durable` | none required; `tenancy:*` (or `tenancy:<org>`) | add it when the app starts runs for its active organization |
+| `urn:agora:durable` | `tenancy:*` or `tenancy:<org>` | only apps that start runs for their active organization; running steps needs no capability |
 
 In crypto's key-name segment, a capability can name a prefix: `crypto:decrypt:subject_*` matches
 `subject_researcher_7`, never `orders`. Nothing is implied across operations: `crypto:encrypt:media`

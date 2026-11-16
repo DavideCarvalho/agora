@@ -149,7 +149,8 @@ export async function hubAppsAuthorize(ctx: HttpContext) {
 | crypto | `console.authorize` in `config/crypto.ts` |
 
 With a list, the viewer's pickers, listings, searches, ⌘K and MCP tools show only those apps, and a
-request for another app answers `403` (durable reads another app's run as not found). Shared data
+request for another app answers `403`. The durable console answers not found instead: another
+app's run, its live tail and its actions do not exist for that viewer. Shared data
 stays visible where it is shared: the flags ruleset is one for every app. Actions that reach every
 app at once, such as telescope's queue retries or a CPU capture, need `'*'`.
 

@@ -102,7 +102,18 @@ export default class extends BaseSchema {
 ## Existing rows
 
 Deploy the model with `legacyPlaintext: true` first, so rows still in plaintext keep reading while
-every save encrypts. Then encrypt the rest, remove `legacyPlaintext` and validate the constraint:
+every save encrypts:
+
+```ts title="app/models/order_note.ts"
+@encrypted({
+  subject: (note: OrderNote) => note.customerId,
+  namespace: 'customer',
+  legacyPlaintext: true, // only until the backfill below is done
+})
+declare body: string
+```
+
+Then encrypt the rest, remove `legacyPlaintext` and validate the constraint:
 
 ```sh
 node ace crypto:subjects:backfill '#models/order_note' --dry-run
@@ -128,7 +139,12 @@ import Customer from '#models/customer'
 
 export default class EraseAccountController {
   async handle({ request, response }: HttpContext) {
-    const customer = await Customer.findByOrFail('accountId', request.input('accountId'))
+    const customer = await Customer.findBy('accountId', request.input('accountId'))
+    // Already erased: answer the same, so the Hub can retry safely.
+    if (!customer) return response.noContent()
+
+    // Shred first: if the delete below fails, the data is already unreadable, and a retry
+    // finishes the job (forgetting a forgotten subject is fine).
     await crypto.forgetSubject({ type: 'customer', id: customer.id })
     await customer.delete()
     return response.noContent()
@@ -138,7 +154,8 @@ export default class EraseAccountController {
 
 The process that runs it needs `crypto:keys:manage:subject_*`. From then on every value sealed for
 that subject fails with `forgotten`. Rows left behind read as
-`null` with `onUndecryptable: 'null'` on the column. Other processes that already cached the
+`null` with `onUndecryptable: 'null'` on the column
+(`@encrypted({ subject, namespace, onUndecryptable: 'null' })`). Other processes that already cached the
 subject's data key keep it until the cache TTL ends (5 minutes by default); call
 `crypto.subjects.evict({ type, id })` on each to close that window. The same from a terminal:
 
@@ -156,8 +173,12 @@ shreds their documents too:
 import type { StorageCodec, StorageCodecContext } from '@adonis-agora/collaboration'
 import crypto from '@adonis-agora/crypto/services/main'
 
-/** 'customers/42/brief' → customer 42. */
-const owner = (ctx: StorageCodecContext) => ({ type: 'customer', id: ctx.docName.split('/')[1] })
+/** 'customers/42/brief' → customer 42, the same id `forgetSubject` receives. */
+function owner(ctx: StorageCodecContext) {
+  const match = /^customers\/(\d+)\//.exec(ctx.docName)
+  if (!match) throw new Error(`no owner in document name "${ctx.docName}"`)
+  return { type: 'customer', id: Number(match[1]) }
+}
 const aad = (ctx: StorageCodecContext) => `${ctx.docName}:${ctx.kind}:${ctx.field}`
 
 export const documentCodec: StorageCodec = {
