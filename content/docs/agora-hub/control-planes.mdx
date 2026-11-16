@@ -195,6 +195,10 @@ export default defineConfig({
 })
 ```
 
+The app evaluates flags in memory from the ruleset it downloaded and keeps the last one on disk
+(`snapshotPath`). With the Hub down it boots and serves from that snapshot; without one, each flag
+takes its declared default.
+
 ### Config
 
 ```ts title="config/config.ts (shop)"
@@ -211,6 +215,11 @@ export default defineConfig({
   },
 })
 ```
+
+The app fetches its scope at boot and follows changes over a stream. With the Hub down it boots
+from the snapshot on disk; without one, it keeps its local configuration (or fails the boot with
+`required: true`). Values `config/*.ts` must see at load time are fetched earlier, in
+`bin/server.ts`; see [Secrets](/docs/agora-hub/secrets).
 
 ### Durable
 
