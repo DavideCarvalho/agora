@@ -85,14 +85,19 @@ const known = new Set(pages.map(pageUrl));
 function headingSlug(text) {
   const explicit = /\[#([^\]]+)\]\s*$/.exec(text);
   if (explicit) return explicit[1];
-  return text
-    .replace(/`/g, '')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[*_]/g, '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s/g, '-');
+  return (
+    text
+      .replace(/`/g, '')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      // Emphasis markers vanish, but an underscore inside a word (`id_token`) is kept, as
+      // github-slugger keeps it.
+      .replace(/\*/g, '')
+      .replace(/(^|\s)_+|_+(?=\s|$)/g, '$1')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_\s-]/g, '')
+      .replace(/\s/g, '-')
+  );
 }
 
 /** Every heading id a page will expose, keyed by the URL it is served at. */

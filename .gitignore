@@ -23,6 +23,8 @@
 /content/docs/sail/
 /content/docs/flags/
 /content/docs/cms/
+/content/docs/config/
+/content/docs/crypto/
 
 # build
 /coverage

@@ -248,4 +248,32 @@ export const sources = [
     latestLabel: '0.x',
     versions: [],
   },
+  {
+    slug: 'config',
+    name: 'Config',
+    description:
+      'Centralized configuration in the style of Spring Cloud Config — one config server, per-app and per-environment documents with history and audit; apps pull them into the environment at boot.',
+    icon: 'FileSliders',
+    repo: 'DavideCarvalho/adonis-agora-config',
+    ref: 'master',
+    path: 'docs',
+    repoDir: 'adonis-config',
+    migrated: true,
+    latestLabel: '0.x',
+    versions: [],
+  },
+  {
+    slug: 'crypto',
+    name: 'Crypto',
+    description:
+      'A small Vault Transit for AdonisJS — named, versioned keys per app; encrypt, decrypt, rewrap, sign and HMAC, audited, over HTTP or in process.',
+    icon: 'LockKeyhole',
+    repo: 'DavideCarvalho/adonis-agora-crypto',
+    ref: 'master',
+    path: 'docs',
+    repoDir: 'adonis-crypto',
+    migrated: true,
+    latestLabel: '0.x',
+    versions: [],
+  },
 ];
