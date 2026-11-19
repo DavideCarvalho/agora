@@ -19,6 +19,8 @@
     "payments",
     "flags",
     "cms",
-    "sail"
+    "sail",
+    "config",
+    "crypto"
   ]
 }
