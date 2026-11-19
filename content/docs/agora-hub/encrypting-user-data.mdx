@@ -3,15 +3,13 @@ title: Encrypting user data
 description: One key per person on the Hub's crypto control plane, encrypted Lucid columns guarded by CHECK constraints, a backfill for existing rows, crypto-shredding on account deletion, and encrypted collaborative documents.
 ---
 
-# Encrypting user data
-
 With crypto on the Hub, each app can encrypt a person's data with a key that belongs to that
 person. The Hub's crypto control plane holds the keys; the app encrypts and decrypts in its own
 process with cached data keys, so steady-state reads and writes make no network call. Deleting the
 person's key makes all of their data unreadable, in the database and in its backups.
 
 This page is the map. The details live in crypto's
-[per-subject encryption](https://github.com/DavideCarvalho/adonis-agora-crypto/blob/master/docs/subjects.mdx)
+[per-subject encryption](/docs/crypto/subjects)
 guide and collaboration's [encryption at rest](/docs/collaboration/storage/encryption).
 
 ## The app's token

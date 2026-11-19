@@ -3,8 +3,6 @@ title: Calls between apps
 description: Plain fetch from one app to another, traced, routed by name, authenticated and encrypted — each by the library that owns it, with configuration only.
 ---
 
-# Calls between apps
-
 Once your apps are tenants of the Hub, a call from `app-a` to `app-b` stays a plain `fetch` and a
 plain route. Each library adds one piece to it, from configuration:
 
@@ -111,7 +109,7 @@ envelope: { key: 'svc-a-b' },
 ```
 
 JSON bodies to `app-b` leave sealed; `app-b`'s routes read plaintext from `request.body()`. See
-[encrypted service-to-service requests](https://github.com/DavideCarvalho/adonis-agora-crypto/blob/master/docs/transport.mdx).
+[encrypted service-to-service requests](/docs/crypto/transport).
 
 ## Browsers always use HTTP
 

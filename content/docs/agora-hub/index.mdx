@@ -3,8 +3,6 @@ title: Agora Hub
 description: Run every Agora control plane in one AdonisJS app and make your other apps its tenants — one login, one console, one place for config, keys, flags, workflows and traces.
 ---
 
-# Agora Hub
-
 An **Agora Hub** is an ordinary AdonisJS app that runs every Agora library in
 `topology: 'control-plane'`. Your other apps keep running their own code and switch the same
 libraries to `topology: 'tenant'`: they send traces to the Hub, read their config and flags from

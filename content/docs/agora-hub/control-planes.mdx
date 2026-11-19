@@ -3,8 +3,6 @@ title: Composing control planes
 description: Run each library's control plane in the Hub or as its own service, make apps tenants of each one independently, and let one AuthKit issuer hold the trust and the map of where everything runs.
 ---
 
-# Composing control planes
-
 Every Agora library with a control plane (telescope, durable, flags, config, crypto) decides its
 topology on its own. The Hub is the simplest arrangement: all of them in one process. It is not the
 only one.
@@ -237,8 +235,8 @@ node ace telescope:server:status    # "The server accepts this app as "shop""
 Each library's own page has the details: telescope's
 [central server](/docs/telescope/concepts/central-server#finding-the-server-through-authkit),
 [flags](/docs/flags/central-server#a-tenant),
-[config](https://github.com/DavideCarvalho/adonis-agora-config/blob/master/docs/tenant.mdx),
-[crypto](https://github.com/DavideCarvalho/adonis-agora-crypto/blob/master/docs/deployment.mdx) and
+[config](/docs/config/tenant),
+[crypto](/docs/crypto/deployment) and
 AuthKit's [Find the control planes](/docs/authkit/service-tenants#find-the-control-planes).
 
 ## Over the private network

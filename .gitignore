@@ -35,3 +35,5 @@
 .env*.local
 .vercel
 next-env.d.ts
+/content/docs/config/
+/content/docs/crypto/

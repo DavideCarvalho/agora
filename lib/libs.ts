@@ -3,10 +3,12 @@ import {
   Bot,
   Boxes,
   CreditCard,
+  FileSliders,
   Filter,
   Flag,
   Image,
   KeyRound,
+  LockKeyhole,
   type LucideIcon,
   Newspaper,
   ShieldCheck,
@@ -218,6 +220,30 @@ export const libs: AgoraLib[] = [
     iconName: 'Newspaper',
     packages: 4,
     stage: 'wip',
+  },
+  {
+    slug: 'config',
+    pkg: 'config',
+    name: 'Config',
+    blurb:
+      'Centralized configuration in the style of Spring Cloud Config — one config server, per-app and per-environment documents with history and audit; apps pull them into the environment at boot.',
+    role: 'Platform',
+    icon: FileSliders,
+    iconName: 'FileSliders',
+    packages: 4,
+    stage: 'alpha',
+  },
+  {
+    slug: 'crypto',
+    pkg: 'crypto',
+    name: 'Crypto',
+    blurb:
+      'A small Vault Transit for AdonisJS — named, versioned keys per app; encrypt, decrypt, rewrap, sign and HMAC, audited, over HTTP or in process.',
+    role: 'Platform',
+    icon: LockKeyhole,
+    iconName: 'LockKeyhole',
+    packages: 6,
+    stage: 'alpha',
   },
 ];
 
