@@ -228,9 +228,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-flags',
     migrated: true,
-    // Pre-1.0: one line of docs, no version dropdown yet.
-    latestLabel: '0.x',
-    versions: [],
+    latestLabel: '1.x (rc)',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/flags@0.15.0' }],
   },
   {
     slug: 'cms',
@@ -259,8 +258,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-config',
     migrated: true,
-    latestLabel: '0.x',
-    versions: [],
+    latestLabel: '1.x (rc)',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/config@0.12.1' }],
   },
   {
     slug: 'crypto',
@@ -273,7 +272,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-crypto',
     migrated: true,
-    latestLabel: '0.x',
-    versions: [],
+    latestLabel: '1.x (rc)',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/crypto@0.13.0' }],
   },
 ];
