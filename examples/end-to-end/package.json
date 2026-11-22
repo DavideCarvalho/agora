@@ -56,7 +56,7 @@
     "youch": "4.1.1"
   },
   "dependencies": {
-    "@adonis-agora/authkit-client": "1.0.0-rc.6",
+    "@adonis-agora/authkit-client": "1.0.0-rc.13",
     "@adonis-agora/authkit-server": "1.0.0-rc.22",
     "@adonis-agora/authz": "1.0.0-rc.5",
     "@adonis-agora/context": "1.0.0-rc.2",
