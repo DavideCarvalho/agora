@@ -58,7 +58,7 @@
   "dependencies": {
     "@adonis-agora/authkit-client": "1.0.0-rc.13",
     "@adonis-agora/authkit-server": "1.0.0-rc.44",
-    "@adonis-agora/authz": "1.0.0-rc.5",
+    "@adonis-agora/authz": "1.0.0-rc.10",
     "@adonis-agora/context": "1.0.0-rc.2",
     "@adonis-agora/media": "1.0.0-rc.15",
     "@adonis-agora/telescope": "1.0.0-rc.13",
