@@ -286,3 +286,92 @@
     }
   }
 }
+
+/* ------------------------------------------------------ Topology explorer */
+.ag-topo-move,
+.ag-topo-fade,
+.ag-topo-link {
+  transition:
+    transform 0.8s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 0.5s ease;
+}
+.ag-topo-box {
+  fill: var(--ag-bg);
+  stroke: var(--ag-line);
+}
+.ag-topo-box-hub {
+  fill: var(--ag-accent-soft);
+  stroke: color-mix(in oklab, var(--ag-accent) 40%, var(--ag-line));
+}
+.ag-topo-chip {
+  fill: var(--ag-card);
+  stroke: var(--ag-line);
+}
+.ag-topo-chip-accent {
+  fill: var(--ag-accent);
+}
+.ag-topo-chip-ghost {
+  fill: transparent;
+  stroke: var(--ag-line);
+  stroke-dasharray: 4 4;
+}
+.ag-topo-label {
+  fill: var(--ag-fg);
+  font-size: 14px;
+  font-weight: 500;
+}
+.ag-topo-chip-ghost + .ag-topo-label {
+  fill: var(--ag-muted);
+  font-weight: 400;
+}
+.ag-topo-label-accent {
+  fill: var(--ag-on-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ag-topo-title {
+  fill: var(--ag-fg);
+  font-size: 15px;
+  font-weight: 600;
+}
+.ag-topo-meta,
+.ag-topo-caption {
+  fill: var(--ag-muted);
+  font-size: 12.5px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+.ag-topo-caption {
+  paint-order: stroke;
+  stroke: var(--ag-card);
+  stroke-width: 8px;
+  stroke-linejoin: round;
+}
+.ag-topo-link {
+  fill: none;
+  stroke: color-mix(in oklab, var(--ag-accent) 60%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 6;
+}
+.ag-topo-link-solid {
+  stroke-dasharray: 2 10;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Traffic flows from the Hub to the apps once they are connected. */
+  .ag-topo-link {
+    animation: ag-flow 1.4s linear infinite;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ag-topo-move,
+  .ag-topo-fade,
+  .ag-topo-link {
+    transition: none;
+  }
+}
+@keyframes ag-flow {
+  to {
+    stroke-dashoffset: -22;
+  }
+}

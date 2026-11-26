@@ -11,6 +11,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { BackerLogo } from '@/components/backers';
 import { TopologyCard } from '@/components/home/topology-card';
+import { TopologyExplorer } from '@/components/home/topology-explorer';
 import { AgoraMark, GitHubMark } from '@/components/logo';
 import { adopters, adoptersIssue } from '@/lib/adopters';
 import { type AgoraLib, libs, stageLabel, totalPackages } from '@/lib/libs';
@@ -116,7 +117,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="ag-in min-w-0" style={{ '--i': 2 } as React.CSSProperties}>
+        <div
+          className="ag-in min-w-0"
+          style={{ '--i': 2 } as React.CSSProperties}
+        >
           <TopologyCard />
         </div>
       </section>
@@ -129,6 +133,20 @@ export default function HomePage() {
           <Fact value="0" label="hard dependencies between them" />
           <Fact value="MIT" label="license, free to run anywhere" />
         </dl>
+      </section>
+
+      {/* -------------------------------------------------------- Topologies */}
+      <section className="mx-auto w-full max-w-7xl px-4 pt-24 sm:px-8 lg:pt-32">
+        <h2 className="ag-display text-3xl leading-[1.1] sm:text-4xl">
+          Same libraries, three shapes.
+        </h2>
+        <p className="mt-5 max-w-xl leading-relaxed text-[var(--ag-muted)]">
+          Pick how your apps share their libraries. Switching is configuration,
+          not a rewrite.
+        </p>
+        <div className="ag-reveal mt-10">
+          <TopologyExplorer />
+        </div>
       </section>
 
       {/* ------------------------------------------------------------ Path */}
