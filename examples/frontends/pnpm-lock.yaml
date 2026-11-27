@@ -167,8 +167,8 @@ importers:
   .:
     dependencies:
       '@a2ui/markdown-it':
-        specifier: 0.2.2
-        version: 0.2.2(@a2ui/web_core@0.15.0)
+        specifier: 0.2.4
+        version: 0.2.4(@a2ui/web_core@0.15.0)
       '@a2ui/react':
         specifier: 0.15.0
         version: 0.15.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
@@ -319,10 +319,10 @@ packages:
       graphql:
         optional: true
 
-  '@a2ui/markdown-it@0.2.2':
-    resolution: {integrity: sha512-oj58ybxIPwnRzN2NpvgxrOOwDlZuBKoEtW5U6wRs6SOq1dDjk/zAAkRtb0U52WPSu01gHJOFSGEkuE+Xe09dcQ==}
+  '@a2ui/markdown-it@0.2.4':
+    resolution: {integrity: sha512-7gqKNyIxkFfkjtxXuDtJ0Lu07NFtf15x1JdyXC7VE0Q+tpk4LjD2RL+GRM19SyDFPc3dbN7bTQnD+wnsmMY/Sg==}
     peerDependencies:
-      '@a2ui/web_core': ^0.14.0
+      '@a2ui/web_core': ^0.16.1
 
   '@a2ui/react@0.15.0':
     resolution: {integrity: sha512-SkbdIMoRgtYNGh+nSEvK8YHDSAgS8LVFggDMCYdDqrUAWMLb2PS1unYOL8lfkXjskYK/+VoD7sa6X+I2F+F62w==}
@@ -3342,9 +3342,6 @@ packages:
   dom-helpers@5.2.1:
     resolution: {integrity: sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==}
 
-  dompurify@3.4.11:
-    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
-
   dompurify@3.4.17:
     resolution: {integrity: sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==}
 
@@ -5619,15 +5616,15 @@ snapshots:
     optionalDependencies:
       graphql: 16.14.2
 
-  '@a2ui/markdown-it@0.2.2(@a2ui/web_core@0.15.0)':
+  '@a2ui/markdown-it@0.2.4(@a2ui/web_core@0.15.0)':
     dependencies:
       '@a2ui/web_core': 0.15.0
-      dompurify: 3.4.11
+      dompurify: 3.4.17
       markdown-it: 14.3.2
 
   '@a2ui/react@0.15.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
     dependencies:
-      '@a2ui/markdown-it': 0.2.2(@a2ui/web_core@0.15.0)
+      '@a2ui/markdown-it': 0.2.4(@a2ui/web_core@0.15.0)
       '@a2ui/web_core': 0.15.0
       clsx: 2.1.1
       markdown-it: 14.3.2
@@ -8627,10 +8624,6 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.10
       csstype: 3.2.3
-
-  dompurify@3.4.11:
-    optionalDependencies:
-      '@types/trusted-types': 2.0.7
 
   dompurify@3.4.17:
     optionalDependencies:
