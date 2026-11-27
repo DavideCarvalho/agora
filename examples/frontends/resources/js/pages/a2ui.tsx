@@ -2,13 +2,15 @@ import { StrictMode, useEffect, useMemo, useRef, useState, useSyncExternalStore 
 import { createRoot } from 'react-dom/client'
 import {
   A2uiSurface,
-  basicCatalog,
   createBinderlessComponentImplementation,
   MarkdownContext,
-  type ReactComponentImplementation,
+  type ReactCatalogComponent,
 } from '@a2ui/react/v0_9'
 import { renderMarkdown } from '@a2ui/markdown-it'
 import { Catalog, MessageProcessor, type ActionPayload, type ComponentContext } from '@a2ui/web_core/v0_9'
+// Since @a2ui/react 0.13 the v0.9 basic catalog lives in @a2ui/web_core (its components render as
+// custom elements); a React catalog holds both kinds of entry (`ReactCatalogComponent`).
+import { basicCatalog } from '@a2ui/web_core/v0_9/basic_catalog'
 import {
   GenuiActionProvider,
   GenuiNodeScope,
@@ -70,7 +72,7 @@ const Sandbox = createBinderlessComponentImplementation(
   }
 )
 
-const appCatalog = new Catalog<ReactComponentImplementation>(
+const appCatalog = new Catalog<ReactCatalogComponent>(
   A2UI_CATALOG_ID,
   'v0.9',
   [...basicCatalog.components.values(), Sandbox],
@@ -137,7 +139,7 @@ function A2uiChat(props: { threadId?: string; onThread: (id: string) => void }) 
   // One processor per page: surfaces live in it, `A2uiSurface` draws them; actions come back here.
   const processor = useMemo(
     () =>
-      new MessageProcessor<ReactComponentImplementation>([appCatalog, basicCatalog], (action: ActionPayload) => {
+      new MessageProcessor<ReactCatalogComponent>([appCatalog, basicCatalog], (action: ActionPayload) => {
         const { text: said, ...context } = action.context as Record<string, unknown>
         const label = typeof said === 'string' ? uiActionSummary({ text: said, context }) : describe(action.name, context)
         void post.current({ action: { version: 'v0.9', action: { ...action, context, ...(typeof said === 'string' ? { text: said } : {}) } } }, label)
@@ -244,7 +246,7 @@ function A2uiChat(props: { threadId?: string; onThread: (id: string) => void }) 
   )
 }
 
-function Surface({ processor, id }: { processor: MessageProcessor<ReactComponentImplementation>; id: string }) {
+function Surface({ processor, id }: { processor: MessageProcessor<ReactCatalogComponent>; id: string }) {
   const surface = processor.getSurface(id)
   if (!surface) return null
   return (

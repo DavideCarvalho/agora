@@ -8,8 +8,8 @@ generative-UI tasks on each:
 | --- | --- | --- |
 | `/native` | `@adonis-agora/agent/react` (`AgentProvider`, `useAgentChat`, `<GenerativeUI>`) | the native stream, `POST /agent/chat` |
 | `/copilotkit` | CopilotKit 1.77 (`@copilotkit/react-core/v2`, `CopilotChat`); `?renderer=a2ui` draws with CopilotKit's own A2UI renderer instead | `POST /agent/ag-ui` (`agUiAdapter({ a2ui })`) |
-| `/openui` | OpenUI 0.17 (`@openuidev/react-ui`, `AgentInterface`) | `POST /agent/ag-ui` (`agUiAdapter({ a2ui })`) |
-| `/a2ui` | [A2UI](https://a2ui.org) v0.9 with Google's official renderer (`@a2ui/react` 0.12 `A2uiSurface` + `@a2ui/web_core` `MessageProcessor`) | `POST /agent/a2ui` (`a2uiAdapter()`), JSON Lines of A2UI messages |
+| `/openui` | OpenUI 0.18 (`@openuidev/react-ui`, `AgentInterface`) | `POST /agent/ag-ui` (`agUiAdapter({ a2ui })`) |
+| `/a2ui` | [A2UI](https://a2ui.org) v0.9 with Google's official renderer (`@a2ui/react` 0.16 `A2uiSurface` + `@a2ui/web_core` `MessageProcessor`) | `POST /agent/a2ui` (`a2uiAdapter()`), JSON Lines of A2UI messages |
 | `/` | the comparison matrix below | — |
 
 The point is an honest comparison: every cell in the matrix comes from running these pages

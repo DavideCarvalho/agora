@@ -422,7 +422,9 @@ function statusChart() {
 // ---------------------------------------------------------------------------------------------
 // OpenUI: the same tasks, answered in OpenUI Lang (the vocabulary of `openuiChatLibrary`).
 // OpenUI renders the WHOLE reply as OpenUI Lang — a prose-only reply is an empty bubble — so every
-// final answer is Lang. Text before a tool call stays prose: OpenUI shows it in its tool timeline.
+// final answer is Lang, and a tool call goes out with no text before it: since @openuidev/react-lang 1
+// (OpenUI 0.18) that text is rendered as a reply of its own (and reported as unparseable
+// openui-lang); the tool timeline already says what is happening ("Used list orders").
 // ---------------------------------------------------------------------------------------------
 
 function openUiScript(turn: Turn): Plan {
@@ -438,7 +440,7 @@ function openUiScript(turn: Turn): Plan {
   if (/split|bill/.test(text)) {
     if (!called(turn, 'ui__render').length) {
       return {
-        text: 'Building a bill splitter.',
+        text: '',
         toolCalls: [{ name: 'ui__render', input: billSplitterTree(readBill(text)) }],
         streamArgs: SANDBOX_STREAM,
       }
@@ -454,7 +456,7 @@ function openUiScript(turn: Turn): Plan {
     const refund = called(turn, 'refund_order')[0]
     if (!refund) {
       return {
-        text: `Refunding order #${orderId}.`,
+        text: '',
         toolCalls: [{ name: 'refund_order', input: { orderId } }],
       }
     }
@@ -499,7 +501,7 @@ function openUiScript(turn: Turn): Plan {
 
   if (/revenue|chart/.test(text)) {
     if (!called(turn, 'revenue_by_month').length) {
-      return { text: 'Fetching revenue…', toolCalls: [{ name: 'revenue_by_month', input: {} }] }
+      return { text: '', toolCalls: [{ name: 'revenue_by_month', input: {} }] }
     }
     return {
       ...lang([
@@ -516,7 +518,7 @@ function openUiScript(turn: Turn): Plan {
   if (/order/.test(text)) {
     const listed = called(turn, 'list_orders')[0]
     if (!listed) {
-      return { text: 'Let me look up your orders.', toolCalls: [{ name: 'list_orders', input: {} }] }
+      return { text: '', toolCalls: [{ name: 'list_orders', input: {} }] }
     }
     // The app's own component (resources/js/shared/openui_library.tsx), with its Refund buttons.
     const orders = (listed.output as { orders: Order[] }).orders

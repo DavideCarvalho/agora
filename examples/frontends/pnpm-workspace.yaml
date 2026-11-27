@@ -30,3 +30,17 @@ minimumReleaseAgeExclude:
   - ai@7.0.133
   - playwright-core@1.64.0
   - playwright@1.64.0
+# One @ag-ui/client and one rxjs for the CopilotKit page. Since 1.89, CopilotKit's core, shared and
+# a2ui-renderer depend on zod 3 while react-core takes this app's zod 4 as a peer, so pnpm installed
+# @ag-ui/client twice (one per zod): the agent `useAgent` returns and the one `runAgent` takes, and
+# the `HttpAgent` the page subclasses and the one `CopilotKitProvider` takes, were different classes.
+# CopilotKit supports zod 4 (react-core's peer is `zod >=3.25`; shared converts schemas through
+# Standard JSON Schema), so its packages get the app's zod. @ag-ui/client pins rxjs 7.8.1 and the
+# app uses 7.8.2 (the page builds an rxjs Observable for `HttpAgent.connect`): one rxjs, the app's.
+# Keep these versions equal to zod and rxjs in package.json: bump them together, or the duplicates
+# come back.
+overrides:
+  '@copilotkit/core>zod': 4.6.7
+  '@copilotkit/shared>zod': 4.6.7
+  '@copilotkit/a2ui-renderer>zod': 4.6.7
+  rxjs: 7.8.2

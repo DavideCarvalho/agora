@@ -1,0 +1,91 @@
+name: Example — frontends
+
+# examples/frontends is a STANDALONE AdonisJS app with its own
+# pnpm-workspace.yaml, lockfile and dependency tree (see its README) —
+# entirely separate from the Next.js docs site deploy.yml builds. This job
+# only runs when that directory (or this workflow file) changes, and never
+# touches the repo-root pnpm install/build the docs site relies on.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/frontends/**"
+      - ".github/workflows/example-frontends.yml"
+  pull_request:
+    paths:
+      - "examples/frontends/**"
+      - ".github/workflows/example-frontends.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: examples/frontends
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      # Reads the pnpm version from examples/frontends/package.json's own
+      # `packageManager` field (its own project, own version pin).
+      - uses: pnpm/action-setup@v6.1.1
+        with:
+          package_json_file: examples/frontends/package.json
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 26.13.1
+          cache: pnpm
+          cache-dependency-path: examples/frontends/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # better-sqlite3's build script is allow-listed (pnpm-workspace.yaml)
+      # but pnpm only runs an allow-listed script on an explicit rebuild, not
+      # on a plain install — see the README's Quickstart.
+      - name: Build native dependencies (better-sqlite3)
+        run: pnpm rebuild
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: node ace build
+
+      # The scripted offline model is the default (AGENT_MODEL=scripted in
+      # .env.example): no API key, no outbound calls.
+      - name: Prepare a runnable environment
+        run: |
+          cp .env.example .env
+          node ace generate:key
+
+      - name: Boot the dev server
+        run: |
+          nohup node ace serve --no-hmr > /tmp/dev-server.log 2>&1 &
+          echo $! > /tmp/dev-server.pid
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3333/ || true)
+            if [ "$code" = "200" ]; then echo "server is up"; exit 0; fi
+            sleep 1
+          done
+          echo "server never became ready" >&2
+          cat /tmp/dev-server.log
+          exit 1
+
+      - name: Smoke test — every page answers 200
+        run: |
+          for path in / /native /copilotkit /openui /a2ui /whatsapp; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3333$path" || true)
+            echo "$path -> $code"
+            [ "$code" = "200" ] || exit 1
+          done
+
+      - name: Dump server log on failure
+        if: failure()
+        run: cat /tmp/dev-server.log || true
+
+      - name: Stop the dev server
+        if: always()
+        run: kill "$(cat /tmp/dev-server.pid)" 2>/dev/null || true
