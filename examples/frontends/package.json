@@ -58,7 +58,7 @@
     "@ai-sdk/react": "4.0.186",
     "@copilotkit/react-core": "1.89.0",
     "@openuidev/react-headless": "0.18.12",
-    "@openuidev/react-lang": "1.1.1",
+    "@openuidev/react-lang": "1.2.0",
     "@openuidev/react-ui": "0.18.6",
     "@resvg/resvg-js": "2.6.2",
     "@vinejs/vine": "4.4.0",
