@@ -214,7 +214,9 @@ export const sources = [
     migrated: true,
     latestLabel: '1.x',
     versions: [
-      { id: 'v0', label: '0.x', ref: '@adonis-agora/payments@0.27.0' },
+      // A docs-only tag on release/0.x, past the last 0.x release (0.27.0), whose
+      // docs still linked to a renamed Efí heading.
+      { id: 'v0', label: '0.x', ref: 'docs/payments-0.x' },
     ],
   },
   {

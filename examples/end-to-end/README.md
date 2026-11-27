@@ -15,7 +15,11 @@ What it demonstrates:
 
 ## Quickstart
 
-The `@adonis-agora/*` packages are pinned to the 1.0 release candidates (npm's `rc` tag).
+The `@adonis-agora/*` packages are pinned to their current stable releases (npm's
+`latest` tag: the 1.x libraries and `telescope-ui` 3.x). pnpm's
+`minimumReleaseAge` holds back versions published in the last day, so
+`pnpm-workspace.yaml` lists the exact `@adonis-agora/*` versions pinned here
+under `minimumReleaseAgeExclude` (pnpm adds them when you bump a pin).
 
 ```bash
 pnpm install
