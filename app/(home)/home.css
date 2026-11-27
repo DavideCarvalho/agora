@@ -1,0 +1,377 @@
+/* Landing page only (app/(home)/page.tsx). Scoped under .ag-home so the docs keep their theme.
+   One accent (cobalt), zinc neutrals, one radius scale: 10px controls, 18px surfaces. */
+
+.ag-home {
+  --ag-bg: #f6f6f7;
+  --ag-fg: #141417;
+  --ag-muted: #5b5c66;
+  --ag-line: #e2e2e7;
+  --ag-card: #ffffff;
+  --ag-accent: #2453e0;
+  --ag-on-accent: #ffffff;
+  --ag-accent-soft: color-mix(in oklab, var(--ag-accent) 9%, transparent);
+  --ag-code-str: #1f6b4f;
+  --ag-shadow:
+    0 1px 0 rgb(20 20 40 / 0.04), 0 18px 48px -24px rgb(36 83 224 / 0.25);
+
+  background: var(--ag-bg);
+  color: var(--ag-fg);
+  font-family: var(--font-geist), var(--font-sans), system-ui, sans-serif;
+}
+
+.dark .ag-home {
+  --ag-bg: #0c0c0f;
+  --ag-fg: #ececf1;
+  --ag-muted: #9c9caa;
+  --ag-line: #24242b;
+  --ag-card: #131317;
+  --ag-accent: #7d9fff;
+  --ag-on-accent: #0c0c0f;
+  --ag-code-str: #8fd6b4;
+  --ag-shadow:
+    0 1px 0 rgb(255 255 255 / 0.03), 0 24px 64px -32px rgb(125 159 255 / 0.3);
+}
+
+.ag-home .font-mono {
+  font-family:
+    var(--font-geist-mono), var(--font-mono), ui-monospace, monospace;
+}
+
+.ag-display {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ Buttons */
+.ag-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  padding: 0 1.15rem;
+  border-radius: 10px;
+  font-size: 0.925rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.ag-btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+.ag-btn-primary {
+  background: var(--ag-accent);
+  color: var(--ag-on-accent);
+}
+.ag-btn-primary:hover {
+  background: color-mix(in oklab, var(--ag-accent) 88%, var(--ag-fg));
+}
+.ag-btn-ghost {
+  border: 1px solid var(--ag-line);
+  color: var(--ag-fg);
+  background: var(--ag-card);
+}
+.ag-btn-ghost:hover {
+  border-color: color-mix(in oklab, var(--ag-fg) 30%, var(--ag-line));
+}
+.ag-btn:focus-visible,
+.ag-tab:focus-visible,
+.ag-row:focus-visible {
+  outline: 2px solid var(--ag-accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------- Code card */
+.ag-codecard {
+  overflow: hidden;
+  border: 1px solid var(--ag-line);
+  border-radius: 18px;
+  background: var(--ag-card);
+  box-shadow: var(--ag-shadow);
+}
+.ag-tab {
+  height: 2.1rem;
+  padding: 0 0.85rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--ag-muted);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+.ag-tab:hover {
+  color: var(--ag-fg);
+}
+.ag-tab[aria-selected="true"] {
+  background: var(--ag-accent-soft);
+  color: var(--ag-accent);
+  font-weight: 500;
+}
+.ag-code-line {
+  display: block;
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem;
+  white-space: pre;
+}
+.ag-code-hit {
+  background: var(--ag-accent-soft);
+  box-shadow: inset 2px 0 0 var(--ag-accent);
+}
+.ag-code-str {
+  color: var(--ag-code-str);
+}
+
+/* ---------------------------------------------------------------- Ladder */
+.ag-step {
+  position: relative;
+  padding-left: 2.5rem;
+}
+.ag-step::before {
+  /* the rail */
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  top: 1.9rem;
+  bottom: -2.5rem;
+  width: 1px;
+  background: var(--ag-line);
+}
+.ag-step:last-child::before {
+  display: none;
+}
+.ag-step-mark {
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  border: 1px solid var(--ag-line);
+  background: var(--ag-card);
+}
+.ag-step-mark::after {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--ag-accent);
+}
+.ag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.75rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--ag-line);
+  border-radius: 10px;
+  background: var(--ag-card);
+  font-size: 0.78rem;
+  color: var(--ag-muted);
+}
+
+/* ----------------------------------------------------------------- Bento */
+.ag-cell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--ag-line);
+  border-radius: 18px;
+  background: var(--ag-card);
+  padding: 1.75rem;
+}
+.ag-cell-accent {
+  border-color: transparent;
+  background: var(--ag-accent);
+  color: var(--ag-on-accent);
+}
+.ag-cell-accent .ag-cell-body {
+  color: color-mix(in oklab, var(--ag-on-accent) 82%, transparent);
+}
+.ag-cell-dots {
+  background-color: var(--ag-card);
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--ag-accent) 28%, transparent) 1px,
+    transparent 1.2px
+  );
+  background-size: 14px 14px;
+  background-position: -2px -2px;
+}
+.ag-cell-dots > * {
+  position: relative;
+}
+.ag-cell-tint {
+  background:
+    linear-gradient(160deg, var(--ag-accent-soft), transparent 70%),
+    var(--ag-card);
+}
+.ag-cell-body {
+  color: var(--ag-muted);
+}
+
+/* ------------------------------------------------------------ Library rows */
+.ag-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem 0.9rem;
+  margin: 0 -0.9rem;
+  border-radius: 10px;
+  transition: background-color 0.2s ease;
+}
+.ag-row:hover {
+  background: var(--ag-accent-soft);
+}
+.ag-row:hover .ag-row-arrow {
+  transform: translateX(3px);
+  color: var(--ag-accent);
+}
+.ag-row-arrow {
+  color: var(--ag-muted);
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.2s ease;
+}
+.ag-icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--ag-line);
+  background: var(--ag-card);
+  color: var(--ag-accent);
+}
+
+/* ---------------------------------------------------------------- Motion */
+@keyframes ag-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ag-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Hero enters in reading order. */
+  .ag-in {
+    animation: ag-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 80ms);
+  }
+  /* Switching a topology tab: the new snippet fades in so the change reads as a change. */
+  .ag-swap {
+    animation: ag-fade 0.35s ease both;
+  }
+  /* Sections rise as they enter, where scroll-driven animations exist. */
+  @supports (animation-timeline: view()) {
+    .ag-reveal {
+      animation: ag-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+  }
+}
+
+/* ------------------------------------------------------ Topology explorer */
+.ag-topo-move,
+.ag-topo-fade,
+.ag-topo-link {
+  transition:
+    transform 0.8s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 0.5s ease;
+}
+.ag-topo-box {
+  fill: var(--ag-bg);
+  stroke: var(--ag-line);
+}
+.ag-topo-box-hub {
+  fill: var(--ag-accent-soft);
+  stroke: color-mix(in oklab, var(--ag-accent) 40%, var(--ag-line));
+}
+.ag-topo-chip {
+  fill: var(--ag-card);
+  stroke: var(--ag-line);
+}
+.ag-topo-chip-accent {
+  fill: var(--ag-accent);
+}
+.ag-topo-chip-ghost {
+  fill: transparent;
+  stroke: var(--ag-line);
+  stroke-dasharray: 4 4;
+}
+.ag-topo-label {
+  fill: var(--ag-fg);
+  font-size: 14px;
+  font-weight: 500;
+}
+.ag-topo-chip-ghost + .ag-topo-label {
+  fill: var(--ag-muted);
+  font-weight: 400;
+}
+.ag-topo-label-accent {
+  fill: var(--ag-on-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ag-topo-title {
+  fill: var(--ag-fg);
+  font-size: 15px;
+  font-weight: 600;
+}
+.ag-topo-meta,
+.ag-topo-caption {
+  fill: var(--ag-muted);
+  font-size: 12.5px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+.ag-topo-caption {
+  paint-order: stroke;
+  stroke: var(--ag-card);
+  stroke-width: 8px;
+  stroke-linejoin: round;
+}
+.ag-topo-link {
+  fill: none;
+  stroke: color-mix(in oklab, var(--ag-accent) 60%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 6;
+}
+.ag-topo-link-solid {
+  stroke-dasharray: 2 10;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Traffic flows from the Hub to the apps once they are connected. */
+  .ag-topo-link {
+    animation: ag-flow 1.4s linear infinite;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ag-topo-move,
+  .ag-topo-fade,
+  .ag-topo-link {
+    transition: none;
+  }
+}
+@keyframes ag-flow {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
