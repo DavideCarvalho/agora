@@ -50,6 +50,12 @@
       "allowedVersions": "<6.1.0"
     },
     {
+      "description": "Internal `@adonis-agora/*` packages are runtime dependencies of the published packages here, declared as ranges on purpose (`^1.0.0`) so an app shares one copy of, say, `@adonis-agora/filter` with every Agora lib instead of getting one nested inside each. The global `rangeStrategy: pin` would rewrite them to an exact version, and since pin updates automerge and cut a patch release, that release would pin every consumer. Keep the range and only move it when a new version falls outside it.",
+      "matchDepTypes": ["dependencies", "optionalDependencies"],
+      "matchPackageNames": ["@adonis-agora/**"],
+      "rangeStrategy": "replace"
+    },
+    {
       "description": "A peer range is the compatibility window this package advertises. Widen it rather than pinning it, and never without a human deciding the window is really that wide.",
       "matchDepTypes": ["peerDependencies"],
       "rangeStrategy": "widen",
