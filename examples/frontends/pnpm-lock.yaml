@@ -168,13 +168,13 @@ importers:
     dependencies:
       '@a2ui/markdown-it':
         specifier: 0.2.4
-        version: 0.2.4(@a2ui/web_core@0.15.0)
+        version: 0.2.4(@a2ui/web_core@0.16.1)
       '@a2ui/react':
         specifier: 0.15.0
         version: 0.15.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@a2ui/web_core':
-        specifier: 0.15.0
-        version: 0.15.0
+        specifier: 0.16.1
+        version: 0.16.1
       '@adonis-agora/agent':
         specifier: 0.97.7
         version: 0.97.7(7b93896665da19f5bea92ffaae895557)
@@ -334,6 +334,9 @@ packages:
 
   '@a2ui/web_core@0.15.0':
     resolution: {integrity: sha512-S3k9rAJ9O55z5TlDeWy22ly3yQnDLO+XBWihlL5JQSuyxaCUmd7jgFnxO4eq/Bn6dSgdBF0WG8cve/euMoz8SA==}
+
+  '@a2ui/web_core@0.16.1':
+    resolution: {integrity: sha512-sdQ8q4RNAaKla18AAXIGdAvfbzpE8+qay2vXMSPmgnBVUMZmi7ZwguzVsoCeRQSzvyAgNMjde/CcclARv7SzQw==}
 
   '@adonis-agora/agent@0.97.7':
     resolution: {integrity: sha512-8R/Y3X4YvFtK7N1L2HXlg1gqM7h+3xmU+TZ3mNHjo3znnAkSUSHJRNoGsmk5i4u0P5GGcrIBPzFkofVd3uTSjw==}
@@ -5515,6 +5518,12 @@ snapshots:
       dompurify: 3.5.0
       markdown-it: 14.3.3
 
+  '@a2ui/markdown-it@0.2.4(@a2ui/web_core@0.16.1)':
+    dependencies:
+      '@a2ui/web_core': 0.16.1
+      dompurify: 3.5.0
+      markdown-it: 14.3.3
+
   '@a2ui/react@0.15.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
     dependencies:
       '@a2ui/markdown-it': 0.2.4(@a2ui/web_core@0.15.0)
@@ -5531,6 +5540,15 @@ snapshots:
       '@preact/signals-core': 1.14.5
       lit: 3.3.3
       redos-detector: 6.1.4
+      validate-color: 2.2.4
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+
+  '@a2ui/web_core@0.16.1':
+    dependencies:
+      '@lit/context': 1.1.6
+      '@preact/signals-core': 1.14.5
+      lit: 3.3.3
       validate-color: 2.2.4
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
