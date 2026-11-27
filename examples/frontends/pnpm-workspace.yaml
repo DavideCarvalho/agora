@@ -37,6 +37,8 @@ minimumReleaseAgeExclude:
 # CopilotKit supports zod 4 (react-core's peer is `zod >=3.25`; shared converts schemas through
 # Standard JSON Schema), so its packages get the app's zod. @ag-ui/client pins rxjs 7.8.1 and the
 # app uses 7.8.2 (the page builds an rxjs Observable for `HttpAgent.connect`): one rxjs, the app's.
+# Keep these versions equal to zod and rxjs in package.json: bump them together, or the duplicates
+# come back.
 overrides:
   '@copilotkit/core>zod': 4.6.7
   '@copilotkit/shared>zod': 4.6.7
