@@ -7,8 +7,8 @@ The Hub is a new AdonisJS app. Install the libraries the way you install them in
 [Getting started](/docs/getting-started)), then give each one `topology: 'control-plane'`.
 
 ```sh
-npm i @adonis-agora/authkit-server@rc @adonis-agora/telescope@rc @adonis-agora/durable@rc \
-  @adonis-agora/agent@rc @adonis-agora/flags @adonis-agora/config @adonis-agora/crypto
+npm i @adonis-agora/authkit-server @adonis-agora/telescope @adonis-agora/durable \
+  @adonis-agora/agent @adonis-agora/flags @adonis-agora/config @adonis-agora/crypto
 ```
 
 Run `node ace configure <package>` for each one, then edit the configs below.
@@ -348,8 +348,7 @@ See [Health checks](/docs/telescope/concepts/health-checks) and [Fleet](/docs/te
 node ace agora:doctor --deep
 ```
 
-It must report no errors before you deploy. Warnings about a 0.x library next to 1.x ones are
-expected while flags, config and crypto are on 0.x (see [Pitfalls](/docs/agora-hub/pitfalls)).
+It must report no errors before you deploy (see [Pitfalls](/docs/agora-hub/pitfalls)).
 
 Then, locally:
 

@@ -72,12 +72,11 @@ rollout, especially one that deploys the Hub and several tenants at once:
 
 ## Versions and doctor warnings
 
-Flags, config and crypto are on 0.x while the other libraries are on the 1.x release candidate.
-`agora:doctor` warns that the versions don't line up; that warning is expected. Errors are not:
-`node ace agora:doctor --deep` must have none on the Hub and on each app before every phase.
+Every library the Hub runs is on 1.x. `node ace agora:doctor --deep` must report no errors on the
+Hub and on each app before every phase.
 
-Keep every 1.x package on the same `rc` line, and upgrade the Hub before (or with) its tenants: a
-control plane understands older tenants more reliably than the other way round.
+Keep every `@adonis-agora/*` package on the same major version, and upgrade the Hub before (or with)
+its tenants: a control plane understands older tenants more reliably than the other way round.
 
 ## A control plane URL with the wrong shape
 
