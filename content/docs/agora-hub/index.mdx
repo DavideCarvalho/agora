@@ -46,7 +46,7 @@ it buys you nothing.
 
 | Library | Standalone (today) | On the Hub (`control-plane`) | On each app (`tenant`) |
 | --- | --- | --- | --- |
-| [AuthKit](/docs/authkit) | each app is its own IdP, or one app is the IdP for the others | `authkit-server`: the issuer, accounts, clients, signing keys, consoles' login | `authkit-client`: an OIDC relying party, service tokens for the other control planes and for calls between apps |
+| [AuthKit](/docs/authkit) | each app is its own IdP, or one app is the IdP for the others | `authkit-server`: the issuer, accounts, clients, signing keys, consoles' login | `authkit-client`: an OIDC relying party, and with its `service`, every library's tenant URL, token and partition, and calls between apps |
 | [Telescope](/docs/telescope) | each app stores and shows its own entries | stores every app's entries, Fleet, health, alerts, service discovery | records as usual, sends entries in the background, optional local copy |
 | [Durable](/docs/durable) | each app owns its runs, schedules and worker | owns the store, the schedules, recovery and the console | runs its steps; owns no store |
 | [Flags](/docs/flags) | each app owns its ruleset and events | owns the ruleset, the console, events and sinks, OFREP | evaluates in memory from a ruleset snapshot, sends events |
@@ -74,7 +74,7 @@ service, and a control plane can itself be a tenant of another one. See
    with a schema per library, one login in front of every console.
 2. **[Composing control planes](/docs/agora-hub/control-planes)**: the Hub or separate services,
    one issuer and the capabilities each app needs, finding every control plane from the issuer,
-   and calls over the private network.
+   one-line tenant configs with `authkit-client`, and calls over the private network.
 3. **[Deploying it](/docs/agora-hub/deploying)**: a service, its database and Redis, a domain.
 4. **[Migrating in phases](/docs/agora-hub/migrating)**: observability, then config and crypto, flags,
    workflows, and identity last, each with a go/no-go and a rollback.

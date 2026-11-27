@@ -31,18 +31,17 @@ web requests can never delete a key. See
 
 ```ts title="config/crypto.ts (shop)"
 import { defineConfig } from '@adonis-agora/crypto'
-import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
 
 export default defineConfig({
   topology: 'tenant',
-  tenant: {
-    url: hubUrl('urn:agora:crypto'),
-    partition: APP_PARTITION,
-    token: hubToken('urn:agora:crypto'),
-  },
   subjects: { createKeys: 'explicit' },
 })
 ```
+
+The URL, the token and the partition come from authkit-client's `service` (see
+[Making an app a tenant](/docs/agora-hub/control-planes#making-an-app-a-tenant)). A process that uses
+the separate key-management client sets only `tenant.token` (an `authkitTenantToken` for that
+client); the URL and the partition still come from authkit-client.
 
 With `createKeys: 'lazy'` instead, a subject's key is created on its first write, and the web token
 needs the two `crypto:keys:*:subject_*` capabilities as well.

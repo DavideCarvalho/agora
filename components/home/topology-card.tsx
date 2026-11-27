@@ -3,7 +3,8 @@
 import { useId, useState } from 'react';
 
 // The same library at three sizes. The snippets are real configs from the Agora Hub guide
-// (docs/agora-hub): only `topology` and the block next to it change.
+// (docs/agora-hub): only `topology` and the block next to it change. A tenant takes its URL,
+// token and partition from authkit-client's `service`, so it adds nothing next to `topology`.
 const stages = [
   {
     id: 'one-app',
@@ -25,7 +26,7 @@ const stages = [
     id: 'every-app',
     label: 'Every app',
     file: 'config/flags.ts (shop)',
-    note: 'Reads its ruleset from the Hub and keeps serving from a snapshot if the Hub is down.',
+    note: 'Reads its ruleset from the Hub. URL, token and partition come from authkit-client.',
     code: [
       "import { defineConfig, flag } from '@adonis-agora/flags'",
       '',
@@ -33,11 +34,6 @@ const stages = [
       "  topology: 'tenant',",
       '  flags: {',
       '    new_checkout: flag.boolean({ default: false }),',
-      '  },',
-      '  tenant: {',
-      "    url: hubUrl('urn:agora:flags'),",
-      '    partition: APP_PARTITION,',
-      "    token: hubToken('urn:agora:flags'),",
       '  },',
       '})',
     ],
@@ -48,13 +44,14 @@ const stages = [
     file: 'config/flags.ts (hub)',
     note: 'One app owns the rulesets, the console and the events for every other app.',
     code: [
+      "import { authkitTenantVerifier } from '@adonis-agora/authkit-server'",
       "import { defineConfig, stores } from '@adonis-agora/flags'",
       '',
       'export default defineConfig({',
       "  topology: 'control-plane',",
       '  flags: {},',
       '  verifyTenant: authkitTenantVerifier({',
-      '    audience: HUB_RESOURCES.flags,',
+      "    audience: 'urn:agora:flags',",
       '  }),',
       "  store: stores.lucid({ connection: 'hub' }),",
       '})',

@@ -217,6 +217,11 @@ longer serves (`/oidc`). The app may keep the `authkit-server` package installed
 if its models use its mixins; `agora:doctor` then warns that the provider is not registered, which
 is expected. See [Deployment topologies](/docs/authkit/topologies).
 
+With the Hub as the issuer, add the app's service-tenant client as authkit-client's `service`
+(`name`, `clientId`, `clientSecret`) and its tenant configs can drop `url`, `token` and
+`partition`: each library takes them from authkit-client. See
+[Making an app a tenant](/docs/agora-hub/control-planes#making-an-app-a-tenant).
+
 ### The order
 
 Never have two keystore writers at the same time.
