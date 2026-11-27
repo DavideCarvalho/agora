@@ -41,9 +41,7 @@ export default class OidcSessionController {
     const manager = await ctx.containerResolver.make('authkit.client')
     const cfg = manager.clientConfig
     const { code, state } = ctx.request.qs()
-    const pkce = ctx.session.get('authkit_pkce') as
-      | { verifier: string; state: string }
-      | undefined
+    const pkce = ctx.session.get('authkit_pkce') as { verifier: string; state: string } | undefined
 
     if (!pkce || pkce.state !== state) {
       return ctx.response.badRequest({ error: 'invalid state' })
@@ -80,7 +78,7 @@ export default class OidcSessionController {
         idToken,
         clientId: cfg.clientId,
         postLogoutRedirectUri: `${ctx.request.protocol()}://${ctx.request.host()}/`,
-      }),
+      })
     )
   }
 }

@@ -6,6 +6,32 @@ import { MediaDeliveryHandler } from '@adonis-agora/media'
 import Document from '#models/document'
 
 /**
+ * A `Content-Disposition` value that is safe for ANY stored file name. The name comes from the
+ * uploader (`file.clientName`), so it can hold quotes, control characters or non-latin1 text
+ * (`报告.pdf`) — interpolated raw into `filename="…"` it would break the header, and Node throws
+ * `ERR_INVALID_CHAR` on non-latin1 header values. This sends an ASCII `filename` fallback plus the
+ * exact name as RFC 6266/5987 `filename*=UTF-8''…` (what every current browser uses).
+ */
+export function contentDisposition(
+  type: 'inline' | 'attachment',
+  fileName: string | undefined
+): string {
+  const clean = (fileName ?? '')
+    .toWellFormed()
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f-\u009f"\\]/g, '')
+    .trim()
+  const name = clean === '' ? 'download' : clean
+  const ascii = name.replace(/[^\x20-\x7e]/g, '_')
+  if (ascii === name) return `${type}; filename="${ascii}"`
+  const encoded = encodeURIComponent(name).replace(
+    /['()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  )
+  return `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`
+}
+
+/**
  * The protected resource for goal #2 (authz-gated access) AND goal #4 (media
  * access with NO built-in authorization, wired shut by this controller).
  *
@@ -29,7 +55,7 @@ export default class DocumentsController {
 
     const documents = await Document.all()
     return response.ok(
-      documents.map((doc) => ({ id: doc.id, title: doc.title, ownerUserId: doc.ownerUserId })),
+      documents.map((doc) => ({ id: doc.id, title: doc.title, ownerUserId: doc.ownerUserId }))
     )
   }
 
@@ -103,7 +129,7 @@ export default class DocumentsController {
 
     response.header('content-type', result.mimeType)
     if (result.size !== undefined) response.header('content-length', String(result.size))
-    response.header('content-disposition', `inline; filename="${result.fileName}"`)
+    response.header('content-disposition', contentDisposition('inline', result.fileName))
     return response.stream(result.stream)
   }
 }
