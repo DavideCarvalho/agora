@@ -45,6 +45,14 @@ resource on the Hub's AuthKit, an app can read them all from the issuer instead;
 [Finding the control planes](/docs/agora-hub/control-planes#finding-the-control-planes). The full
 list of capabilities is in [Capabilities by resource](/docs/agora-hub/control-planes#capabilities-by-resource).
 
+The examples spell out `tenant` because, until [identity](#phase-5-identity) moves, the app's
+users still sign in at its own AuthKit while its tenant tokens come from the Hub (`HUB_ISSUER`).
+An app whose `authkit-client` already has the Hub as its issuer skips the `tenant` fields: with
+this client as authkit-client's `service`, `topology: 'tenant'` is enough, and only the
+library-specific fields (`local`, `snapshotPath`) remain. See
+[Making an app a tenant](/docs/agora-hub/control-planes#making-an-app-a-tenant). After phase 5,
+every app can move to that form.
+
 ## Phase 1: telescope
 
 The app keeps recording exactly as before; its entries also go to the Hub.

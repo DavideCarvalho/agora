@@ -124,6 +124,9 @@ export default defineConfig({
 
 Each `url` lets the apps find that control plane from the issuer instead of an environment variable
 per library; see [Finding the control planes](/docs/agora-hub/control-planes#finding-the-control-planes).
+An app with its service-tenant client as authkit-client's `service` then needs only
+`topology: 'tenant'` in each library; see
+[Making an app a tenant](/docs/agora-hub/control-planes#making-an-app-a-tenant).
 
 If your apps already have users, the Hub's AuthKit can serve **those** accounts instead of new ones.
 That is the [identity](/docs/agora-hub/identity) phase; start with a Hub that has its own admin

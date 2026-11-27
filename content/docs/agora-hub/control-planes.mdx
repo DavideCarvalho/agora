@@ -108,13 +108,167 @@ Each URL is what the library's `tenant.url` expects: the **origin** for telescop
 `/_telescope/v1`), the **route prefix** for flags, config and crypto. URLs must be `https` (`http`
 only on `localhost`).
 
-The apps then need one variable, the issuer, and read every control plane from it.
-`controlPlaneUrl` returns a lazy URL: nothing is fetched until a library first calls it, the
-discovery document is cached, and when a control plane stops answering or answers 404 the library
-looks it up again and retries at the new address. Moving a control plane is a change in the
-issuer's `config/authkit.ts` only.
+The apps then read every control plane from the issuer. The lookup is lazy: nothing is fetched
+until a library first needs the URL, the discovery document is cached, and when a control plane
+stops answering or answers 404 the library looks it up again and retries at the new address.
+Moving a control plane is a change in the issuer's `config/authkit.ts` only.
 
-Keep the issuer and the client in one config file of the app:
+## Making an app a tenant
+
+An app that signs its users in at the Hub already runs `authkit-client` with the Hub as its
+issuer. Give it the app's service-tenant client as its `service`, and every library finds its
+control plane, its token and the app's partition there:
+
+```ts title="config/authkit_client.ts (shop)"
+import env from '#start/env'
+import { defineConfig } from '@adonis-agora/authkit-client'
+
+export default defineConfig({
+  issuer: env.get('AUTHKIT_ISSUER'), // https://hub.example.com/oidc
+  // ...clientId, clientSecret, redirectUri and resolver, for signing users in
+  service: {
+    name: 'shop',
+    clientId: env.get('AGORA_TENANT_CLIENT_ID'),
+    clientSecret: env.get('AGORA_TENANT_CLIENT_SECRET'),
+  },
+})
+```
+
+Then each library needs only `topology: 'tenant'`. Each one asks authkit-client's
+`authkit.client` binding for its own resource (`tenantOf('urn:agora:flags')`, for instance) and
+fills `tenant` from it:
+
+- `url`: the control plane, discovered from the issuer as above;
+- `token`: a service token of `service` for that resource, cached until near expiry and dropped
+  after a `401`;
+- `partition`: `service.partition`, else `service.name`. It must be the client's `--partition`; set
+  `service.partition` when it differs from the name.
+
+The libraries detect authkit-client, they do not depend on it: there is nothing to install or
+register. It takes authkit-client 1.1.0 or later (an older one counts as absent) and 1.1.0 or later
+of each library.
+
+- **Anything you set in `tenant` wins, field by field.** `tenant: { snapshotPath: '…' }` keeps the
+  discovered URL, the token and the partition; `tenant: { url: … }` replaces only the URL (see
+  [Over the private network](#over-the-private-network)).
+- **`tenant: { auto: false }` turns the lookup off** for that library; `url`, `token` and
+  `partition` are then yours to set.
+- **Without either**, the web process refuses to boot and names the missing fields and both fixes:
+  configure authkit-client's `service`, or pass `tenant: { url, token, partition }`.
+
+### Telescope
+
+```ts title="config/telescope.ts (shop)"
+import { defineConfig } from '@adonis-agora/telescope'
+
+export default defineConfig({ topology: 'tenant' })
+```
+
+To keep a short local copy in the app's own console, set only `local`; the rest still comes from
+authkit-client:
+
+```ts title="config/telescope.ts (shop)"
+import { defineConfig, storage } from '@adonis-agora/telescope'
+
+export default defineConfig({
+  topology: 'tenant',
+  tenant: { local: 'memory' },
+  stores: { memory: storage.memory({ maxEntries: 500 }) },
+})
+```
+
+### Crypto
+
+```ts title="config/crypto.ts (shop)"
+import { defineConfig } from '@adonis-agora/crypto'
+
+export default defineConfig({ topology: 'tenant' })
+```
+
+### Flags
+
+```ts title="config/flags.ts (shop)"
+import { defineConfig, flag } from '@adonis-agora/flags'
+
+export default defineConfig({
+  topology: 'tenant',
+  flags: {
+    new_checkout: flag.boolean({ default: false }),
+  },
+  tenant: { snapshotPath: 'storage/flags/ruleset.json' },
+})
+```
+
+The app evaluates flags in memory from the ruleset it downloaded and keeps the last one on disk
+(`snapshotPath`). With the Hub down it boots and serves from that snapshot; without one, each flag
+takes its declared default.
+
+### Config
+
+```ts title="config/config.ts (shop)"
+import { defineConfig } from '@adonis-agora/config'
+
+export default defineConfig({
+  topology: 'tenant',
+  tenant: { snapshotPath: 'storage/config/snapshot.json' },
+})
+```
+
+The app fetches its scope at boot and follows changes over a stream. With the Hub down it boots
+from the snapshot on disk; without one, it keeps its local configuration (or fails the boot with
+`required: true`). Values `config/*.ts` must see at load time are fetched earlier, in
+`bin/server.ts`; see [Secrets](/docs/agora-hub/secrets).
+
+### Durable
+
+Durable needs no URL. Its tenants talk to the control plane over the broker both sides share
+(BullMQ on the Hub's Redis, for instance), so the issuer declares `urn:agora:durable` without a
+`url`, the app keeps its `transports` config, and authkit-client fills only the token and the
+partition. See [Migrating: durable](/docs/agora-hub/migrating#phase-4-durable).
+
+```ts title="config/durable.ts (shop)"
+import env from '#start/env'
+import { defineConfig, transports } from '@adonis-agora/durable'
+
+export default defineConfig({
+  topology: 'tenant',
+  transport: 'bullmq',
+  transports: {
+    // The Hub's Redis (a redis:// URL), same prefix as on the Hub.
+    bullmq: transports.bullmq({ connection: env.get('HUB_REDIS_URL'), prefix: 'hub' }),
+  },
+})
+```
+
+[Media](/docs/media/topology#a-tenant-app) and [payments](/docs/payments/control-plane#a-tenant)
+fill their tenant the same way (payments takes the URL from authkit-client only when no
+`transport` is set). The agent library has no tenant topology.
+
+### Check it
+
+```sh
+node ace agora:doctor --deep        # every control plane URL resolves and accepts the token
+node ace telescope:server:status    # "The server accepts this app as "shop""
+```
+
+`node ace agora:doctor --verbose` also says where each field came from, per library:
+`tenant url: authkit-client (auto), token: authkit-client (auto), partition: authkit-client (auto)`
+for the configs above, and `explicit` for a field set in `tenant`.
+
+Each library's own page has the details: telescope's
+[central server](/docs/telescope/concepts/central-server#a-tenant),
+[flags](/docs/flags/central-server#a-tenant),
+[config](/docs/config/tenant),
+[crypto](/docs/crypto/deployment#a-tenant) and
+AuthKit's [Find the control planes](/docs/authkit/service-tenants#find-the-control-planes).
+
+## Without authkit-client
+
+An app that does not run `authkit-client`, signs its users in somewhere other than the Hub (an app
+mid-[migration](/docs/agora-hub/migrating) still on its own AuthKit, or your own IdP), or needs
+another client than its `service` sets the three fields itself. Every library's `tenant.url` and
+`tenant.token` take a string or a function, so the helpers of `authkit-client` (or your own) plug
+in. Keep the issuer and the client in one config file of the app:
 
 ```ts title="config/hub.ts (shop)"
 import env from '#start/env'
@@ -138,42 +292,6 @@ export function hubToken(resource: string) {
 }
 ```
 
-### Telescope
-
-```ts title="config/telescope.ts (shop)"
-import { defineConfig, storage } from '@adonis-agora/telescope'
-import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
-
-export default defineConfig({
-  topology: 'tenant',
-  tenant: {
-    url: hubUrl('urn:agora:telescope'),
-    partition: APP_PARTITION,
-    token: hubToken('urn:agora:telescope'),
-    local: 'memory',
-  },
-  stores: { memory: storage.memory({ maxEntries: 500 }) },
-})
-```
-
-### Crypto
-
-```ts title="config/crypto.ts (shop)"
-import { defineConfig } from '@adonis-agora/crypto'
-import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
-
-export default defineConfig({
-  topology: 'tenant',
-  tenant: {
-    url: hubUrl('urn:agora:crypto'),
-    partition: APP_PARTITION,
-    token: hubToken('urn:agora:crypto'),
-  },
-})
-```
-
-### Flags
-
 ```ts title="config/flags.ts (shop)"
 import { defineConfig, flag } from '@adonis-agora/flags'
 import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
@@ -192,52 +310,10 @@ export default defineConfig({
 })
 ```
 
-The app evaluates flags in memory from the ruleset it downloaded and keeps the last one on disk
-(`snapshotPath`). With the Hub down it boots and serves from that snapshot; without one, each flag
-takes its declared default.
-
-### Config
-
-```ts title="config/config.ts (shop)"
-import { defineConfig } from '@adonis-agora/config'
-import { APP_PARTITION, hubToken, hubUrl } from '#config/hub'
-
-export default defineConfig({
-  topology: 'tenant',
-  tenant: {
-    url: hubUrl('urn:agora:config'),
-    partition: APP_PARTITION,
-    token: hubToken('urn:agora:config'),
-    snapshotPath: 'storage/config/snapshot.json',
-  },
-})
-```
-
-The app fetches its scope at boot and follows changes over a stream. With the Hub down it boots
-from the snapshot on disk; without one, it keeps its local configuration (or fails the boot with
-`required: true`). Values `config/*.ts` must see at load time are fetched earlier, in
-`bin/server.ts`; see [Secrets](/docs/agora-hub/secrets).
-
-### Durable
-
-Durable needs no URL. Its tenants talk to the control plane over the broker both sides share
-(BullMQ on the Hub's Redis, for instance), so the issuer declares `urn:agora:durable` without a
-`url` and the app keeps its `transports` config. See
-[Migrating: durable](/docs/agora-hub/migrating#phase-4-durable).
-
-### Check it
-
-```sh
-node ace agora:doctor --deep        # every control plane URL resolves and accepts the token
-node ace telescope:server:status    # "The server accepts this app as "shop""
-```
-
-Each library's own page has the details: telescope's
-[central server](/docs/telescope/concepts/central-server#finding-the-server-through-authkit),
-[flags](/docs/flags/central-server#a-tenant),
-[config](/docs/config/tenant),
-[crypto](/docs/crypto/deployment) and
-AuthKit's [Find the control planes](/docs/authkit/service-tenants#find-the-control-planes).
+Telescope, crypto and config take the same three fields with their own resource
+(`urn:agora:telescope`, `urn:agora:crypto`, `urn:agora:config`); durable takes `partition` and
+`token` only. With all three set, nothing comes from authkit-client; `auto: false` turns the lookup
+off altogether.
 
 ## Over the private network
 
@@ -296,11 +372,16 @@ In the middleware's `handle`, after the header check fails and before answering 
 if (isDirectControlPlaneCall(ctx)) return next()
 ```
 
-**On each app**, point the control-plane URLs at the Hub's private address. Every library's
-`tenant.url` takes a function, so wrap the discovered URL and swap only its origin, in the same
-`config/hub.ts`:
+**On each app**, point the control-plane URLs at the Hub's private address. Only the URL changes,
+so set only `tenant.url`: authkit-client still supplies the token and the partition. Every
+library's `tenant.url` takes a function, so wrap the discovered URL and swap only its origin:
 
 ```ts title="config/hub.ts (shop)"
+import env from '#start/env'
+import { controlPlaneUrl } from '@adonis-agora/authkit-client'
+
+const issuer = env.get('AUTHKIT_ISSUER') // https://hub.example.com/oidc
+
 export function hubUrl(resource: string) {
   const discovered = controlPlaneUrl({ issuer, resource })
   const internal = env.get('HUB_INTERNAL_URL') // the Hub's address on the private network
@@ -317,6 +398,21 @@ export function hubUrl(resource: string) {
   })
 }
 ```
+
+```ts title="config/flags.ts (shop)"
+export default defineConfig({
+  topology: 'tenant',
+  flags: { /* ... */ },
+  tenant: {
+    url: hubUrl('urn:agora:flags'), // token and partition still come from authkit-client
+    snapshotPath: 'storage/flags/ruleset.json',
+  },
+})
+```
+
+The same `tenant: { url: hubUrl('urn:agora:<lib>') }` goes in telescope, config and crypto
+(durable has no URL). Without authkit-client, use this `hubUrl` in the `config/hub.ts` of
+[Without authkit-client](#without-authkit-client).
 
 Tokens still come from the public issuer, and their `iss` does not change: only the path the
 control-plane calls take is different. Browsers never use the private address.

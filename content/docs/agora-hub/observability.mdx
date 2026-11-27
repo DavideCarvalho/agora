@@ -94,6 +94,11 @@ export default defineConfig({
 })
 ```
 
+With `authkit-client` configured on that service (its `service` is the durable client, partition
+`durable`), `tenant: { relay: true, local: 'memory' }` (with the same `stores` for `local`) is
+enough: the URL, the token and the partition come from authkit-client, as in
+[Making an app a tenant](/docs/agora-hub/control-planes#making-an-app-a-tenant).
+
 Give its client the relay capability, for every app or only some:
 
 ```sh
