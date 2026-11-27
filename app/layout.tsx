@@ -1,7 +1,14 @@
 import type { Metadata } from 'next';
 import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
 import { Provider } from '@/components/provider';
-import { appName, appTagline, gitConfig } from '@/lib/shared';
+import { appName, gitConfig } from '@/lib/shared';
+import {
+  absoluteUrl,
+  seoDescription,
+  seoKeywords,
+  seoTitle,
+  siteUrl,
+} from '@/lib/site';
 import './global.css';
 
 // Editorial "docs" display serif — characterful, never generic.
@@ -24,54 +31,56 @@ const jetbrains = JetBrains_Mono({
   display: 'swap',
 });
 
-// e.g. https://dudousxd.github.io/agora  (basePath is empty in dev / on a custom domain)
-const siteUrl = `https://${gitConfig.user}.github.io${process.env.NEXT_PUBLIC_BASE_PATH || ''}`;
-
-const description =
-  'Agora is where the AdonisJS ecosystem gathers — plug-n-play, fully-configurable libraries published under @adonis-agora. One docs site for all of them: bring one to your app, or convene them all.';
-
-const ogImageAlt = 'Agora — where the AdonisJS ecosystem gathers';
+const ogImageAlt = 'Agora: start with one app, grow to a platform';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: `${appName} — ${appTagline}`,
+    default: seoTitle,
     template: `%s · ${appName}`,
   },
-  description,
+  description: seoDescription,
   applicationName: appName,
-  authors: [{ name: 'dudousxd' }],
-  keywords: [
-    'AdonisJS',
-    'Adonis',
-    'AdonisJS libraries',
-    'AdonisJS packages',
-    'TypeScript',
-    'Node.js',
-    'IoC container',
-    'Laravel-inspired',
-    '@adonis-agora',
-    'Agora',
-    'monorepo',
-    'libraries',
+  authors: [
+    { name: gitConfig.user, url: `https://github.com/${gitConfig.user}` },
   ],
+  creator: gitConfig.user,
+  keywords: seoKeywords,
+  alternates: { canonical: absoluteUrl('/') },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   // Link previews: Open Graph drives WhatsApp / Facebook / Discord / LinkedIn /
   // Slack; the Twitter card drives X. Both use `/og.png` from
-  // `app/og.png/route.tsx`, made absolute against `metadataBase`.
+  // `app/og.png/route.tsx`.
   openGraph: {
     type: 'website',
     siteName: appName,
-    url: siteUrl,
-    title: `${appName} — ${appTagline}`,
-    description,
+    url: absoluteUrl('/'),
+    title: seoTitle,
+    description: seoDescription,
     locale: 'en_US',
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: ogImageAlt }],
+    images: [
+      {
+        url: `${absoluteUrl('/og.png')}?v=4`,
+        width: 1200,
+        height: 630,
+        alt: ogImageAlt,
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    images: [{ url: '/og.png', alt: ogImageAlt }],
-    title: `${appName} — ${appTagline}`,
-    description,
+    images: [{ url: `${absoluteUrl('/og.png')}?v=4`, alt: ogImageAlt }],
+    title: seoTitle,
+    description: seoDescription,
   },
 };
 

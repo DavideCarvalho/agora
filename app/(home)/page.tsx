@@ -16,6 +16,11 @@ import { AgoraMark, GitHubMark } from '@/components/logo';
 import { adopters, adoptersIssue } from '@/lib/adopters';
 import { type AgoraLib, libs, stageLabel, totalPackages } from '@/lib/libs';
 import { gitConfig, npmScope } from '@/lib/shared';
+import {
+  absoluteUrl,
+  seoDescription,
+  repoUrl as siteRepoUrl,
+} from '@/lib/site';
 import { partners, sponsors } from '@/lib/sponsors';
 import './home.css';
 
@@ -71,9 +76,52 @@ const groups: { title: string; slugs: string[] }[] = [
   },
 ];
 
+/** WebSite + the library catalogue as structured data for search engines. */
+function HomeJsonLd() {
+  const data = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Agora',
+      url: absoluteUrl('/'),
+      description: seoDescription,
+      inLanguage: 'en',
+      sameAs: [siteRepoUrl],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Agora libraries for AdonisJS',
+      itemListElement: libs.map((lib, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        item: {
+          '@type': 'SoftwareSourceCode',
+          name: `${npmScope}/${lib.pkg}`,
+          description: lib.blurb,
+          url: absoluteUrl(`/docs/${lib.slug}`),
+          programmingLanguage: 'TypeScript',
+          runtimePlatform: 'Node.js',
+          license: 'https://opensource.org/licenses/MIT',
+        },
+      })),
+    },
+  ];
+  return (
+    <script
+      type="application/ld+json"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD must be inline; content is our own data, `<` escaped
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(data).replace(/</g, '\\u003c'),
+      }}
+    />
+  );
+}
+
 export default function HomePage() {
   return (
     <main className="ag-home flex-1">
+      <HomeJsonLd />
       {/* ------------------------------------------------------------ Hero */}
       <section className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 pt-14 pb-20 sm:px-8 md:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-24 lg:pb-28">
         <div className="min-w-0">
