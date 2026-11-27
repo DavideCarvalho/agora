@@ -52,7 +52,7 @@
     "@adonisjs/lucid": "22.4.2",
     "@adonisjs/session": "8.3.0",
     "@adonisjs/shield": "9.0.1",
-    "@adonisjs/static": "2.0.1",
+    "@adonisjs/static": "2.0.2",
     "@adonisjs/vite": "6.0.4",
     "@ai-sdk/openai": "4.0.122",
     "@ai-sdk/react": "4.0.186",
