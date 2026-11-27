@@ -120,6 +120,9 @@ issuer. Give it the app's service-tenant client as its `service`, and every libr
 control plane, its token and the app's partition there:
 
 ```ts title="config/authkit_client.ts (shop)"
+import env from '#start/env'
+import { defineConfig } from '@adonis-agora/authkit-client'
+
 export default defineConfig({
   issuer: env.get('AUTHKIT_ISSUER'), // https://hub.example.com/oidc
   // ...clientId, clientSecret, redirectUri and resolver, for signing users in
@@ -161,9 +164,18 @@ import { defineConfig } from '@adonis-agora/telescope'
 export default defineConfig({ topology: 'tenant' })
 ```
 
-To keep a short local copy in the app's own console, add `tenant: { local: 'memory' }` and
-`stores: { memory: storage.memory({ maxEntries: 500 }) }`; the rest still comes from
-authkit-client.
+To keep a short local copy in the app's own console, set only `local`; the rest still comes from
+authkit-client:
+
+```ts title="config/telescope.ts (shop)"
+import { defineConfig, storage } from '@adonis-agora/telescope'
+
+export default defineConfig({
+  topology: 'tenant',
+  tenant: { local: 'memory' },
+  stores: { memory: storage.memory({ maxEntries: 500 }) },
+})
+```
 
 ### Crypto
 
@@ -240,7 +252,8 @@ node ace telescope:server:status    # "The server accepts this app as "shop""
 ```
 
 `node ace agora:doctor --verbose` also says where each field came from, per library:
-`tenant url: authkit-client (auto), token: authkit-client (auto), partition: explicit`.
+`tenant url: authkit-client (auto), token: authkit-client (auto), partition: authkit-client (auto)`
+for the configs above, and `explicit` for a field set in `tenant`.
 
 Each library's own page has the details: telescope's
 [central server](/docs/telescope/concepts/central-server#a-tenant),
