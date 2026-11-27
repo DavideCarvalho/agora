@@ -25,7 +25,7 @@ const pages = {
   // tree with the chart still a placeholder. `ordersLoading`: the orders table before its rows.
   native: { newChat: '.threads .new', dashMid: '[data-testid="chart-skeleton"]', midSelector: 'text=loading 2/6', ordersLoading: '[data-testid="order-list-skeleton"]', langDelay: 0 },
   copilotkit: { newChat: '.threads .new', dashMid: 'text=Sales dashboard', midSelector: 'text=loading 2/6', ordersLoading: 'text=Looking up orders…', langDelay: 0 },
-  openui: { newChat: 'text=New Chat', dashMid: '.openui-agent-thread-container >> text=Sales dashboard', midSelector: 'text=Called the revenue_by_month tool', midWait: 1700, langDelay: 3000 },
+  openui: { newChat: 'text=New Chat', dashMid: '.openui-agent-thread-container >> text=Sales dashboard', midSelector: 'text=/Us(ing|ed) revenue by month/', midWait: 1700, langDelay: 3000 },
 }
 
 const browser = await chromium.launch()

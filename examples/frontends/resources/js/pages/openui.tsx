@@ -189,9 +189,16 @@ function Bridge() {
     : null
 }
 
+// Since 0.18, `AgentInterface` starts with its sidebar collapsed to an icon rail unless the visitor
+// opened it before (a saved `openui-agent-sidebar-open` preference). This page is about threads
+// (New Chat, reopening an older one), so it starts open; a visitor who collapses it stays collapsed.
+try {
+  if (localStorage.getItem('openui-agent-sidebar-open') === null) localStorage.setItem('openui-agent-sidebar-open', 'true')
+} catch {}
+
 function OpenUiPage() {
   return (
-    <Shell current="/openui" subtitle="OpenUI 0.17 AgentInterface → POST /agent/ag-ui">
+    <Shell current="/openui" subtitle="OpenUI 0.18 AgentInterface → POST /agent/ag-ui">
       <div className="openui-frame" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
         <AgentInterface
           llm={llm}
