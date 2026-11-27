@@ -2488,8 +2488,8 @@ packages:
   '@types/d3-scale@4.0.9':
     resolution: {integrity: sha512-dLmtwB8zkAeO/juAMfnV+sItKjlsw2lKdZVVy6LRr0cBmegxSABiLEpGVmSJJ8O08i4+sGR6qQtb6WtuwJdvVw==}
 
-  '@types/d3-selection@3.0.12':
-    resolution: {integrity: sha512-Qe/KWYhEiIIxGs7HrAAjMfShxKldx19SJtr5zu53f3afPsdZNz7HHtdTLXo/kqeiWNXVycI24kSnfzBYkTzpgw==}
+  '@types/d3-selection@3.0.13':
+    resolution: {integrity: sha512-oXz0iHVpWOhurycj7P8KehdevbbwQfdOyYPd6u5TUcrk6ofXeQfY0e4Ow+0/35arZ24gs6ubpjJX0CuZHV5fdw==}
 
   '@types/d3-shape@3.2.0':
     resolution: {integrity: sha512-kVd74ta9eof3eJOvbNd1vGKS/XERRyQbT26Og63hIsvDO84cjD5gEOhsXf26w3FSoNlPVz84DOFcKv/oou+fMw==}
@@ -2518,8 +2518,8 @@ packages:
   '@types/estree-jsx@1.0.5':
     resolution: {integrity: sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==}
 
-  '@types/estree@1.0.10':
-    resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
+  '@types/estree@1.0.11':
+    resolution: {integrity: sha512-YBdNe5JcjYR0sPhJW1QIeRCmI11YhYvaRuGCs9+WCeTTb+Yhb2BE2XMe5/wAqF10FK5g3+q1PDhQABfT7aX0gg==}
 
   '@types/geojson@7946.0.16':
     resolution: {integrity: sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==}
@@ -3435,8 +3435,8 @@ packages:
   extend@3.0.2:
     resolution: {integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==}
 
-  fast-copy@4.3.3:
-    resolution: {integrity: sha512-U3A5d4cBrc7fpZ2Sbz46FbFl+VdnCBAwRQaIR7IFWsyvndISF5CGjTbhiawGoMv7Ob8slBY1nT8XT3bWRFErzA==}
+  fast-copy@4.3.4:
+    resolution: {integrity: sha512-o+7Dj5GG97OeQdPAVAo9EQE3O8YmRqUjCg0iqk9P2xH3IXI7rQPRyanWdoqK1QIzGje1oKF+kQudEStF93atyw==}
 
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
@@ -3658,8 +3658,8 @@ packages:
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
 
-  hono@4.13.21:
-    resolution: {integrity: sha512-h9UsguqfVk4kjUwLvQpHOmOaJpW10jz9lp8bvKUUa04wJG/fabKFBqXZ06D6LFaeKQZtUZRVeg0gfkTTEsX7Mw==}
+  hono@4.13.22:
+    resolution: {integrity: sha512-wncKd5/40Pj8grx0RZ2fgNIicFEmVFwIHT5UFLTnphR8I6AQWFf9c2JoM6ZJ9g8y4pMzg3sNlCVNe0m2Yclg0Q==}
     engines: {node: '>=16.9.0'}
 
   hosted-git-info@9.0.3:
@@ -5162,8 +5162,8 @@ packages:
   tiny-invariant@1.3.3:
     resolution: {integrity: sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==}
 
-  tinyexec@1.3.1:
-    resolution: {integrity: sha512-GCvB3aoys96IuDFBMcTB46JOR6mdMtAToqwiW8JlWhsoh1mhHi/xn9ss/Dg7N555GiJyEt2qzoG/NHCwM6h1EA==}
+  tinyexec@1.4.0:
+    resolution: {integrity: sha512-PV6lIcJQh57aFeJDwx16JNHmgFRh5xguzallrDW1qe8nAghYgr5MKz2K5k7wEyV/ygZhdnIAP8+HZSarHPBCsg==}
     engines: {node: '>=18'}
 
   tinyglobby@0.2.17:
@@ -5954,7 +5954,7 @@ snapshots:
   '@antfu/install-pkg@2.1.0':
     dependencies:
       package-manager-detector: 1.9.0
-      tinyexec: 1.3.1
+      tinyexec: 1.4.0
 
   '@arr/every@1.0.1': {}
 
@@ -6343,9 +6343,9 @@ snapshots:
     dependencies:
       graphql: 16.15.0
 
-  '@hono/node-server@2.1.11(hono@4.13.21)':
+  '@hono/node-server@2.1.11(hono@4.13.22)':
     dependencies:
-      hono: 4.13.21
+      hono: 4.13.22
 
   '@iconify/types@2.0.0': {}
 
@@ -6409,7 +6409,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.7)':
     dependencies:
-      '@hono/node-server': 2.1.11(hono@4.13.21)
+      '@hono/node-server': 2.1.11(hono@4.13.22)
       ajv: 8.20.0
       ajv-formats: 3.0.1
       content-type: 1.0.5
@@ -6419,7 +6419,7 @@ snapshots:
       eventsource-parser: 3.1.1
       express: 5.3.0(supports-color@10.2.2)
       express-rate-limit: 8.7.5(express@5.3.0(supports-color@10.2.2))(supports-color@10.2.2)
-      hono: 4.13.21
+      hono: 4.13.22
       jose: 6.2.15
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.2
@@ -7652,11 +7652,11 @@ snapshots:
 
   '@types/d3-axis@3.0.6':
     dependencies:
-      '@types/d3-selection': 3.0.12
+      '@types/d3-selection': 3.0.13
 
   '@types/d3-brush@3.0.6':
     dependencies:
-      '@types/d3-selection': 3.0.12
+      '@types/d3-selection': 3.0.13
 
   '@types/d3-chord@3.0.6': {}
 
@@ -7673,7 +7673,7 @@ snapshots:
 
   '@types/d3-drag@3.0.7':
     dependencies:
-      '@types/d3-selection': 3.0.12
+      '@types/d3-selection': 3.0.13
 
   '@types/d3-dsv@3.0.7': {}
 
@@ -7711,7 +7711,7 @@ snapshots:
     dependencies:
       '@types/d3-time': 3.0.4
 
-  '@types/d3-selection@3.0.12': {}
+  '@types/d3-selection@3.0.13': {}
 
   '@types/d3-shape@3.2.0':
     dependencies:
@@ -7725,12 +7725,12 @@ snapshots:
 
   '@types/d3-transition@3.0.9':
     dependencies:
-      '@types/d3-selection': 3.0.12
+      '@types/d3-selection': 3.0.13
 
   '@types/d3-zoom@3.0.9':
     dependencies:
       '@types/d3-interpolate': 3.0.4
-      '@types/d3-selection': 3.0.12
+      '@types/d3-selection': 3.0.13
 
   '@types/d3@7.4.3':
     dependencies:
@@ -7757,7 +7757,7 @@ snapshots:
       '@types/d3-random': 3.0.4
       '@types/d3-scale': 4.0.9
       '@types/d3-scale-chromatic': 3.1.0
-      '@types/d3-selection': 3.0.12
+      '@types/d3-selection': 3.0.13
       '@types/d3-shape': 3.2.0
       '@types/d3-time': 3.0.4
       '@types/d3-time-format': 4.0.3
@@ -7771,9 +7771,9 @@ snapshots:
 
   '@types/estree-jsx@1.0.5':
     dependencies:
-      '@types/estree': 1.0.10
+      '@types/estree': 1.0.11
 
-  '@types/estree@1.0.10': {}
+  '@types/estree@1.0.11': {}
 
   '@types/geojson@7946.0.16': {}
 
@@ -8594,7 +8594,7 @@ snapshots:
 
   extend@3.0.2: {}
 
-  fast-copy@4.3.3: {}
+  fast-copy@4.3.4: {}
 
   fast-deep-equal@3.1.3: {}
 
@@ -8815,7 +8815,7 @@ snapshots:
 
   hast-util-to-jsx-runtime@2.3.7(supports-color@10.2.2):
     dependencies:
-      '@types/estree': 1.0.10
+      '@types/estree': 1.0.11
       '@types/hast': 3.0.5
       '@types/unist': 3.0.3
       comma-separated-tokens: 2.0.3
@@ -8875,7 +8875,7 @@ snapshots:
     dependencies:
       react-is: 16.13.1
 
-  hono@4.13.21: {}
+  hono@4.13.22: {}
 
   hosted-git-info@9.0.3:
     dependencies:
@@ -10004,7 +10004,7 @@ snapshots:
     dependencies:
       colorette: 2.0.20
       dateformat: 4.6.3
-      fast-copy: 4.3.3
+      fast-copy: 4.3.4
       fast-safe-stringify: 2.1.1
       help-me: 5.0.0
       joycon: 3.1.1
@@ -10764,7 +10764,7 @@ snapshots:
 
   tiny-invariant@1.3.3: {}
 
-  tinyexec@1.3.1: {}
+  tinyexec@1.4.0: {}
 
   tinyglobby@0.2.17:
     dependencies:
