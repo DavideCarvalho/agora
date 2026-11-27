@@ -1,0 +1,70 @@
+---
+title: AI agent skills
+description: Which Agora libraries ship agent skills for coding agents (Claude Code, Cursor, Copilot, Codex) and how to load them with TanStack Intent.
+---
+
+Most Agora libraries ship [Agent Skills](https://agentskills.io): short `SKILL.md` files that tell
+a coding agent how to use the library, the patterns to follow and the mistakes to avoid. They live
+inside each npm package (its `skills/` folder), so they always match the version you installed:
+upgrade a package and its skills come with it.
+
+## Load them with TanStack Intent
+
+[TanStack Intent](https://github.com/TanStack/intent) finds the skills in your installed packages
+and tells your agent when to load them.
+
+```bash
+npm i -D @tanstack/intent    # pnpm add -D @tanstack/intent
+npx intent install
+```
+
+The first `intent install` runs in a terminal: it asks which packages' skills to allow (saved as
+`intent.skills` in your `package.json`) and writes a short skill-loading block into `AGENTS.md`
+(or into the `CLAUDE.md`, `.cursorrules` or `.github/copilot-instructions.md` that already carries
+it). To allow every Agora library without the prompt, for example in CI, add this to
+`package.json` first:
+
+```json
+{
+  "intent": { "skills": ["@adonis-agora/*"] }
+}
+```
+
+Then your agent, or you, can list and load them:
+
+```bash
+npx intent list
+npx intent load @adonis-agora/durable#durable-setup
+```
+
+`npx intent hooks install` adds hooks that remind Claude Code, Codex and Copilot to load a matching
+skill before editing. Without Intent, point your agent at
+`node_modules/@adonis-agora/<package>/skills/<skill>/SKILL.md`.
+
+## Libraries that ship skills
+
+Each library's page lists its skills and when to load each one.
+
+| Library | Packages | Skills |
+| --- | --- | --- |
+| [Context](/docs/context/agent-skills) | `@adonis-agora/context` | 3 |
+| [Diagnostics](/docs/diagnostics/agent-skills) | `@adonis-agora/diagnostics` | 3 |
+| [Resilience](/docs/resilience/agent-skills) | `@adonis-agora/resilience` | 3 |
+| [Durable](/docs/durable/agent-skills) | `@adonis-agora/durable`, `@adonis-agora/durable-dashboard` | 7 |
+| [Telescope](/docs/telescope/reference/agent-skills) | `@adonis-agora/telescope`, `@adonis-agora/telescope-ui` | 6 |
+| [Authz](/docs/authz/agent-skills) | `@adonis-agora/authz`, `@adonis-agora/authz-react` | 6 |
+| [Media](/docs/media/agent-skills) | `@adonis-agora/media`, `@adonis-agora/media-dashboard`, `@adonis-agora/media-react` | 7 |
+| [Filter](/docs/filter/agent-skills) | `@adonis-agora/filter`, `@adonis-agora/filter-client` | 6 |
+| [Agent](/docs/agent/agent-skills) | `@adonis-agora/agent`, `@adonis-agora/agent-dashboard` | 6 |
+| [AuthKit](/docs/authkit/agent-skills) | `@adonis-agora/authkit-client`, `@adonis-agora/authkit-server`, `@adonis-agora/authkit-react` | 4 |
+| [Flags](/docs/flags/agent-skills) | `@adonis-agora/flags` | 3 |
+| [Sail](/docs/sail/agent-skills) | `@adonis-agora/sail` | 1 |
+
+Collaboration, Payments, CMS, Config and Crypto do not ship skills yet.
+
+## Skills and the MCP endpoint
+
+Skills teach an agent how to write code against a library. To let it look at what your running
+app is doing (failed durable runs, slow requests, flag state), connect it to the app's
+`/mcp/agora` endpoint, as in [Getting started](/docs/getting-started#3-connect-your-coding-agent).
+The two work together.
