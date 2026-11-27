@@ -53,7 +53,7 @@ serviceTenants: {
 node ace authkit:client create --client-id=shop --partition=shop \
   --capability=telescope:ingest \
   --capability=flags:ruleset:read --capability=flags:events:write --capability=flags:declarations:write \
-  --capability=config:read \
+  --capability=config:read --capability=config:secrets:read \
   --capability=crypto:datakey:subject_* --capability=crypto:encrypt:subject_* --capability=crypto:decrypt:subject_*
 ```
 
@@ -72,12 +72,20 @@ A control plane that runs as its own service gets a client too, for the resource
 | | `flags:declarations:write` | every app that declares flags (they are published at boot) |
 | | `flags:ofrep:evaluate` | OFREP callers only |
 | `urn:agora:config` | `config:read` | every app that reads its configuration |
-| | `config:secrets:read` | only apps that read secret values |
+| | `config:secrets:read` | apps that read secret values, and every app that registers its sealing key (`tenant.key`, on by default: without it the key registration is refused with a `403`, `agora:doctor` warns, and operators cannot seal values to the app) |
 | `urn:agora:crypto` | `crypto:encrypt:<key>`, `crypto:decrypt:<key>` | named keys, such as the envelope key of a [call between apps](/docs/agora-hub/calls-between-apps#privacy) |
+| | `crypto:sign:<key>`, `crypto:verify:<key>`, `crypto:hmac:<key>` | apps that sign, verify or MAC with a named key |
+| | `crypto:seal:<key>` | apps that encrypt with another partition's key (never decrypt); only an explicit grant counts, `crypto:*` does not |
 | | `crypto:datakey:subject_*`, `crypto:encrypt:subject_*`, `crypto:decrypt:subject_*` | apps that [encrypt user data](/docs/agora-hub/encrypting-user-data) with per-subject keys |
 | | `crypto:keys:manage:subject_*`, `crypto:keys:read:subject_*` | the client that creates and forgets subject keys |
 | | `crypto:rewrap:subject_*` | the client that rewraps data keys after a rotation |
 | `urn:agora:durable` | `tenancy:*` or `tenancy:<org>` | only apps that start runs for their active organization; running steps needs no capability |
+| `urn:agora:media` | `media:read` | every app that reads its media records, their bytes and URLs |
+| | `media:write` | every app that adds, renames or deletes media |
+| `urn:agora:payments` | `payments:read` | every app (the tenant describes the control plane at boot, and reads an account's billing) |
+| | `payments:charge`, `payments:refund` | apps that charge, tokenize cards, open checkouts, list invoices, refund |
+| | `payments:customers`, `payments:subscriptions`, `payments:disputes` | apps that manage customers, subscriptions, disputes |
+| | `payments:events` | apps that receive the payment events of their own objects |
 
 In crypto's key-name segment, a capability can name a prefix: `crypto:decrypt:subject_*` matches
 `subject_researcher_7`, never `orders`. Nothing is implied across operations: `crypto:encrypt:media`

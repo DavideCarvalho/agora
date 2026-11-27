@@ -29,11 +29,12 @@ durable:
 node ace authkit:client create --client-id=app-a --partition=app-a \
   --capability=telescope:ingest \
   --capability=flags:ruleset:read --capability=flags:events:write --capability=flags:declarations:write \
-  --capability=config:read
+  --capability=config:read --capability=config:secrets:read
 ```
 
-Add `config:secrets:read` only for apps that read secret values, and the
-`crypto:encrypt:<key>` / `crypto:decrypt:<key>` capabilities in phase 2.
+`config:secrets:read` lets the app read secret values and register its sealing key (on by
+default, so keep it unless the app sets `tenant.key: false`). Add the `crypto:encrypt:<key>` /
+`crypto:decrypt:<key>` capabilities in phase 2.
 
 The partition is the app's name everywhere: in telescope's App picker, in service discovery
 (`http://app-a/…`), in flags' events and in durable's queues. Use a single label (`app-a`, not

@@ -107,7 +107,13 @@ export default defineConfig({
   adapter: adapters.database({ connection: 'hub', schema: HUB_SCHEMAS.authkit }),
   session: { adapter: adapters.redis({ connection: 'main' }) },
   schema: { connection: 'hub', name: HUB_SCHEMAS.authkit },
-  jwks: { source: 'managed', algorithm: 'RS256' },
+  // Signing keys in the database: every Hub process (web, `durable:work`) signs with the same keys,
+  // and a restart keeps them, so tenants' cached tokens stay valid.
+  jwks: {
+    source: 'managed',
+    algorithm: 'RS256',
+    store: { driver: 'lucid', connection: 'hub', schema: HUB_SCHEMAS.authkit },
+  },
   // ...accountStore, login methods, branding
   serviceTenants: {
     resources: {
