@@ -1,29 +1,33 @@
 ---
 title: Getting started
-description: Install Agora libraries from the 1.0 release candidate, configure them in your AdonisJS app, and connect your coding agent to /mcp/agora.
+description: Install Agora libraries from npm, configure them in your AdonisJS app, and connect your coding agent to /mcp/agora.
 ---
 
 Every Agora library installs into an AdonisJS 7 app on its own. Pick the ones you need; they find
 each other at boot.
 
-## 1. Install from the `rc` tag
+## 1. Install
 
-The 1.x line is a **release candidate**. npm's `latest` tag still points at 0.x, so install with
-`@rc`, then run the package's configure hook:
+The 1.x line is stable on npm's `latest` tag. Add each library with `node ace add`, which installs
+the package and runs its configure hook (providers, `config/<lib>.ts`, migrations, whatever the
+library sets up):
 
 ```sh
-npm i @adonis-agora/durable@rc @adonis-agora/telescope@rc
+node ace add @adonis-agora/durable
+node ace add @adonis-agora/telescope
+```
+
+To install with your package manager first, run the same hook afterwards with `node ace configure`:
+
+```sh
+npm i @adonis-agora/durable @adonis-agora/telescope
 node ace configure @adonis-agora/durable
 node ace configure @adonis-agora/telescope
 ```
 
-`node ace configure` runs the same configure hook `node ace add` runs after its install (providers,
-`config/<lib>.ts`, migrations, whatever the library sets up). A library's own getting-started page shows
-`node ace add @adonis-agora/<lib>`; use the two commands above instead while 1.x is on `rc`. Keep
-every `@adonis-agora/*` package on the same release line.
+Keep every `@adonis-agora/*` package on the same major version.
 
-[Flags](/docs/flags) and the [CMS](/docs/cms) are still on 0.x and install from `latest` with
-`node ace add`.
+The [CMS](/docs/cms) is still on 0.x; it installs from `latest` the same way.
 
 ## 2. Check the configuration
 
@@ -38,7 +42,7 @@ It checks every installed library and prints the fix for each problem.
 Install the agent and register its MCP provider after the agent provider:
 
 ```sh
-npm i @adonis-agora/agent@rc
+npm i @adonis-agora/agent
 node ace configure @adonis-agora/agent
 ```
 
