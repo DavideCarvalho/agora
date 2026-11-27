@@ -15,7 +15,7 @@
 // - `versions` lists the OLDER majors, newest first. Each entry is
 //   `{ id, label, ref, path? }`: `id` is the URL segment (/docs/<slug>/<id>/...),
 //   `label` is what the dropdown shows, `ref` is a git tag (the last release of that
-//   major, e.g. `@adonis-agora/durable@0.60.0`), and `path` overrides the docs dir
+//   major, e.g. `@adonis-agora/durable@0.60.1`), and `path` overrides the docs dir
 //   when it moved between majors (defaults to the source's `path`).
 // When a library ships a new major, prepend one entry for the previous major (its last
 // tag) and bump `latestLabel` — see the README.
@@ -36,9 +36,9 @@ export const sources = [
     path: 'apps/docs/content/docs',
     repoDir: 'adonis-authkit',
     migrated: true,
-    latestLabel: '1.x (rc)',
+    latestLabel: '1.x',
     versions: [
-      { id: 'v0', label: '0.x', ref: '@adonis-agora/authkit-server@0.90.2' },
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/authkit-server@0.90.3' },
     ],
   },
   {
@@ -52,8 +52,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-context',
     migrated: true,
-    latestLabel: '1.x (rc)',
-    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/context@0.7.1' }],
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/context@0.8.0' }],
   },
   {
     slug: 'diagnostics',
@@ -66,9 +66,9 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-diagnostics',
     migrated: true,
-    latestLabel: '1.x (rc)',
+    latestLabel: '1.x',
     versions: [
-      { id: 'v0', label: '0.x', ref: '@adonis-agora/diagnostics@0.3.2' },
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/diagnostics@0.4.0' },
     ],
   },
   {
@@ -82,7 +82,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-resilience',
     migrated: true,
-    latestLabel: '1.x (rc)',
+    latestLabel: '1.x',
     versions: [
       { id: 'v0', label: '0.x', ref: '@adonis-agora/resilience@0.4.3' },
     ],
@@ -98,8 +98,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-durable',
     migrated: true,
-    latestLabel: '1.x (rc)',
-    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/durable@0.60.0' }],
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/durable@0.60.1' }],
   },
   {
     slug: 'telescope',
@@ -112,9 +112,9 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-telescope',
     migrated: true,
-    latestLabel: '1.x (rc)',
+    latestLabel: '1.x',
     versions: [
-      { id: 'v0', label: '0.x', ref: '@adonis-agora/telescope@0.27.1' },
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/telescope@0.28.0' },
     ],
   },
   {
@@ -128,7 +128,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-authz',
     migrated: true,
-    latestLabel: '1.x (rc)',
+    latestLabel: '1.x',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/authz@0.20.2' }],
   },
   {
@@ -142,8 +142,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-media',
     migrated: true,
-    latestLabel: '1.x (rc)',
-    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/media@0.30.0' }],
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/media@0.31.0' }],
   },
   {
     slug: 'filter',
@@ -156,8 +156,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-filter',
     migrated: true,
-    latestLabel: '1.x (rc)',
-    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/filter@0.11.3' }],
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/filter@0.12.0' }],
   },
   {
     slug: 'sail',
@@ -170,7 +170,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-sail',
     migrated: true,
-    latestLabel: '1.x (rc)',
+    latestLabel: '1.x',
     versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/sail@0.6.1' }],
   },
   {
@@ -184,8 +184,8 @@ export const sources = [
     path: 'packages/adonis/docs',
     repoDir: 'adonis-agent',
     migrated: true,
-    latestLabel: '1.x (rc)',
-    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/agent@0.97.7' }],
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/agent@0.98.0' }],
   },
   {
     slug: 'collaboration',
@@ -198,9 +198,9 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-collaboration',
     migrated: true,
-    latestLabel: '1.x (rc)',
+    latestLabel: '1.x',
     versions: [
-      { id: 'v0', label: '0.x', ref: '@adonis-agora/collaboration@0.20.2' },
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/collaboration@0.21.0' },
     ],
   },
   {
@@ -212,9 +212,9 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-payments',
     migrated: true,
-    latestLabel: '1.x (rc)',
+    latestLabel: '1.x',
     versions: [
-      { id: 'v0', label: '0.x', ref: '@adonis-agora/payments@0.26.1' },
+      { id: 'v0', label: '0.x', ref: '@adonis-agora/payments@0.27.0' },
     ],
   },
   {
@@ -228,8 +228,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-flags',
     migrated: true,
-    latestLabel: '1.x (rc)',
-    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/flags@0.15.0' }],
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/flags@0.16.0' }],
   },
   {
     slug: 'cms',
@@ -258,8 +258,8 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-config',
     migrated: true,
-    latestLabel: '1.x (rc)',
-    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/config@0.12.1' }],
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/config@0.13.0' }],
   },
   {
     slug: 'crypto',
@@ -272,7 +272,7 @@ export const sources = [
     path: 'docs',
     repoDir: 'adonis-crypto',
     migrated: true,
-    latestLabel: '1.x (rc)',
-    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/crypto@0.13.0' }],
+    latestLabel: '1.x',
+    versions: [{ id: 'v0', label: '0.x', ref: '@adonis-agora/crypto@0.14.0' }],
   },
 ];

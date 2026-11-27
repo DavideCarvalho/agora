@@ -21,8 +21,8 @@ export function GET() {
         justifyContent: 'space-between',
         padding: '72px 80px',
         background:
-          'radial-gradient(900px 520px at 50% -8%, rgba(90,69,255,0.34), rgba(90,69,255,0) 70%), radial-gradient(700px 420px at 14% 12%, rgba(124,58,170,0.20), rgba(124,58,170,0) 70%), #0c0a0e',
-        color: '#ECE7E1',
+          'radial-gradient(900px 520px at 78% -10%, rgba(125,159,255,0.30), rgba(125,159,255,0) 70%), #0c0c0f',
+        color: '#ECECF1',
         fontFamily: 'sans-serif',
       }}
     >
@@ -34,7 +34,7 @@ export function GET() {
           fontSize: 26,
           letterSpacing: 6,
           textTransform: 'uppercase',
-          color: '#B9B2AA',
+          color: '#9C9CAA',
         }}
       >
         <div
@@ -43,7 +43,7 @@ export function GET() {
             width: 16,
             height: 16,
             borderRadius: 999,
-            background: '#5a45ff',
+            background: '#7d9fff',
           }}
         />
         @adonis-agora · for AdonisJS
@@ -58,7 +58,7 @@ export function GET() {
             lineHeight: 1.02,
           }}
         >
-          Many libraries.
+          Start with one app.
         </div>
         <div
           style={{
@@ -66,11 +66,10 @@ export function GET() {
             fontSize: 92,
             fontWeight: 700,
             lineHeight: 1.02,
-            color: '#5a45ff',
-            fontStyle: 'italic',
+            color: '#7d9fff',
           }}
         >
-          One agora.
+          Grow to a platform.
         </div>
       </div>
 
@@ -80,7 +79,7 @@ export function GET() {
           alignItems: 'center',
           justifyContent: 'space-between',
           fontSize: 30,
-          color: '#B9B2AA',
+          color: '#9C9CAA',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -89,17 +88,17 @@ export function GET() {
               display: 'flex',
               fontSize: 40,
               fontWeight: 700,
-              color: '#ECE7E1',
+              color: '#ECECF1',
             }}
           >
             Agora
           </div>
           <div style={{ display: 'flex' }}>
-            — where the AdonisJS ecosystem gathers
+            production-grade libraries for AdonisJS
           </div>
         </div>
-        <div style={{ display: 'flex', fontSize: 26, color: '#8A847C' }}>
-          {libs.length} libraries · {totalPackages} packages
+        <div style={{ display: 'flex', fontSize: 26, color: '#7A7A88' }}>
+          {libs.length} libraries, {totalPackages}+ packages
         </div>
       </div>
     </div>,

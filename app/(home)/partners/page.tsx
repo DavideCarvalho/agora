@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BackerLogo } from '@/components/backers';
 import { libs } from '@/lib/libs';
+import { absoluteUrl } from '@/lib/site';
 import {
   partners,
   sponsors,
@@ -13,6 +14,7 @@ import {
 
 export const metadata: Metadata = {
   title: 'Partners & sponsors',
+  alternates: { canonical: absoluteUrl('/partners') },
   description:
     'Every Agora library is MIT and stays that way. Partners and sponsors fund the work — and get featured where AdonisJS developers pick their stack.',
 };

@@ -14,7 +14,8 @@ import { notFound } from 'next/navigation';
 import { DocsPartners } from '@/components/docs-partners';
 import { getMDXComponents } from '@/components/mdx';
 import { libs } from '@/lib/libs';
-import { gitConfig } from '@/lib/shared';
+import { gitConfig, npmScope } from '@/lib/shared';
+import { absoluteUrl } from '@/lib/site';
 import {
   getPageImage,
   getPageMarkdownUrl,
@@ -105,6 +106,57 @@ function ReleaseCandidateBanner({
   );
 }
 
+/** TechArticle + BreadcrumbList structured data for search engines. */
+function DocsJsonLd({ page }: { page: (typeof source)['$inferPage'] }) {
+  const lib = libs.find((l) => l.slug === page.slugs[0]);
+  const crumbs = [
+    { name: 'Agora', url: absoluteUrl('/') },
+    { name: 'Docs', url: absoluteUrl('/docs') },
+    ...(lib && page.slugs.length > 1
+      ? [{ name: lib.name, url: absoluteUrl(`/docs/${lib.slug}`) }]
+      : []),
+    { name: page.data.title, url: absoluteUrl(page.url) },
+  ];
+  const data = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'TechArticle',
+      headline: page.data.title,
+      description: page.data.description,
+      url: absoluteUrl(page.url),
+      inLanguage: 'en',
+      isPartOf: { '@type': 'WebSite', name: 'Agora', url: absoluteUrl('/') },
+      ...(lib
+        ? {
+            about: {
+              '@type': 'SoftwareSourceCode',
+              name: `${npmScope}/${lib.pkg}`,
+            },
+          }
+        : {}),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: crumbs.map((c, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: c.name,
+        item: c.url,
+      })),
+    },
+  ];
+  return (
+    <script
+      type="application/ld+json"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD must be inline; content is our own data, `<` escaped
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(data).replace(/</g, '\\u003c'),
+      }}
+    />
+  );
+}
+
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
   const page = source.getPage(params.slug);
@@ -119,6 +171,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       full={page.data.full}
       tableOfContent={{ footer: <DocsPartners slug={params.slug?.[0]} /> }}
     >
+      <DocsJsonLd page={page} />
       <OlderVersionBanner page={page} />
       <ReleaseCandidateBanner page={page} />
       <DocsTitle>{page.data.title}</DocsTitle>
@@ -166,28 +219,41 @@ export async function generateMetadata(
   // make scrapers render the full 1200×630 landscape card instead of cropping
   // to a square thumbnail (which cut off the emblem on the right).
   const image = {
-    url: `${getPageImage(page).url}?v=3`,
+    url: `${absoluteUrl(getPageImage(page).url)}?v=3`,
     width: 1200,
     height: 630,
     alt: title,
   };
 
+  const lib = libs.find((l) => l.slug === page.slugs[0]);
+  // Pages without a description still get a useful snippet instead of the site-wide one.
+  const description =
+    page.data.description ??
+    (lib
+      ? `${page.data.title} in ${lib.name} (${npmScope}/${lib.pkg}), a library for AdonisJS. ${lib.blurb}`
+      : `${page.data.title} in the Agora docs, libraries for AdonisJS.`);
+  const isOlder = Boolean(older);
+
   return {
     title: `${page.data.title}${older}`,
-    description: page.data.description,
+    description,
+    alternates: { canonical: absoluteUrl(page.url) },
+    // Older majors stay reachable but don't compete with the latest docs in search.
+    ...(isOlder ? { robots: { index: false, follow: true } } : {}),
     // Per-page Open Graph (WhatsApp / Discord / Facebook / LinkedIn / Telegram /
     // Slack) and Twitter card, so every platform shows this page's own title,
     // description and preview image instead of the site-wide one.
     openGraph: {
       type: 'article',
       title,
-      description: page.data.description,
+      description,
+      url: absoluteUrl(page.url),
       images: [image],
     },
     twitter: {
       card: 'summary_large_image',
       title,
-      description: page.data.description,
+      description,
       images: [image],
     },
   };
