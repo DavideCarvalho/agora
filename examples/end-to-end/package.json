@@ -67,7 +67,7 @@
     "@adonisjs/auth": "10.1.1",
     "@adonisjs/core": "7.6.0",
     "@adonisjs/drive": "4.0.0",
-    "@adonisjs/lucid": "22.4.2",
+    "@adonisjs/lucid": "22.5.0",
     "@adonisjs/session": "8.3.0",
     "@adonisjs/shield": "9.0.1",
     "@adonisjs/static": "2.0.1",

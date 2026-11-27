@@ -49,7 +49,7 @@
     "@a2ui/web_core": "0.16.1",
     "@adonis-agora/agent": "0.97.7",
     "@adonisjs/core": "7.6.0",
-    "@adonisjs/lucid": "22.4.2",
+    "@adonisjs/lucid": "22.5.0",
     "@adonisjs/session": "8.3.0",
     "@adonisjs/shield": "9.0.1",
     "@adonisjs/static": "2.0.1",
