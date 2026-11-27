@@ -62,7 +62,15 @@ export async function clientConfigFor(kit: string) {
   return (await serverFor(kit)).client()
 }
 
-/** Who picked which kit: the visitor's anonymous actor (its `agent_anon` cookie) → the kit. */
+/**
+ * Who picked which kit: the visitor's anonymous actor (its `agent_anon` cookie) → the kit.
+ *
+ * Every page GET remembers its visitor, and a request without the cookie is a brand-new actor, so
+ * this is a bounded LRU (least recently seen visitor out first): a cookie-less crawler cannot grow
+ * it without limit. A visitor that falls out just draws with their `sandbox_kit` cookie's kit
+ * again on their next page view.
+ */
+const MAX_VISITORS = 10_000
 const visitors = new Map<string, string>()
 const actors = new AnonymousActorResolver()
 
@@ -72,9 +80,15 @@ export function actorIdOf(ctx: unknown): string {
 }
 
 export function rememberKit(actorId: string, kit: string): void {
+  visitors.delete(actorId)
   visitors.set(actorId, kit)
+  if (visitors.size > MAX_VISITORS) visitors.delete(visitors.keys().next().value as string)
 }
 
 export function kitOfActor(actorId: string): string {
-  return visitors.get(actorId) ?? defaultKit()
+  const kit = visitors.get(actorId)
+  if (kit === undefined) return defaultKit()
+  visitors.delete(actorId)
+  visitors.set(actorId, kit)
+  return kit
 }

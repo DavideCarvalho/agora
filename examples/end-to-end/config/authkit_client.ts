@@ -21,7 +21,7 @@ const authkitClientConfig = defineConfig({
   resolveUser: async (identity: Identity) => {
     return AppUser.updateOrCreate(
       { id: identity.userId },
-      { id: identity.userId, email: identity.email, fullName: identity.profile?.name ?? null },
+      { id: identity.userId, email: identity.email, fullName: identity.profile?.name ?? null }
     )
   },
 

@@ -2,3 +2,4 @@
 node_modules
 build
 *.edge
+database/schema.ts

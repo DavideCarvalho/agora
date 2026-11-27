@@ -53,7 +53,8 @@ test.group('documents authorization', (group) => {
   test('the "member" role grants view + create but not manage', async ({ assert }) => {
     await seedCatalog()
     const user = await AppUser.create({ id: randomUUID(), email: 'member@example.com' })
-    await (await authzService()).store.assignRole({ type: 'user', id: user.id }, 'member')
+    const { store } = await authzService()
+    await store.assignRole({ type: 'user', id: user.id }, 'member')
 
     assert.isTrue(await authz.can(user, 'documents.view'))
     assert.isTrue(await authz.can(user, 'documents.create'))
@@ -65,7 +66,8 @@ test.group('documents authorization', (group) => {
   }) => {
     await seedCatalog()
     const user = await AppUser.create({ id: randomUUID(), email: 'admin@example.com' })
-    await (await authzService()).store.assignRole({ type: 'user', id: user.id }, 'ADMIN')
+    const { store } = await authzService()
+    await store.assignRole({ type: 'user', id: user.id }, 'ADMIN')
 
     assert.isTrue(await authz.can(user, 'documents.view'))
     assert.isTrue(await authz.can(user, 'documents.create'))
@@ -79,7 +81,8 @@ test.group('documents authorization', (group) => {
     const owner = await AppUser.create({ id: randomUUID(), email: 'owner@example.com' })
     const stranger = await AppUser.create({ id: randomUUID(), email: 'stranger@example.com' })
     const admin = await AppUser.create({ id: randomUUID(), email: 'admin2@example.com' })
-    await (await authzService()).store.assignRole({ type: 'user', id: admin.id }, 'ADMIN')
+    const { store } = await authzService()
+    await store.assignRole({ type: 'user', id: admin.id }, 'ADMIN')
 
     const doc = await Document.createFor(owner.id, 'Some document')
 
