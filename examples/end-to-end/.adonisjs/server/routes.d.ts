@@ -30,11 +30,16 @@ export type ScannedRoutes = {
     'telescope_ui.metrics_ai': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_pulse': { paramsTuple?: []; params?: {} }
     'telescope_ui.stream': { paramsTuple?: []; params?: {} }
+    'telescope_ui.fleet': { paramsTuple?: []; params?: {} }
+    'telescope_ui.architecture': { paramsTuple?: []; params?: {} }
+    'telescope_ui.health': { paramsTuple?: []; params?: {} }
     'telescope_ui.tenants': { paramsTuple?: []; params?: {} }
+    'telescope_ui.apps': { paramsTuple?: []; params?: {} }
     'telescope_ui.meta': { paramsTuple?: []; params?: {} }
     'media.dashboard.topology': { paramsTuple?: []; params?: {} }
     'media.dashboard.tenants': { paramsTuple?: []; params?: {} }
     'media.dashboard.tenants.select': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'media.dashboard.apps': { paramsTuple?: []; params?: {} }
     'media.dashboard.consoles': { paramsTuple?: []; params?: {} }
     'media.dashboard.consoles.search': { paramsTuple?: []; params?: {} }
     'media.dashboard.disks': { paramsTuple?: []; params?: {} }
@@ -242,6 +247,9 @@ export type ScannedRoutes = {
     'api_clients.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'api_clients.revoke': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'api_clients.grant_app': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'app': ParamValue} }
+    'api_clients.revoke_app': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'app': ParamValue} }
     'api_orgs.index': { paramsTuple?: []; params?: {} }
     'api_orgs.store': { paramsTuple?: []; params?: {} }
     'api_orgs.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -261,6 +269,10 @@ export type ScannedRoutes = {
     'api_settings.destroy': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
     'api_keys.status': { paramsTuple?: []; params?: {} }
     'api_keys.rotate': { paramsTuple?: []; params?: {} }
+    'authkit.org_labels': { paramsTuple?: []; params?: {} }
+    'authkit.app_catalog': { paramsTuple?: []; params?: {} }
+    'authkit.app_keys.publish': { paramsTuple?: []; params?: {} }
+    'authkit.app_keys.read': { paramsTuple: [ParamValue]; params: {'app': ParamValue} }
     'home': { paramsTuple?: []; params?: {} }
     'auth.login': { paramsTuple?: []; params?: {} }
     'auth.callback': { paramsTuple?: []; params?: {} }
@@ -291,10 +303,15 @@ export type ScannedRoutes = {
     'telescope_ui.metrics_ai': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_pulse': { paramsTuple?: []; params?: {} }
     'telescope_ui.stream': { paramsTuple?: []; params?: {} }
+    'telescope_ui.fleet': { paramsTuple?: []; params?: {} }
+    'telescope_ui.architecture': { paramsTuple?: []; params?: {} }
+    'telescope_ui.health': { paramsTuple?: []; params?: {} }
     'telescope_ui.tenants': { paramsTuple?: []; params?: {} }
+    'telescope_ui.apps': { paramsTuple?: []; params?: {} }
     'telescope_ui.meta': { paramsTuple?: []; params?: {} }
     'media.dashboard.topology': { paramsTuple?: []; params?: {} }
     'media.dashboard.tenants': { paramsTuple?: []; params?: {} }
+    'media.dashboard.apps': { paramsTuple?: []; params?: {} }
     'media.dashboard.consoles': { paramsTuple?: []; params?: {} }
     'media.dashboard.consoles.search': { paramsTuple?: []; params?: {} }
     'media.dashboard.disks': { paramsTuple?: []; params?: {} }
@@ -385,6 +402,8 @@ export type ScannedRoutes = {
     'api_settings.index': { paramsTuple?: []; params?: {} }
     'api_settings.show': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
     'api_keys.status': { paramsTuple?: []; params?: {} }
+    'authkit.org_labels': { paramsTuple?: []; params?: {} }
+    'authkit.app_keys.read': { paramsTuple: [ParamValue]; params: {'app': ParamValue} }
     'home': { paramsTuple?: []; params?: {} }
     'auth.login': { paramsTuple?: []; params?: {} }
     'auth.callback': { paramsTuple?: []; params?: {} }
@@ -413,10 +432,15 @@ export type ScannedRoutes = {
     'telescope_ui.metrics_ai': { paramsTuple?: []; params?: {} }
     'telescope_ui.metrics_pulse': { paramsTuple?: []; params?: {} }
     'telescope_ui.stream': { paramsTuple?: []; params?: {} }
+    'telescope_ui.fleet': { paramsTuple?: []; params?: {} }
+    'telescope_ui.architecture': { paramsTuple?: []; params?: {} }
+    'telescope_ui.health': { paramsTuple?: []; params?: {} }
     'telescope_ui.tenants': { paramsTuple?: []; params?: {} }
+    'telescope_ui.apps': { paramsTuple?: []; params?: {} }
     'telescope_ui.meta': { paramsTuple?: []; params?: {} }
     'media.dashboard.topology': { paramsTuple?: []; params?: {} }
     'media.dashboard.tenants': { paramsTuple?: []; params?: {} }
+    'media.dashboard.apps': { paramsTuple?: []; params?: {} }
     'media.dashboard.consoles': { paramsTuple?: []; params?: {} }
     'media.dashboard.consoles.search': { paramsTuple?: []; params?: {} }
     'media.dashboard.disks': { paramsTuple?: []; params?: {} }
@@ -507,6 +531,8 @@ export type ScannedRoutes = {
     'api_settings.index': { paramsTuple?: []; params?: {} }
     'api_settings.show': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
     'api_keys.status': { paramsTuple?: []; params?: {} }
+    'authkit.org_labels': { paramsTuple?: []; params?: {} }
+    'authkit.app_keys.read': { paramsTuple: [ParamValue]; params: {'app': ParamValue} }
     'home': { paramsTuple?: []; params?: {} }
     'auth.login': { paramsTuple?: []; params?: {} }
     'auth.callback': { paramsTuple?: []; params?: {} }
@@ -617,6 +643,7 @@ export type ScannedRoutes = {
     'api_clients.regenerate_secret': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.disable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.enable': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'api_clients.revoke': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_orgs.store': { paramsTuple?: []; params?: {} }
     'api_orgs.add_member': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_orgs.create_invitation': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -635,7 +662,10 @@ export type ScannedRoutes = {
     'account_api.update_login_methods': { paramsTuple?: []; params?: {} }
     'console_settings.upsert': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
     'console_mcp_clients.update': { paramsTuple?: []; params?: {} }
+    'api_clients.grant_app': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'app': ParamValue} }
     'api_settings.upsert': { paramsTuple: [ParamValue]; params: {'key': ParamValue} }
+    'authkit.app_catalog': { paramsTuple?: []; params?: {} }
+    'authkit.app_keys.publish': { paramsTuple?: []; params?: {} }
   }
   PATCH: {
     'authkit.oidc.wildcard': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
@@ -672,6 +702,7 @@ export type ScannedRoutes = {
     'console_personal_agents.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_users.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_clients.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'api_clients.revoke_app': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'app': ParamValue} }
     'api_orgs.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'api_orgs.remove_member': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'accountId': ParamValue} }
     'api_orgs.revoke_invitation': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'invitationId': ParamValue} }

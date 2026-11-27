@@ -114,6 +114,34 @@ export class AuthAgentRegistrySchema extends BaseModel {
   declare updatedBy: string | null
 }
 
+export class AuthAppCatalogSchema extends BaseModel {
+  static $columns = ['app', 'capabilities', 'createdAt', 'updatedAt'] as const
+  $columns = AuthAppCatalogSchema.$columns
+  @column({ isPrimary: true })
+  declare app: string
+  @column()
+  declare capabilities: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class AuthAppKeySchema extends BaseModel {
+  static $columns = ['app', 'createdAt', 'keys', 'purpose', 'updatedAt'] as const
+  $columns = AuthAppKeySchema.$columns
+  @column({ isPrimary: true })
+  declare app: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column()
+  declare keys: string
+  @column()
+  declare purpose: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class AuthMfaSchema extends BaseModel {
   static $columns = ['accountId', 'lastTotpStep', 'mfaEnabledAt', 'recoveryCodes', 'totpSecret'] as const
   $columns = AuthMfaSchema.$columns
@@ -254,6 +282,17 @@ export class AuthUserSchema extends BaseModel {
   declare passwordResetToken: string | null
 }
 
+export class AuthkitKeystoreSchema extends BaseModel {
+  static $columns = ['blob', 'key', 'updatedAt'] as const
+  $columns = AuthkitKeystoreSchema.$columns
+  @column()
+  declare blob: string
+  @column({ isPrimary: true })
+  declare key: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class AuthkitOidcPayloadSchema extends BaseModel {
   static $columns = ['accountId', 'expiresAt', 'grantId', 'id', 'modelName', 'payload', 'uid', 'userCode'] as const
   $columns = AuthkitOidcPayloadSchema.$columns
@@ -276,7 +315,7 @@ export class AuthkitOidcPayloadSchema extends BaseModel {
 }
 
 export class AuthzPermissionSchema extends BaseModel {
-  static $columns = ['createdAt', 'guard', 'id', 'name'] as const
+  static $columns = ['createdAt', 'guard', 'id', 'name', 'updatedAt'] as const
   $columns = AuthzPermissionSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime | null
@@ -286,11 +325,15 @@ export class AuthzPermissionSchema extends BaseModel {
   declare id: string
   @column()
   declare name: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
 }
 
 export class AuthzRolePermissionSchema extends BaseModel {
-  static $columns = ['permissionId', 'roleId'] as const
+  static $columns = ['createdAt', 'permissionId', 'roleId'] as const
   $columns = AuthzRolePermissionSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
   @column()
   declare permissionId: string
   @column({ isPrimary: true })
@@ -298,7 +341,7 @@ export class AuthzRolePermissionSchema extends BaseModel {
 }
 
 export class AuthzRoleSchema extends BaseModel {
-  static $columns = ['createdAt', 'guard', 'id', 'name'] as const
+  static $columns = ['createdAt', 'guard', 'id', 'name', 'updatedAt'] as const
   $columns = AuthzRoleSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime | null
@@ -308,11 +351,15 @@ export class AuthzRoleSchema extends BaseModel {
   declare id: string
   @column()
   declare name: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
 }
 
 export class AuthzSubjectPermissionSchema extends BaseModel {
-  static $columns = ['permissionId', 'subjectId', 'subjectType'] as const
+  static $columns = ['createdAt', 'permissionId', 'subjectId', 'subjectType'] as const
   $columns = AuthzSubjectPermissionSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
   @column()
   declare permissionId: string
   @column()
@@ -322,8 +369,10 @@ export class AuthzSubjectPermissionSchema extends BaseModel {
 }
 
 export class AuthzSubjectRoleSchema extends BaseModel {
-  static $columns = ['roleId', 'source', 'subjectId', 'subjectType', 'tenantId'] as const
+  static $columns = ['createdAt', 'roleId', 'source', 'subjectId', 'subjectType', 'tenantId'] as const
   $columns = AuthzSubjectRoleSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
   @column()
   declare roleId: string
   @column()
