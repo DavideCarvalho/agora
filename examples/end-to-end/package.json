@@ -73,7 +73,7 @@
     "@adonisjs/static": "2.0.1",
     "@adonisjs/vite": "6.0.4",
     "@vinejs/vine": "4.4.0",
-    "better-sqlite3": "13.0.3",
+    "better-sqlite3": "13.2.0",
     "edge.js": "6.5.1",
     "luxon": "3.7.2",
     "reflect-metadata": "0.2.2"
