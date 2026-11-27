@@ -118,6 +118,16 @@ A Lucid `searchPath` leaks between clients behind PgBouncer in transaction mode.
 `schema` option, and write the schema into your own models' table names when the Hub reads another
 app's tables.
 
+## Signing keys per process
+
+With `jwks: { source: 'managed' }` and no shared `store`, each Hub process (web, `durable:work`,
+any other worker) generates its own signing key at boot. A token minted by one process fails
+`authkitTenantVerifier()` in another, and every restart invalidates the tokens the apps cached.
+authkit-server 1.1 keeps the keystore in the database by default when Lucid is configured; set
+`jwks.store` explicitly (as in [Building the Hub](/docs/agora-hub/building)) so every process
+reads the same keys. `node ace agora:doctor` reports a managed key without a shared store as an
+error in production.
+
 ## Two keystore writers
 
 During the identity work, exactly one server may write the keystore. Keep `jwks.readOnly: true` on

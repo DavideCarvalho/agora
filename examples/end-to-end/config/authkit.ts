@@ -12,7 +12,9 @@ import { defineConfig, adapters, lucidAccountStore } from '@adonis-agora/authkit
 const authServerConfig = defineConfig({
   issuer: env.get('AUTHKIT_ISSUER'),
   adapter: adapters.database({ connection: 'sqlite' }),
-  jwks: { source: 'managed', algorithm: 'RS256' },
+  // Signing keys in the database: the web process and every worker sign with the same keys,
+  // and a restart keeps them.
+  jwks: { source: 'managed', algorithm: 'RS256', store: { driver: 'lucid' } },
   ttl: { accessToken: '15m', refreshToken: '30d' },
   accountStore: lucidAccountStore(AuthUser),
   mountPath: '/oidc',
