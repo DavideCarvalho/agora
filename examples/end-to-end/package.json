@@ -70,7 +70,7 @@
     "@adonisjs/lucid": "22.4.2",
     "@adonisjs/session": "8.3.0",
     "@adonisjs/shield": "9.0.1",
-    "@adonisjs/static": "2.0.1",
+    "@adonisjs/static": "2.0.2",
     "@adonisjs/vite": "6.0.4",
     "@vinejs/vine": "4.4.0",
     "better-sqlite3": "13.0.3",
