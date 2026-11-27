@@ -187,8 +187,6 @@ overrides:
   '@copilotkit/a2ui-renderer>zod': 4.6.7
   rxjs: 7.8.2
 
-pnpmfileChecksum: sha256-uEwUQo/A1bW9RL4o5Zgzjdjf3GUEbHGeZthFwN4fh5U=
-
 importers:
 
   .:
@@ -198,7 +196,7 @@ importers:
         version: 0.2.4(@a2ui/web_core@0.16.1)
       '@a2ui/react':
         specifier: 0.16.1
-        version: 0.16.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 0.16.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@a2ui/web_core':
         specifier: 0.16.1
         version: 0.16.1
@@ -233,14 +231,14 @@ importers:
         specifier: 1.89.0
         version: 1.89.0(@types/mdast@4.0.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(micromark-util-types@2.0.3)(micromark@4.0.3(supports-color@10.2.2))(react-dom@19.3.1(react@19.3.1))(react-is@19.3.1)(react@19.3.1)(redux@5.0.1)(supports-color@10.2.2)(zod@4.6.7)
       '@openuidev/react-headless':
-        specifier: 0.18.12
-        version: 0.18.12(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))
+        specifier: 0.19.0
+        version: 0.19.0(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))
       '@openuidev/react-lang':
         specifier: 1.1.1
         version: 1.1.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@openuidev/react-ui':
         specifier: 0.18.6
-        version: 0.18.6(@openuidev/react-headless@0.18.12(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1)))(@openuidev/react-lang@1.1.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))
+        version: 0.18.6(@openuidev/react-headless@0.19.0(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1)))(@openuidev/react-lang@1.1.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
@@ -357,6 +355,7 @@ packages:
     peerDependencies:
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+      zod: ^3.25.76
 
   '@a2ui/web_core@0.15.0':
     resolution: {integrity: sha512-S3k9rAJ9O55z5TlDeWy22ly3yQnDLO+XBWihlL5JQSuyxaCUmd7jgFnxO4eq/Bn6dSgdBF0WG8cve/euMoz8SA==}
@@ -1268,8 +1267,8 @@ packages:
   '@openuidev/observability@0.0.4':
     resolution: {integrity: sha512-4fjIrWu3TqTlfDE/m7cG10CH1vV7wQk5GPwMOmXeF9vJtkg92dg4Bdk3AjKgud7H7Xypwwjgt52VcLGZCE2CJQ==}
 
-  '@openuidev/react-headless@0.18.12':
-    resolution: {integrity: sha512-aPwLzb6WwJ+ESuSWrSBHaqFFQDKdYnXYyX0MgVxk3WSCCRG5d1zdTtn8pLHcJ9+AzdBBE7KUIfi5VazBJplA9Q==}
+  '@openuidev/react-headless@0.19.0':
+    resolution: {integrity: sha512-0nSQ4agKpUa0rGhIM5aIKxLnnj382lpwSmx/7kzL7VACTCt8FWr1JK1oAwFF9cQlGKV/ZiIFGbUAm0R0SDkL6w==}
     peerDependencies:
       ai: ^6.0.0 || ^7.0.0
       react: ^18.3.1 || ^19.0.0
@@ -5544,7 +5543,7 @@ snapshots:
       dompurify: 3.5.0
       markdown-it: 14.3.3
 
-  '@a2ui/react@0.16.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@a2ui/react@0.16.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
     dependencies:
       '@a2ui/markdown-it': 0.2.4(@a2ui/web_core@0.16.1)
       '@a2ui/web_core': 0.16.1
@@ -5552,7 +5551,7 @@ snapshots:
       markdown-it: 14.3.3
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
-      zod: 3.25.76
+      zod: 4.6.7
 
   '@a2ui/web_core@0.15.0':
     dependencies:
@@ -6553,7 +6552,7 @@ snapshots:
 
   '@openuidev/observability@0.0.4': {}
 
-  '@openuidev/react-headless@0.18.12(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))':
+  '@openuidev/react-headless@0.19.0(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))':
     dependencies:
       '@ag-ui/core': 0.0.53
       '@openuidev/observability': 0.0.4
@@ -6573,10 +6572,10 @@ snapshots:
       '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.7)
       react-dom: 19.3.1(react@19.3.1)
 
-  '@openuidev/react-ui@0.18.6(@openuidev/react-headless@0.18.12(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1)))(@openuidev/react-lang@1.1.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))':
+  '@openuidev/react-ui@0.18.6(@openuidev/react-headless@0.19.0(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1)))(@openuidev/react-lang@1.1.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(csstype@3.2.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(zod@4.6.7)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))':
     dependencies:
       '@floating-ui/react-dom': 2.1.9(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@openuidev/react-headless': 0.18.12(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))
+      '@openuidev/react-headless': 0.19.0(ai@7.0.181(zod@4.6.7))(react@19.3.1)(zustand@4.5.7(@types/react@19.3.0)(immer@11.2.10)(react@19.3.1))
       '@openuidev/react-lang': 1.1.1(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@radix-ui/react-accordion': 1.3.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@radix-ui/react-aspect-ratio': 1.2.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
