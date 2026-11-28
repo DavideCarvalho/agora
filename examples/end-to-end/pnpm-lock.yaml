@@ -229,7 +229,7 @@ importers:
         version: 2.0.1(@adonisjs/assembler@8.6.0(@typescript/typescript6@6.0.2))(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(@typescript/typescript6@6.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(supports-color@10.2.2)
       '@adonisjs/vite':
         specifier: 6.0.4
-        version: 6.0.4(1af4cb5ebf1502f9140e028b7dee7deb)
+        version: 6.0.4(f685bb51b2c43bb3176d0ceec55f58bb)
       '@vinejs/vine':
         specifier: 4.4.0
         version: 4.4.0
@@ -280,8 +280,8 @@ importers:
         specifier: 3.7.6
         version: 3.7.6
       '@types/node':
-        specifier: 26.6.6
-        version: 26.6.6
+        specifier: 26.6.10
+        version: 26.6.10
       '@typescript/native':
         specifier: npm:typescript@7.0.2
         version: typescript@7.0.2
@@ -305,7 +305,7 @@ importers:
         version: '@typescript/typescript6@6.0.2'
       vite:
         specifier: 8.3.8
-        version: 8.3.8(@types/node@26.6.6)
+        version: 8.3.8(@types/node@26.6.10)
       youch:
         specifier: 4.1.1
         version: 4.1.1
@@ -1562,8 +1562,8 @@ packages:
   '@types/methods@1.1.4':
     resolution: {integrity: sha512-ymXWVrDiCxTBE3+RIrrP533E70eA+9qu7zdWoHuOmGujkYtzf4HQF96b8nwHLqhuf4ykX61IGRIB38CC6/sImQ==}
 
-  '@types/node@26.6.6':
-    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
+  '@types/node@26.6.10':
+    resolution: {integrity: sha512-WJuPHoGB8WNQuTksNF7SOQpnH02PXeDYz4iueWbBT6/hTWnShY5F3T/hoJA3fY9+uYReDZ7pyTKKx83jQa7aGg==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -4100,13 +4100,13 @@ snapshots:
 
   '@adonisjs/tsconfig@2.0.0': {}
 
-  '@adonisjs/vite@6.0.4(1af4cb5ebf1502f9140e028b7dee7deb)':
+  '@adonisjs/vite@6.0.4(f685bb51b2c43bb3176d0ceec55f58bb)':
     dependencies:
       '@adonisjs/core': 7.6.0(@adonisjs/assembler@8.6.0(@typescript/typescript6@6.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
       '@poppinss/utils': 7.1.2
       edge-error: 4.0.2
       picomatch: 4.0.7
-      vite: 8.3.8(@types/node@26.6.6)
+      vite: 8.3.8(@types/node@26.6.10)
     optionalDependencies:
       '@adonisjs/assembler': 8.6.0(@typescript/typescript6@6.0.2)
       '@adonisjs/shield': 9.0.1(@adonisjs/assembler@8.6.0(@typescript/typescript6@6.0.2))(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(@typescript/typescript6@6.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/session@8.3.0(d59f6e6017af0a847c649cfcfefdf5c0))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.4.0))(@japa/runner@5.4.0)(supports-color@10.2.2))(@japa/plugin-adonisjs@5.2.0(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(@typescript/typescript6@6.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.4.0))(@japa/runner@5.4.0)(supports-color@10.2.2))(@japa/runner@5.4.0))(edge.js@6.5.1)
@@ -4829,7 +4829,7 @@ snapshots:
 
   '@types/methods@1.1.4': {}
 
-  '@types/node@26.6.6':
+  '@types/node@26.6.10':
     dependencies:
       undici-types: 8.9.0
 
@@ -4841,7 +4841,7 @@ snapshots:
     dependencies:
       '@types/cookiejar': 2.1.5
       '@types/methods': 1.1.4
-      '@types/node': 26.6.6
+      '@types/node': 26.6.10
       form-data: 4.0.6
 
   '@types/validator@13.15.10': {}
@@ -6716,7 +6716,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@8.3.8(@types/node@26.6.6):
+  vite@8.3.8(@types/node@26.6.10):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -6724,7 +6724,7 @@ snapshots:
       rolldown: 1.2.19
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.6.6
+      '@types/node': 26.6.10
       fsevents: 2.3.3
 
   which-module@2.0.1: {}

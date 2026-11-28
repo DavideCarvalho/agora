@@ -187,8 +187,6 @@ overrides:
   '@copilotkit/a2ui-renderer>zod': 4.6.7
   rxjs: 7.8.2
 
-pnpmfileChecksum: sha256-uEwUQo/A1bW9RL4o5Zgzjdjf3GUEbHGeZthFwN4fh5U=
-
 importers:
 
   .:
@@ -198,13 +196,13 @@ importers:
         version: 0.2.4(@a2ui/web_core@0.16.1)
       '@a2ui/react':
         specifier: 0.16.1
-        version: 0.16.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 0.16.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@a2ui/web_core':
         specifier: 0.16.1
         version: 0.16.1
       '@adonis-agora/agent':
         specifier: 0.97.7
-        version: 0.97.7(7b93896665da19f5bea92ffaae895557)
+        version: 0.97.7(a1b72beaeff4420e14dfc080be1aaf48)
       '@adonisjs/core':
         specifier: 7.6.0
         version: 7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
@@ -222,7 +220,7 @@ importers:
         version: 2.0.1(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(supports-color@10.2.2)
       '@adonisjs/vite':
         specifier: 6.0.4
-        version: 6.0.4(e7919721aa66f677163abcf848555d21)
+        version: 6.0.4(4df90f1b4a7f66bf87a5baa608ce3d4f)
       '@ai-sdk/openai':
         specifier: 4.0.122
         version: 4.0.122(zod@4.6.7)
@@ -298,10 +296,10 @@ importers:
         version: 1.5.2
       '@tailwindcss/vite':
         specifier: 4.3.5
-        version: 4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2))
+        version: 4.3.5(vite@8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2))
       '@types/node':
-        specifier: 26.6.6
-        version: 26.6.6
+        specifier: 26.6.10
+        version: 26.6.10
       '@types/react':
         specifier: 19.3.0
         version: 19.3.0
@@ -310,7 +308,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: 6.3.0
-        version: 6.3.0(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2))
+        version: 6.3.0(vite@8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2))
       bootstrap:
         specifier: 5.3.9
         version: 5.3.9(@popperjs/core@2.11.8)
@@ -334,7 +332,7 @@ importers:
         version: 7.0.2
       vite:
         specifier: 8.3.8
-        version: 8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2)
+        version: 8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2)
 
 packages:
 
@@ -357,6 +355,7 @@ packages:
     peerDependencies:
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+      zod: ^3.25.76
 
   '@a2ui/web_core@0.15.0':
     resolution: {integrity: sha512-S3k9rAJ9O55z5TlDeWy22ly3yQnDLO+XBWihlL5JQSuyxaCUmd7jgFnxO4eq/Bn6dSgdBF0WG8cve/euMoz8SA==}
@@ -2577,8 +2576,8 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
-  '@types/node@26.6.6':
-    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
+  '@types/node@26.6.10':
+    resolution: {integrity: sha512-WJuPHoGB8WNQuTksNF7SOQpnH02PXeDYz4iueWbBT6/hTWnShY5F3T/hoJA3fY9+uYReDZ7pyTKKx83jQa7aGg==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -5544,7 +5543,7 @@ snapshots:
       dompurify: 3.5.0
       markdown-it: 14.3.3
 
-  '@a2ui/react@0.16.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@a2ui/react@0.16.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
     dependencies:
       '@a2ui/markdown-it': 0.2.4(@a2ui/web_core@0.16.1)
       '@a2ui/web_core': 0.16.1
@@ -5552,7 +5551,7 @@ snapshots:
       markdown-it: 14.3.3
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
-      zod: 3.25.76
+      zod: 4.6.7
 
   '@a2ui/web_core@0.15.0':
     dependencies:
@@ -5573,7 +5572,7 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
 
-  '@adonis-agora/agent@0.97.7(7b93896665da19f5bea92ffaae895557)':
+  '@adonis-agora/agent@0.97.7(a1b72beaeff4420e14dfc080be1aaf48)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.2(supports-color@10.2.2)(zod@4.6.7)
       '@standard-schema/spec': 1.1.0
@@ -5599,7 +5598,7 @@ snapshots:
       remark-math: 6.0.0(supports-color@10.2.2)
       typescript: 7.0.2
       unist-util-visit: 5.2.0
-      vite: 8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2)
+      vite: 8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2)
       zod: 4.6.7
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -5859,13 +5858,13 @@ snapshots:
 
   '@adonisjs/tsconfig@2.0.0': {}
 
-  '@adonisjs/vite@6.0.4(e7919721aa66f677163abcf848555d21)':
+  '@adonisjs/vite@6.0.4(4df90f1b4a7f66bf87a5baa608ce3d4f)':
     dependencies:
       '@adonisjs/core': 7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1)
       '@poppinss/utils': 7.1.2
       edge-error: 4.0.2
       picomatch: 4.0.7
-      vite: 8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2)
+      vite: 8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2)
     optionalDependencies:
       '@adonisjs/assembler': 8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)
       '@adonisjs/shield': 9.0.1(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/session@8.3.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@adonisjs/lucid@22.4.2(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@vinejs/vine@4.4.0)(better-sqlite3@13.0.3)(luxon@3.7.2)(supports-color@10.2.2))(edge.js@6.5.1))(edge.js@6.5.1)
@@ -7603,12 +7602,12 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.5
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.5
 
-  '@tailwindcss/vite@4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2))':
+  '@tailwindcss/vite@4.3.5(vite@8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2))':
     dependencies:
       '@tailwindcss/node': 4.3.5
       '@tailwindcss/oxide': 4.3.5
       tailwindcss: 4.3.5
-      vite: 8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2)
+      vite: 8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2)
 
   '@tanstack/devtools-event-client@0.4.4': {}
 
@@ -7807,7 +7806,7 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
-  '@types/node@26.6.6':
+  '@types/node@26.6.10':
     dependencies:
       undici-types: 8.9.0
 
@@ -7936,10 +7935,10 @@ snapshots:
       normalize-url: 8.1.1
       validator: 13.15.35
 
-  '@vitejs/plugin-react@6.3.0(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2))':
+  '@vitejs/plugin-react@6.3.0(vite@8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2))':
     dependencies:
       '@rolldown/pluginutils': 1.1.1
-      vite: 8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2)
+      vite: 8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2)
 
   '@workflow/serde@4.1.0': {}
 
@@ -11031,7 +11030,7 @@ snapshots:
       d3-time: 3.1.1
       d3-timer: 3.0.2
 
-  vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0)(sass@1.108.2):
+  vite@8.3.8(@types/node@26.6.10)(jiti@2.7.0)(sass@1.108.2):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -11039,7 +11038,7 @@ snapshots:
       rolldown: 1.2.19
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.6.6
+      '@types/node': 26.6.10
       fsevents: 2.3.3
       jiti: 2.7.0
       sass: 1.108.2
